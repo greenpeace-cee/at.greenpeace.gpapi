@@ -126,6 +126,12 @@ function _civicrm_api3_o_s_f_submit_spec(&$params) {
     'api.required' => 0,
     'title'        => 'CiviCRM Campaign (external identifier)',
     );
+  $params['campaign_id'] = array(
+    'name'         => 'campaign_id',
+    'api.required' => 0,
+    'title'        => 'CiviCRM Campaign ID',
+    'description'  => 'Overwrites "campaign"',
+    );
   $params['email'] = array(
     'name'         => 'email',
     'api.required' => 0,

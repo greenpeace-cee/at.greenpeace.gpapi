@@ -162,3 +162,30 @@ function gpapi_civicrm_fix_API_UID() {
     }
   }
 }
+
+/**
+ * internal function to replace keys in the data
+ * with the appropriate custom_XX notation.
+ */
+function gpapi_civicrm_resolveCustomFields(&$data, $customgroups) {
+  $custom_fields = civicrm_api3('CustomField', 'get', array(
+    'custom_group_id' => array('IN' => $customgroups),
+    'option.limit'    => 0,
+    'return'          => 'id,name,is_active'
+    ));
+
+  // compile indexed list
+  $field_list = array();
+  foreach ($custom_fields['values'] as $custom_field) {
+    $field_list[$custom_field['name']] = $custom_field;
+  }
+
+  // replace stuff
+  foreach (array_keys($data) as $key) {
+    if (isset($field_list[$key])) {
+      $custom_key = $field_list[$key];
+      $data[$custom_key] = $data[$key];
+      unset($data[$key]);
+    }
+  }
+}

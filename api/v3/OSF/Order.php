@@ -16,11 +16,11 @@
 /**
  * Process OSF (online donation form) DONATION submission
  *
- * @param see specs below (_civicrm_api3_o_s_f_donation_spec)
+ * @param see specs below (_civicrm_api3_o_s_f_order_spec)
  * @return array API result array
  * @access public
  */
-function civicrm_api3_o_s_f_donation($params) {
+function civicrm_api3_o_s_f_order($params) {
   gpapi_civicrm_fix_API_UID();
 
   // resolve campaign ID
@@ -30,29 +30,17 @@ function civicrm_api3_o_s_f_donation($params) {
     unset($params['campaign']);
   }
 
-  if ($params['payment_instrument'] == 'Credit Card') {
-    // PROCESS CREDIT CARD STATEMENT
-    $params['payment_instrument_id'] = 1; // 'Credit Card'
-    $params['contribution_status_id'] = 1; // Completed
-    unset($params['payment_instrument']);
-    if (empty($params['receive_date'])) {
-      $params['receive_date'] = date('YmdHis');
-    }
+  // adjust fields
+  $params['target_id'] = $params['contact_id'];
+  unset($params['contact_id']);
+  $params['activity_type_id'] = 'Webshop Order';
+  $params['status_id'] = 'Scheduled';
 
-    $result = civirm_api3('Contribution', 'create', $params);
+  // resolve custom fields
+  gpapi_civicrm_resolveCustomFields($params, array('webshop_information'));
 
-  } elseif ($params['payment_instrument'] == 'OOFF') {
-    // PROCESS SEPA OOFF STATEMENT
-    $params['type'] = 'OOFF';
-    unset($params['payment_instrument']);
-    $params['amount'] = $params['total_amount'];
-    unset($params['total_amount']);
-
-    $result = civirm_api3('SepaMandate', 'createfull', $params);
-
-  } else {
-    return civicrm_api3_create_error("Undefined 'payment_instrument' {$params['payment_instrument']}");
-  }
+  // create Webshop Order activity
+  $result = civicrm_api3('Activity', 'create', $params);
 
   // and return the good news (otherwise an Exception would have occurred)
   return civicrm_api3_create_success($result);
@@ -64,7 +52,7 @@ function civicrm_api3_o_s_f_donation($params) {
  * The metadata is used for setting defaults, documentation & validation
  * @param array $params array or parameters determined by getfields
  */
-function _civicrm_api3_o_s_f_donation_spec(&$params) {
+function _civicrm_api3_o_s_f_order_spec(&$params) {
   // CONTACT BASE
   $params['contact_id'] = array(
     'name'         => 'contact_id',
@@ -82,34 +70,24 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'title'        => 'CiviCRM Campaign ID',
     'description'  => 'Overwrites "campaign"',
     );
-  $params['total_amount'] = array(
-    'name'         => 'total_amount',
+  $params['order_type'] = array(
+    'name'         => 'order_type',
     'api.required' => 1,
-    'title'        => 'Amount',
+    'title'        => 'Webshop Order Type',
     );
-  $params['currency'] = array(
-    'name'         => 'currency',
-    'api.default'  => 'EUR',
-    'title'        => 'Currency',
+  $params['order_count'] = array(
+    'name'         => 'order_count',
+    'api.required' => 1,
+    'title'        => 'Webshop Order Count',
     );
-  $params['payment_instrument'] = array(
-    'name'         => 'payment_instrument',
-    'api.default'  => 'Credit Card',
-    'title'        => 'Payment type ("Credit Card" or "OOFF" for SEPA)',
+  $params['payment_received'] = array(
+    'name'         => 'payment_received',
+    'api.required' => 1,
+    'title'        => 'Webshop Order Payment Received',
     );
-  $params['financial_type_id'] = array(
-    'name'         => 'financial_type_id',
-    'api.default'  => 1, // Donation
-    'title'        => 'Financial Type, e.g. 1="Donation"',
-    );
-  $params['iban'] = array(
-    'name'         => 'iban',
+  $params['multi_purpose'] = array(
+    'name'         => 'multi_purpose',
     'api.required' => 0,
-    'title'        => 'IBAN (only for payment_instrument=OOFF)',
-    );
-  $params['bic'] = array(
-    'name'         => 'bic',
-    'api.required' => 0,
-    'title'        => 'BIC (only for payment_instrument=OOFF)',
+    'title'        => 'Webshop Order CustomData',
     );
 }
