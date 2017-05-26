@@ -49,6 +49,7 @@ function civicrm_api3_o_s_f_submit($params) {
   // TODO: process email
 
   // process newsletter
+  // TODO: double opt in?
   if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
     $newsletter_group = civicrm_api3('Group', 'getsingle', array('title' => 'Community NL'));
     civicrm_api3('GroupContact', 'create', array(
@@ -57,7 +58,7 @@ function civicrm_api3_o_s_f_submit($params) {
   }
 
   // pass through WebShop orders/donations/contracts
-  $pass_through = array('wsorders'  => 'wsorder',
+  $pass_through = array('wsorders'  => 'order',
                         'donations' => 'donation',
                         'contracts' => 'contract');
   foreach ($pass_through as $field_name => $action) {

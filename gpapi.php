@@ -168,6 +168,7 @@ function gpapi_civicrm_fix_API_UID() {
  * with the appropriate custom_XX notation.
  */
 function gpapi_civicrm_resolveCustomFields(&$data, $customgroups) {
+  // error_log("BEFORE: ".json_encode($data));
   $custom_fields = civicrm_api3('CustomField', 'get', array(
     'custom_group_id' => array('IN' => $customgroups),
     'option.limit'    => 0,
@@ -183,9 +184,10 @@ function gpapi_civicrm_resolveCustomFields(&$data, $customgroups) {
   // replace stuff
   foreach (array_keys($data) as $key) {
     if (isset($field_list[$key])) {
-      $custom_key = $field_list[$key];
+      $custom_key = 'custom_' . $field_list[$key]['id'];
       $data[$custom_key] = $data[$key];
       unset($data[$key]);
     }
   }
+  // error_log("AFTER: ".json_encode($data));
 }

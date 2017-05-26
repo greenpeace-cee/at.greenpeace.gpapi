@@ -33,6 +33,7 @@ function civicrm_api3_o_s_f_contract($params) {
   // prepare parameters
   $params['member_since'] = date('YmdHis'); // now
   $params['start_date'] = date('YmdHis'); // now
+  $params['amount'] = number_format($params['amount'], 2, '.', '');
 
   // create Webshop Order activity
   $result = civicrm_api3('Contract', 'create', $params);

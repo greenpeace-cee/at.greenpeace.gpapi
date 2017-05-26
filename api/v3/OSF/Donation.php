@@ -30,6 +30,9 @@ function civicrm_api3_o_s_f_donation($params) {
     unset($params['campaign']);
   }
 
+  // format amount
+  $params['total_amount'] = number_format($params['total_amount'], 2, '.', '');
+
   if ($params['payment_instrument'] == 'Credit Card') {
     // PROCESS CREDIT CARD STATEMENT
     $params['payment_instrument_id'] = 1; // 'Credit Card'
@@ -39,16 +42,25 @@ function civicrm_api3_o_s_f_donation($params) {
       $params['receive_date'] = date('YmdHis');
     }
 
-    $result = civirm_api3('Contribution', 'create', $params);
+    $result = civicrm_api3('Contribution', 'create', $params);
 
   } elseif ($params['payment_instrument'] == 'OOFF') {
     // PROCESS SEPA OOFF STATEMENT
+    if (empty($params['iban'])) {
+      return civicrm_api3_create_error("No 'iban' provided.");
+    }
+    if (empty($params['bic'])) {
+      return civicrm_api3_create_error("No 'bic' provided.");
+    }
+    if (empty($params['creation_date'])) {
+      $params['creation_date'] = date('YmdHis');
+    }
     $params['type'] = 'OOFF';
-    unset($params['payment_instrument']);
     $params['amount'] = $params['total_amount'];
     unset($params['total_amount']);
+    unset($params['payment_instrument']);
 
-    $result = civirm_api3('SepaMandate', 'createfull', $params);
+    $result = civicrm_api3('SepaMandate', 'createfull', $params);
 
   } else {
     return civicrm_api3_create_error("Undefined 'payment_instrument' {$params['payment_instrument']}");
@@ -101,6 +113,11 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'name'         => 'financial_type_id',
     'api.default'  => 1, // Donation
     'title'        => 'Financial Type, e.g. 1="Donation"',
+    );
+  $params['source'] = array(
+    'name'         => 'source',
+    'api.default'  => "OSF",
+    'title'        => 'Source of donation',
     );
   $params['iban'] = array(
     'name'         => 'iban',

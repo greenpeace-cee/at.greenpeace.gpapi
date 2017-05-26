@@ -70,6 +70,11 @@ function _civicrm_api3_o_s_f_order_spec(&$params) {
     'title'        => 'CiviCRM Campaign ID',
     'description'  => 'Overwrites "campaign"',
     );
+  $params['subject'] = array(
+    'name'         => 'subject',
+    'api.default'  => "Webshop Order",
+    'title'        => 'Webshop Order Type',
+    );
   $params['order_type'] = array(
     'name'         => 'order_type',
     'api.required' => 1,
