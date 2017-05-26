@@ -69,7 +69,7 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
   $params['contact_id'] = array(
     'name'         => 'contact_id',
     'api.required' => 1,
-    'title'        => 'CiviCRM Contact',
+    'title'        => 'CiviCRM Contact ID',
     );
   $params['campaign'] = array(
     'name'         => 'campaign',

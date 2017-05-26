@@ -36,8 +36,8 @@ function civicrm_api3_o_s_f_submit($params) {
   }
 
   // match contact using XCM
-  $contact = civicrm_api3('Contact', 'getorcreate', $params);
-  $contact_id = $contact['id'];
+  $contact_match = civicrm_api3('Contact', 'getorcreate', $params);
+  $contact_id = $contact_match['id'];
 
   // resolve campaign ID
   if (empty($params['campaign_id']) && !empty($params['campaign'])) {
@@ -48,8 +48,13 @@ function civicrm_api3_o_s_f_submit($params) {
 
   // TODO: process email
 
-  // TODO: process newsletter
-
+  // process newsletter
+  if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
+    $newsletter_group = civicrm_api3('Group', 'getsingle', array('title' => 'Community NL'));
+    civicrm_api3('GroupContact', 'create', array(
+      'contact_id' => $contact_id,
+      'group_id'   => $newsletter_group['id']));
+  }
 
   // pass through WebShop orders/donations/contracts
   $pass_through = array('wsorders'  => 'wsorder',
@@ -80,7 +85,8 @@ function civicrm_api3_o_s_f_submit($params) {
   if (!empty($error_list)) {
     return civicrm_api3_create_error($error_list);
   }
-  return civicrm_api3_create_success();
+
+  return civicrm_api3_create_success($contact_match);
 }
 
 /**
@@ -173,7 +179,7 @@ function _civicrm_api3_o_s_f_submit_spec(&$params) {
   // NEWSLETTER
   $params['newsletter'] = array(
     'name'         => 'newsletter',
-    'api.required' => 0,
+    'api.default'  => '0',
     'title'        => 'Sign up for newsletter?',
     );
 

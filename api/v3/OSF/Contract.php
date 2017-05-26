@@ -52,7 +52,7 @@ function _civicrm_api3_o_s_f_contract_spec(&$params) {
   $params['contact_id'] = array(
     'name'         => 'contact_id',
     'api.required' => 1,
-    'title'        => 'CiviCRM Contact',
+    'title'        => 'CiviCRM Contact ID',
     );
   $params['campaign'] = array(
     'name'         => 'campaign',
@@ -82,12 +82,12 @@ function _civicrm_api3_o_s_f_contract_spec(&$params) {
     );
   $params['iban'] = array(
     'name'         => 'iban',
-    'api.required' => 0,
+    'api.required' => 1,
     'title'        => 'IBAN',
     );
   $params['bic'] = array(
     'name'         => 'bic',
-    'api.required' => 0,
+    'api.required' => 1,
     'title'        => 'BIC',
     );
 }
