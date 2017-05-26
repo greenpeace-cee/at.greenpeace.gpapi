@@ -134,30 +134,31 @@ function gpapi_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
   _gpapi_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
 
-// --- Functions below this ship commented out. Uncomment as required. ---
-
 /**
- * Implements hook_civicrm_preProcess().
+ * Fixed API bug, where activity creation needs a valid userID
  *
- * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_preProcess
- *
-function gpapi_civicrm_preProcess($formName, &$form) {
+ * Copied from https://github.com/CiviCooP/org.civicoop.apiuidfix
+ * by Jaap Jansma, CiviCoop
+ */
+function gpapi_civicrm_fix_API_UID() {
+  // see https://github.com/CiviCooP/org.civicoop.apiuidfix
+  $session = CRM_Core_Session::singleton();
+  $userId = $session->get('userID');
+  if (empty($userId)) {
+    $valid_user = FALSE;
 
-} // */
+    // Check and see if a valid secret API key is provided.
+    $api_key = CRM_Utils_Request::retrieve('api_key', 'String', $store, FALSE, NULL, 'REQUEST');
+    if (!$api_key || strtolower($api_key) == 'null') {
+      return; // nothing we can do
+    }
 
-/**
- * Implements hook_civicrm_navigationMenu().
- *
- * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
- *
-function gpapi_civicrm_navigationMenu(&$menu) {
-  _gpapi_civix_insert_navigation_menu($menu, NULL, array(
-    'label' => ts('The Page', array('domain' => 'at.greenpeace.gpapi')),
-    'name' => 'the_page',
-    'url' => 'civicrm/the-page',
-    'permission' => 'access CiviReport,access CiviContribute',
-    'operator' => 'OR',
-    'separator' => 0,
-  ));
-  _gpapi_civix_navigationMenu($menu);
-} // */
+    $valid_user = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $api_key, 'id', 'api_key');
+
+    // If we didn't find a valid user, die
+    if (!empty($valid_user)) {
+      //now set the UID into the session
+      $session->set('userID', $valid_user);
+    }
+  }
+}

@@ -14,7 +14,7 @@
 
 
 /**
- * Process OSF (online donation form) submission
+ * Process OSF (online donation form) base submission
  *
  * @param see specs below (_civicrm_api3_o_s_f_submit_spec)
  * @return array API result array
@@ -22,7 +22,7 @@
  */
 function civicrm_api3_o_s_f_submit($params) {
   $error_list = array();
-  _civicrm_api3_fix_API_UID();
+  gpapi_civicrm_fix_API_UID();
 
   // check input
   if (   (empty($params['bpk']))
@@ -39,47 +39,47 @@ function civicrm_api3_o_s_f_submit($params) {
   $contact = civicrm_api3('Contact', 'getorcreate', $params);
   $contact_id = $contact['id'];
 
+  // resolve campaign ID
+  if (empty($params['campaign_id']) && !empty($params['campaign'])) {
+    $campaign = civicrm_api3('Campaign', 'getsingle', array('external_identifier' => $params['campaign']));
+    $params['campaign_id'] = $campaign['id'];
+    unset($params['campaign']);
+  }
+
   // TODO: process email
 
   // TODO: process newsletter
 
-  // pass through WebShop orders
-  if (!empty($params['wsorders']) && is_array($params['wsorders'])) {
-    foreach ($params['wsorders'] as $wsorder) {
-      $wsorder['contact_id'] = $contact_id;
-      try {
-        civicrm_api3('OSF', 'wsorder', $wsorder);
-      } catch (Exception $e) {
-        $error_list[] = $e->getMessage();
+
+  // pass through WebShop orders/donations/contracts
+  $pass_through = array('wsorders'  => 'wsorder',
+                        'donations' => 'donation',
+                        'contracts' => 'contract');
+  foreach ($pass_through as $field_name => $action) {
+    if (!empty($params[$field_name]) && is_array($params[$field_name])) {
+      foreach ($params[$field_name] as $call_data) {
+        // set contact ID
+        $call_data['contact_id'] = $contact_id;
+
+        // fill campaign_id
+        if (empty($call_data['campaign_id']) && !empty($params['campaign_id'])) {
+          $call_data['campaign_id'] = $params['campaign_id'];
+        }
+
+        // run the sub-call
+        try {
+          civicrm_api3('OSF', $action, $call_data);
+        } catch (Exception $e) {
+          $error_list[] = $e->getMessage();
+        }
       }
     }
   }
 
-  // pass through dontations
-  if (!empty($params['donations']) && is_array($params['donations'])) {
-    foreach ($params['donations'] as $donation) {
-      $donation['contact_id'] = $contact_id;
-      try {
-        civicrm_api3('OSF', 'donation', $donation);
-      } catch (Exception $e) {
-        $error_list[] = $e->getMessage();
-      }
-    }
+  // create result
+  if (!empty($error_list)) {
+    return civicrm_api3_create_error($error_list);
   }
-
-  // pass through dontations
-  if (!empty($params['contracts']) && is_array($params['contracts'])) {
-    foreach ($params['contracts'] as $contract) {
-      $contract['contact_id'] = $contact_id;
-      try {
-        civicrm_api3('OSF', 'contract', $contract);
-      } catch (Exception $e) {
-        $error_list[] = $e->getMessage();
-      }
-    }
-  }
-
-  // and return the good news (otherwise an Exception would have occurred)
   return civicrm_api3_create_success();
 }
 
@@ -120,6 +120,11 @@ function _civicrm_api3_o_s_f_submit_spec(&$params) {
     'name'         => 'bpk',
     'api.required' => 0,
     'title'        => 'bereichsspezifische Personenkennzeichen (AT)',
+    );
+  $params['campaign'] = array(
+    'name'         => 'campaign',
+    'api.required' => 0,
+    'title'        => 'CiviCRM Campaign (external identifier)',
     );
   $params['email'] = array(
     'name'         => 'email',
@@ -183,34 +188,3 @@ function _civicrm_api3_o_s_f_submit_spec(&$params) {
     'title'        => 'List of contracts to be passed on to OSF.contract',
     );
 }
-
-
-/**
- * Fixed API bug, where activity creation needs a valid userID
- *
- * Copied from https://github.com/CiviCooP/org.civicoop.apiuidfix
- * by Jaap Jansma, CiviCoop
- */
-function _civicrm_api3_fix_API_UID() {
-  // see https://github.com/CiviCooP/org.civicoop.apiuidfix
-  $session = CRM_Core_Session::singleton();
-  $userId = $session->get('userID');
-  if (empty($userId)) {
-    $valid_user = FALSE;
-
-    // Check and see if a valid secret API key is provided.
-    $api_key = CRM_Utils_Request::retrieve('api_key', 'String', $store, FALSE, NULL, 'REQUEST');
-    if (!$api_key || strtolower($api_key) == 'null') {
-      return; // nothing we can do
-    }
-
-    $valid_user = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $api_key, 'id', 'api_key');
-
-    // If we didn't find a valid user, die
-    if (!empty($valid_user)) {
-      //now set the UID into the session
-      $session->set('userID', $valid_user);
-    }
-  }
-}
-
