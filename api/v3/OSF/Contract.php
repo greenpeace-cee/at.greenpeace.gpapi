@@ -36,7 +36,12 @@ function civicrm_api3_o_s_f_contract($params) {
   $params['amount'] = number_format($params['amount'], 2, '.', '');
 
   // create Webshop Order activity
-  $result = civicrm_api3('Contract', 'create', $params);
+
+  // TODO: re-enable when contract extension is done
+  // $result = civicrm_api3('Contract', 'create', $params);
+
+  // TODO: remove logging
+  CRM_Core_Error::debug_log_message("Would call Contract.create with: " . json_encode($params));
 
   // and return the good news (otherwise an Exception would have occurred)
   return civicrm_api3_create_success($result);
