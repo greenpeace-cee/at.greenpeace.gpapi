@@ -42,7 +42,7 @@ function civicrm_api3_o_s_f_donation($params) {
       $params['receive_date'] = date('YmdHis');
     }
 
-    $result = civicrm_api3('Contribution', 'create', $params);
+    return civicrm_api3('Contribution', 'create', $params);
 
   } elseif ($params['payment_instrument'] == 'OOFF') {
     // PROCESS SEPA OOFF STATEMENT
@@ -60,14 +60,12 @@ function civicrm_api3_o_s_f_donation($params) {
     unset($params['total_amount']);
     unset($params['payment_instrument']);
 
-    $result = civicrm_api3('SepaMandate', 'createfull', $params);
+    return civicrm_api3('SepaMandate', 'createfull', $params);
 
   } else {
+
     return civicrm_api3_create_error("Undefined 'payment_instrument' {$params['payment_instrument']}");
   }
-
-  // and return the good news (otherwise an Exception would have occurred)
-  return civicrm_api3_create_success($result);
 }
 
 /**

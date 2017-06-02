@@ -22,6 +22,7 @@
  */
 function civicrm_api3_o_s_f_submit($params) {
   $error_list = array();
+  $result = array();
   gpapi_civicrm_fix_API_UID();
 
   // check input
@@ -38,6 +39,7 @@ function civicrm_api3_o_s_f_submit($params) {
   // match contact using XCM
   $contact_match = civicrm_api3('Contact', 'getorcreate', $params);
   $contact_id = $contact_match['id'];
+  $result['id'] = $contact_id;
 
   // resolve campaign ID
   if (empty($params['campaign_id']) && !empty($params['campaign'])) {
@@ -74,7 +76,8 @@ function civicrm_api3_o_s_f_submit($params) {
 
         // run the sub-call
         try {
-          civicrm_api3('OSF', $action, $call_data);
+          $call_result = civicrm_api3('OSF', $action, $call_data);
+          $result[$field_name][] = $call_result['id'];
         } catch (Exception $e) {
           $error_list[] = $e->getMessage();
         }
@@ -87,7 +90,7 @@ function civicrm_api3_o_s_f_submit($params) {
     return civicrm_api3_create_error($error_list);
   }
 
-  return civicrm_api3_create_success($contact_match);
+  return civicrm_api3_create_success(array($contact_id => $result));
 }
 
 /**

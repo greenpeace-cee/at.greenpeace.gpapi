@@ -40,10 +40,7 @@ function civicrm_api3_o_s_f_order($params) {
   gpapi_civicrm_resolveCustomFields($params, array('webshop_information'));
 
   // create Webshop Order activity
-  $result = civicrm_api3('Activity', 'create', $params);
-
-  // and return the good news (otherwise an Exception would have occurred)
-  return civicrm_api3_create_success($result);
+  return civicrm_api3('Activity', 'create', $params);
 }
 
 /**
