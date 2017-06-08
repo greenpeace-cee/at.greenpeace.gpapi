@@ -21,6 +21,7 @@
  * @access public
  */
 function civicrm_api3_o_s_f_submit($params) {
+  CRM_Core_Error::debug_log_message("OSF.submit: " . json_encode($params));
   $error_list = array();
   $result = array();
   gpapi_civicrm_fix_API_UID();
@@ -34,6 +35,23 @@ function civicrm_api3_o_s_f_submit($params) {
       ) {
     // we don not have enough information to match/create the contact
     return civicrm_api3_create_error("Insufficient contact data");
+  }
+
+  // prepare data: prefix
+  if (empty($params['prefix_id']) && !empty($params['prefix'])) {
+    $params['prefix_id'] = CRM_Core_OptionGroup::getValue('individual_prefix', $params['prefix']);
+    if ($params['prefix'] == 'Herr') {
+      $params['gender_id'] = 2; // male
+    } elseif ($params['prefix'] == 'Frau') {
+      $params['gender_id'] = 1; // female
+    }
+  }
+  // prepare data: country
+  if (empty($params['country_id']) && !empty($params['country'])) {
+    $country_search = civicrm_api3('Country', 'get', array('name' => $params['country']));
+    if (!empty($country_search['id'])) {
+      $params['country_id'] = $country_search['id'];
+    }
   }
 
   // match contact using XCM

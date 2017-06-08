@@ -21,6 +21,7 @@
  * @access public
  */
 function civicrm_api3_o_s_f_donation($params) {
+  CRM_Core_Error::debug_log_message("OSF.donation: " . json_encode($params));
   gpapi_civicrm_fix_API_UID();
 
   // resolve campaign ID

@@ -21,6 +21,7 @@
  * @access public
  */
 function civicrm_api3_o_s_f_contract($params) {
+  CRM_Core_Error::debug_log_message("OSF.contract: " . json_encode($params));
   gpapi_civicrm_fix_API_UID();
 
   if (empty($params['iban'])) {
@@ -76,7 +77,6 @@ function civicrm_api3_o_s_f_contract($params) {
     ));
   // reload mandate
   $mandate = civicrm_api3('SepaMandate', 'getsingle', array('id' => $mandate['id']));
-  error_log("MANDATE " . json_encode($mandate));
 
   // create the contract
   $result = civicrm_api3('Contract', 'create', array(
@@ -93,7 +93,6 @@ function civicrm_api3_o_s_f_contract($params) {
     'membership_payment.from_ba'                           => _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']),
     'membership_payment.cycle_day'                         => $cycle_day
     ));
-  error_log("CONTRACT " . json_encode($result));
   // and return the good news (otherwise an Exception would have occurred)
   return $result;
 }
