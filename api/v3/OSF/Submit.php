@@ -48,7 +48,24 @@ function civicrm_api3_o_s_f_submit($params) {
     unset($params['campaign']);
   }
 
-  // TODO: process email
+  // process email: if the email doesn't exist with the contact -> create
+  if (!empty($params['email'])) {
+    $contact_emails = civicrm_api3('Email', 'get', array(
+      'contact_id'   => $contact_id,
+      'email'        => $params['email'],
+      'option.limit' => 2));
+    if ($contact_emails['count'] == 0) {
+      // email is not present -> create
+      civicrm_api3('Email', 'create', array(
+        'contact_id'       => $contact_id,
+        'email'            => $params['email'],
+        'is_primary'       => 1,
+        'is_bulkmail'      => empty($params['newsletter']) ? 0 : 1,
+        'location_type_id' => 1 // TODO: which location type?
+        ));
+    }
+  }
+
 
   // process newsletter
   // TODO: double opt in?
