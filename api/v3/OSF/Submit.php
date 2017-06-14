@@ -106,6 +106,10 @@ function civicrm_api3_o_s_f_submit($params) {
         // set contact ID
         $call_data['contact_id'] = $contact_id;
 
+        if (isset($params['sequential'])) {
+          $call_data['sequential'] = $params['sequential'];
+        }
+
         // fill campaign_id
         if (empty($call_data['campaign_id']) && !empty($params['campaign_id'])) {
           $call_data['campaign_id'] = $params['campaign_id'];
