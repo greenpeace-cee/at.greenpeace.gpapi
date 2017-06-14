@@ -24,6 +24,10 @@ function civicrm_api3_o_s_f_order($params) {
   CRM_Core_Error::debug_log_message("OSF.order: " . json_encode($params));
   gpapi_civicrm_fix_API_UID();
 
+  if (empty($params['contact_id'])) {
+    return civicrm_api3_create_error("No 'contact_id' provided.");
+  }
+
   // resolve campaign ID
   if (empty($params['campaign_id']) && !empty($params['campaign'])) {
     $campaign = civicrm_api3('Campaign', 'getsingle', array('external_identifier' => $params['campaign']));

@@ -24,6 +24,9 @@ function civicrm_api3_o_s_f_contract($params) {
   CRM_Core_Error::debug_log_message("OSF.contract: " . json_encode($params));
   gpapi_civicrm_fix_API_UID();
 
+  if (empty($params['contact_id'])) {
+    return civicrm_api3_create_error("No 'contact_id' provided.");
+  }
   if (empty($params['iban'])) {
     return civicrm_api3_create_error("No 'iban' provided.");
   }
