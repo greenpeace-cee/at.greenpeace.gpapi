@@ -125,7 +125,11 @@ function civicrm_api3_o_s_f_submit($params) {
     return civicrm_api3_create_error($error_list);
   }
 
-  return civicrm_api3_create_success(array($contact_id => $result));
+  if (!empty($params['sequential'])) {
+    return civicrm_api3_create_success(array($result));
+  } else {
+    return civicrm_api3_create_success(array($contact_id => $result));
+  }
 }
 
 /**
