@@ -90,7 +90,7 @@ function civicrm_api3_o_s_f_contract($params) {
     'membership_payment.membership_frequency'              => $params['frequency'],
     'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
     'membership_payment.to_ba'                             => _civicrm_api3_o_s_f_contract_getBA($creditor->iban, $creditor->creditor_id),
-    'membership_payment.from_ba'                           => _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']),
+    'membership_payment.from_ba'                           => _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic'])),
     'membership_payment.cycle_day'                         => $cycle_day
     ));
   // and return the good news (otherwise an Exception would have occurred)
@@ -101,7 +101,7 @@ function civicrm_api3_o_s_f_contract($params) {
  * get or create the bank account of the given contact/iban
  * @return int banking_account.id
  */
-function _civicrm_api3_o_s_f_contract_getBA($iban, $contact_id) {
+function _civicrm_api3_o_s_f_contract_getBA($iban, $contact_id, $extra_data) {
   // look up reference type option value ID(!)
   $reference_type_value = civicrm_api3('OptionValue', 'getsingle', array(
     'value'           => 'IBAN',
@@ -133,10 +133,11 @@ function _civicrm_api3_o_s_f_contract_getBA($iban, $contact_id) {
 
   // if we get here, that means that there is no such bank account
   //  => create one
+  $extra_data['country'] = substr($iban, 0, 2);
   $bank_account = civicrm_api3('BankingAccount', 'create', array(
     'contact_id'  => $contact_id,
     'description' => "Bulk Importer",
-    'data_parsed' => json_encode($data)));
+    'data_parsed' => json_encode($extra_data)));
 
   $bank_account_reference = civicrm_api3('BankingAccountReference', 'create', array(
     'reference'         => $iban,

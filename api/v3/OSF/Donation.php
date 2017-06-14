@@ -12,6 +12,7 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
+include_once 'Contract.php';
 
 /**
  * Process OSF (online donation form) DONATION submission
@@ -60,6 +61,9 @@ function civicrm_api3_o_s_f_donation($params) {
     $params['amount'] = $params['total_amount'];
     unset($params['total_amount']);
     unset($params['payment_instrument']);
+
+    // add bank accounts
+    _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
 
     return civicrm_api3('SepaMandate', 'createfull', $params);
 
