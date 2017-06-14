@@ -40,12 +40,14 @@ function civicrm_api3_o_s_f_submit($params) {
   // prepare data: prefix
   if (empty($params['prefix_id']) && !empty($params['prefix'])) {
     $params['prefix_id'] = CRM_Core_OptionGroup::getValue('individual_prefix', $params['prefix']);
+    $params['prefix_id'] = $params['prefix'];
     if ($params['prefix'] == 'Herr') {
       $params['gender_id'] = 2; // male
     } elseif ($params['prefix'] == 'Frau') {
       $params['gender_id'] = 1; // female
     }
   }
+
   // prepare data: country
   if (empty($params['country_id']) && !empty($params['country'])) {
     $country_search = civicrm_api3('Country', 'get', array('name' => $params['country']));
