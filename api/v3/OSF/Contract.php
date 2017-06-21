@@ -75,7 +75,7 @@ function civicrm_api3_o_s_f_contract($params) {
     'cycle_day'           => $cycle_day,
     'frequency_interval'  => (int) (12.0 / $params['frequency']),
     'start_date'          => $params['start_date'],
-    'campaign_id'         => $campaign_id,
+    'campaign_id'         => $params['campaign_id'],
     'financial_type_id'   => 3, // Membership Dues
     ));
   // reload mandate
@@ -88,7 +88,7 @@ function civicrm_api3_o_s_f_contract($params) {
     'join_date'                                            => $params['start_date'],
     'start_date'                                           => $params['start_date'],
     'source'                                               => 'OSF',
-    'campaign_id'                                          => $campaign_id,
+    'campaign_id'                                          => $params['campaign_id'],
     'membership_payment.membership_annual'                 => number_format($params['amount'] * $params['frequency'], 2, '.', ''),
     'membership_payment.membership_frequency'              => $params['frequency'],
     'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
