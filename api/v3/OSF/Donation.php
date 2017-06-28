@@ -29,9 +29,13 @@ function civicrm_api3_o_s_f_donation($params) {
     return civicrm_api3_create_error("No 'contact_id' provided.");
   }
 
+  $params['check_permissions'] = 0;
+
   // resolve campaign ID
   if (empty($params['campaign_id']) && !empty($params['campaign'])) {
-    $campaign = civicrm_api3('Campaign', 'getsingle', array('external_identifier' => $params['campaign']));
+    $campaign = civicrm_api3('Campaign', 'getsingle', array(
+      'check_permissions'   => 0,
+      'external_identifier' => $params['campaign']));
     $params['campaign_id'] = $campaign['id'];
     unset($params['campaign']);
   }
@@ -41,7 +45,7 @@ function civicrm_api3_o_s_f_donation($params) {
 
   if ($params['payment_instrument'] == 'Credit Card') {
     // PROCESS CREDIT CARD STATEMENT
-    $params['payment_instrument_id'] = 1; // 'Credit Card'
+    $params['payment_instrument_id']  = 1; // 'Credit Card'
     $params['contribution_status_id'] = 1; // Completed
     unset($params['payment_instrument']);
     if (empty($params['receive_date'])) {

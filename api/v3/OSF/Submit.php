@@ -50,20 +50,25 @@ function civicrm_api3_o_s_f_submit($params) {
 
   // prepare data: country
   if (empty($params['country_id']) && !empty($params['country'])) {
-    $country_search = civicrm_api3('Country', 'get', array('name' => $params['country']));
+    $country_search = civicrm_api3('Country', 'get', array(
+      'check_permissions'   => 0,
+      'name'                => $params['country']));
     if (!empty($country_search['id'])) {
       $params['country_id'] = $country_search['id'];
     }
   }
 
   // match contact using XCM
+  $params['check_permissions'] = 0;
   $contact_match = civicrm_api3('Contact', 'getorcreate', $params);
   $contact_id = $contact_match['id'];
   $result['id'] = $contact_id;
 
   // resolve campaign ID
   if (empty($params['campaign_id']) && !empty($params['campaign'])) {
-    $campaign = civicrm_api3('Campaign', 'getsingle', array('external_identifier' => $params['campaign']));
+    $campaign = civicrm_api3('Campaign', 'getsingle', array(
+      'check_permissions'   => 0,
+      'external_identifier' => $params['campaign']));
     $params['campaign_id'] = $campaign['id'];
     unset($params['campaign']);
   }
@@ -71,17 +76,19 @@ function civicrm_api3_o_s_f_submit($params) {
   // process email: if the email doesn't exist with the contact -> create
   if (!empty($params['email'])) {
     $contact_emails = civicrm_api3('Email', 'get', array(
-      'contact_id'   => $contact_id,
-      'email'        => $params['email'],
-      'option.limit' => 2));
+      'check_permissions' => 0,
+      'contact_id'        => $contact_id,
+      'email'             => $params['email'],
+      'option.limit'      => 2));
     if ($contact_emails['count'] == 0) {
       // email is not present -> create
       civicrm_api3('Email', 'create', array(
-        'contact_id'       => $contact_id,
-        'email'            => $params['email'],
-        'is_primary'       => 1,
-        'is_bulkmail'      => empty($params['newsletter']) ? 0 : 1,
-        'location_type_id' => 1 // TODO: which location type?
+        'check_permissions' => 0,
+        'contact_id'        => $contact_id,
+        'email'             => $params['email'],
+        'is_primary'        => 1,
+        'is_bulkmail'       => empty($params['newsletter']) ? 0 : 1,
+        'location_type_id'  => 1 // TODO: which location type?
         ));
     }
   }
@@ -90,10 +97,13 @@ function civicrm_api3_o_s_f_submit($params) {
   // process newsletter
   // TODO: double opt in?
   if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
-    $newsletter_group = civicrm_api3('Group', 'getsingle', array('title' => 'Community NL'));
+    $newsletter_group = civicrm_api3('Group', 'getsingle', array(
+      'check_permissions' => 0,
+      'title'             => 'Community NL'));
     civicrm_api3('GroupContact', 'create', array(
-      'contact_id' => $contact_id,
-      'group_id'   => $newsletter_group['id']));
+      'check_permissions' => 0,
+      'contact_id'        => $contact_id,
+      'group_id'          => $newsletter_group['id']));
   }
 
   // pass through WebShop orders/donations/contracts
@@ -105,6 +115,7 @@ function civicrm_api3_o_s_f_submit($params) {
       foreach ($params[$field_name] as $call_data) {
         // set contact ID
         $call_data['contact_id'] = $contact_id;
+        $call_data['check_permissions'] = 0;
 
         if (isset($params['sequential'])) {
           $call_data['sequential'] = $params['sequential'];

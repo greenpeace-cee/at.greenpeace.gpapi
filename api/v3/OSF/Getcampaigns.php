@@ -45,9 +45,10 @@ function civicrm_api3_o_s_f_getcampaigns($params) {
   }
 
   // prepare call to pass on to Campaign.get
-  $params['option.limit'] = 0;
-  $params['is_active']    = 1;
-  $params['id']           = array('IN' => $all_campaigns);
+  $params['option.limit']      = 0;
+  $params['is_active']         = 1;
+  $params['id']                = array('IN' => $all_campaigns);
+  $params['check_permissions'] = 0;
 
   // pass to Campaign.get
   return civicrm_api3('Campaign', 'get', $params);

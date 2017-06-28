@@ -147,12 +147,12 @@ function gpapi_civicrm_permission(&$permissions) {
  */
 function gpapi_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions) {
   // OSF
-  $permissions['osf']['submit']       = array('access OSF API');
-  $permissions['osf']['donation']     = array('access OSF API');
-  $permissions['osf']['order']        = array('access OSF API');
-  $permissions['osf']['contract']     = array('access OSF API');
-  $permissions['osf']['getcampaigns'] = array('access OSF API');
-  $permissions['osf']['getproducts']  = array('access OSF API');
+  $permissions['o_s_f']['submit']       = array('access OSF API');
+  $permissions['o_s_f']['donation']     = array('access OSF API');
+  $permissions['o_s_f']['order']        = array('access OSF API');
+  $permissions['o_s_f']['contract']     = array('access OSF API');
+  $permissions['o_s_f']['getcampaigns'] = array('access OSF API');
+  $permissions['o_s_f']['getproducts']  = array('access OSF API');
 
   // Engage
   $permissions['engage']['signpetition'] = array('access Engage API');

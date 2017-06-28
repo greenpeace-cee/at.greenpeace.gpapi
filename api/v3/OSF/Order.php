@@ -30,7 +30,9 @@ function civicrm_api3_o_s_f_order($params) {
 
   // resolve campaign ID
   if (empty($params['campaign_id']) && !empty($params['campaign'])) {
-    $campaign = civicrm_api3('Campaign', 'getsingle', array('external_identifier' => $params['campaign']));
+    $campaign = civicrm_api3('Campaign', 'getsingle', array(
+      'check_permissions'   => 0,
+      'external_identifier' => $params['campaign']));
     $params['campaign_id'] = $campaign['id'];
     unset($params['campaign']);
   }
@@ -38,8 +40,9 @@ function civicrm_api3_o_s_f_order($params) {
   // adjust fields
   $params['target_id'] = $params['contact_id'];
   unset($params['contact_id']);
-  $params['activity_type_id'] = 'Webshop Order';
-  $params['status_id'] = 'Scheduled';
+  $params['activity_type_id']  = 'Webshop Order';
+  $params['status_id']         = 'Scheduled';
+  $params['check_permissions'] = 0;
 
   // resolve custom fields
   gpapi_civicrm_resolveCustomFields($params, array('webshop_information'));

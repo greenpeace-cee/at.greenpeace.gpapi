@@ -24,9 +24,11 @@ function civicrm_api3_o_s_f_getproducts($params) {
   CRM_Core_Error::debug_log_message("OSF.getproducts: " . json_encode($params));
 
   // prepare call to pass on to Campaign.get
-  $params['option.limit']    = 0;
-  $params['option.sort']     = 'weight asc';
-  $params['option_group_id'] = 'order_type';
+  $params['check_permissions'] = 0;
+  $params['option.limit']      = 0;
+  $params['option.sort']       = 'weight asc';
+  $params['option_group_id']   = 'order_type';
+
 
   // pass to OptionValue.get
   return civicrm_api3('OptionValue', 'get', $params);

@@ -25,17 +25,19 @@ function civicrm_api3_engage_getpetitions($params) {
 
   // get all active campaigns
   $active_campaign_query = civicrm_api3('Campaign', 'get', array(
-    'is_active'    => 1,
-    'return'       => 'id',
-    'option.limit' => 0));
+    'check_permissions' => 0,
+    'is_active'         => 1,
+    'return'            => 'id',
+    'option.limit'      => 0));
   $active_campaign_ids = array();
   foreach ($active_campaign_query['values'] as $campaign) {
     $active_campaign_ids[] = $campaign['id'];
   }
 
-  $params['campaign_id']      = array('IN' => $active_campaign_ids);
-  $params['activity_type_id'] = CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature');
-  $params['option.limit']     = 0;
+  $params['campaign_id']       = array('IN' => $active_campaign_ids);
+  $params['activity_type_id']  = CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature');
+  $params['option.limit']      = 0;
+  $params['check_permissions'] = 0;
 
   return civicrm_api3('Survey', 'get', $params);
 }

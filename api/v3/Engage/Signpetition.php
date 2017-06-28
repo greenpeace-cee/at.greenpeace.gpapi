@@ -47,13 +47,16 @@ function civicrm_api3_engage_signpetition($params) {
   }
 
   // match contact using XCM
+  $params['check_permissions'] = 0;
   $contact_match = civicrm_api3('Contact', 'getorcreate', $params);
   $contact_id = $contact_match['id'];
   $result['id'] = $contact_id;
 
   // resolve campaign ID
   if (empty($params['campaign_id']) && !empty($params['campaign'])) {
-    $campaign = civicrm_api3('Campaign', 'getsingle', array('external_identifier' => $params['campaign']));
+    $campaign = civicrm_api3('Campaign', 'getsingle', array(
+      'external_identifier' => $params['campaign'],
+      'check_permissions'   => 0));
     $params['campaign_id'] = $campaign['id'];
     unset($params['campaign']);
   }
@@ -61,25 +64,31 @@ function civicrm_api3_engage_signpetition($params) {
   // process email: if the email doesn't exist with the contact -> create
   if (!empty($params['email'])) {
     $contact_emails = civicrm_api3('Email', 'get', array(
-      'contact_id'   => $contact_id,
-      'email'        => $params['email'],
-      'option.limit' => 2));
+      'check_permissions' => 0,
+      'contact_id'        => $contact_id,
+      'email'             => $params['email'],
+      'option.limit'      => 2));
     if ($contact_emails['count'] == 0) {
       // email is not present -> create
       civicrm_api3('Email', 'create', array(
-        'contact_id'       => $contact_id,
-        'email'            => $params['email'],
-        'is_primary'       => 1,
-        'location_type_id' => 1 // TODO: which location type?
+        'check_permissions' => 0,
+        'contact_id'        => $contact_id,
+        'email'             => $params['email'],
+        'is_primary'        => 1,
+        'location_type_id'  => 1 // TODO: which location type?
         ));
     }
   }
 
   // GP-463: "für Group Donation Info soll jeder Eintrag via signpetition mit email automatisch angemeldet werden"
-  $newsletter_group = civicrm_api3('Group', 'getsingle', array('title' => 'Donation Info'));
+  $newsletter_group = civicrm_api3('Group', 'getsingle', array(
+    'check_permissions' => 0,
+    'title'             => 'Donation Info',
+    ));
   civicrm_api3('GroupContact', 'create', array(
-    'contact_id' => $contact_id,
-    'group_id'   => $newsletter_group['id']));
+    'check_permissions' => 0,
+    'contact_id'        => $contact_id,
+    'group_id'          => $newsletter_group['id']));
 
   // find petition
   if (empty($params['petition_id'])) {
@@ -89,13 +98,16 @@ function civicrm_api3_engage_signpetition($params) {
 
     // indetify/load petition based on the campaign
     $petition = civicrm_api3('Survey', 'getsingle', array(
-      'bypass_confirm'   => '1',
-      'campaign_id'      => $params['campaign_id'],
-      'activity_type_id' => CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature')
+      'check_permissions' => 0,
+      'bypass_confirm'    => '1',
+      'campaign_id'       => $params['campaign_id'],
+      'activity_type_id'  => CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature')
       ));
   } else {
     // simply load the petition
-    $petition = civicrm_api3('Survey', 'getsingle', array('id' => (int) $params['petition_id']));
+    $petition = civicrm_api3('Survey', 'getsingle', array(
+      'id'                => (int) $params['petition_id'],
+      'check_permissions' => 0));
   }
 
   // TODO: check if not signed already
@@ -103,6 +115,7 @@ function civicrm_api3_engage_signpetition($params) {
 
   // create signature activity
   civicrm_api3('Activity', 'create', array(
+    'check_permissions'   => 0,
     'source_contact_id'   => $contact_id,
     'activity_type_id'    => CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature'),
     'status_id'           => CRM_Core_OptionGroup::getValue('activity_status', 'Completed'),

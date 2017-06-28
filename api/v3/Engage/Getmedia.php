@@ -24,9 +24,10 @@ function civicrm_api3_engage_getmedia($params) {
   CRM_Core_Error::debug_log_message("Engage.getmedia: " . json_encode($params));
 
   // prepare call to pass on to Campaign.get
-  $params['option.limit']    = 0;
-  $params['option.sort']     = 'weight asc';
-  $params['option_group_id'] = 'encounter_medium';
+  $params['option.limit']      = 0;
+  $params['option.sort']       = 'weight asc';
+  $params['option_group_id']   = 'encounter_medium';
+  $params['check_permissions'] = 0;
 
   // pass to OptionValue.get
   return civicrm_api3('OptionValue', 'get', $params);

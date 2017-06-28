@@ -36,7 +36,9 @@ function civicrm_api3_o_s_f_contract($params) {
 
   // resolve campaign ID
   if (empty($params['campaign_id']) && !empty($params['campaign'])) {
-    $campaign = civicrm_api3('Campaign', 'getsingle', array('external_identifier' => $params['campaign']));
+    $campaign = civicrm_api3('Campaign', 'getsingle', array(
+      'check_permissions'   => 0,
+      'external_identifier' => $params['campaign']));
     $params['campaign_id'] = $campaign['id'];
     unset($params['campaign']);
   }
@@ -64,6 +66,7 @@ function civicrm_api3_o_s_f_contract($params) {
 
   // first: create a mandate
   $mandate = civicrm_api3('SepaMandate', 'createfull', array(
+    'check_permissions'   => 0,
     'type'                => 'RCUR',
     'iban'                => $params['iban'],
     'bic'                 => $params['bic'],
@@ -79,10 +82,13 @@ function civicrm_api3_o_s_f_contract($params) {
     'financial_type_id'   => 3, // Membership Dues
     ));
   // reload mandate
-  $mandate = civicrm_api3('SepaMandate', 'getsingle', array('id' => $mandate['id']));
+  $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
+    'check_permissions' => 0,
+    'id'                => $mandate['id']));
 
   // create the contract
   $result = civicrm_api3('Contract', 'create', array(
+    'check_permissions'                                    => 0,
     'contact_id'                                           => $params['contact_id'],
     'membership_type_id'                                   => $params['membership_type_id'],
     'join_date'                                            => $params['start_date'],
