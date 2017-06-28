@@ -135,6 +135,34 @@ function gpapi_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
 }
 
 /**
+ * Define custom (Drupal) permissions
+ */
+function gpapi_civicrm_permission(&$permissions) {
+  $permissions['access OSF API']    = 'GP-API: access OSF API';
+  // $permissions['access Engage API'] = 'GP-API: access Engage API';
+}
+
+/**
+ * Set permissions for runner/engine API call
+ */
+function gpapi_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions) {
+  // OSF
+  $permissions['osf']['submit']       = array('access OSF API');
+  $permissions['osf']['donation']     = array('access OSF API');
+  $permissions['osf']['order']        = array('access OSF API');
+  $permissions['osf']['contract']     = array('access OSF API');
+  $permissions['osf']['getcampaigns'] = array('access OSF API');
+  $permissions['osf']['getproducts']  = array('access OSF API');
+}
+
+
+
+
+ /**********************************************
+  *               HELPER                       *
+  *********************************************/
+
+/**
  * Fixed API bug, where activity creation needs a valid userID
  *
  * Copied from https://github.com/CiviCooP/org.civicoop.apiuidfix
