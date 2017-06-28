@@ -139,7 +139,7 @@ function gpapi_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  */
 function gpapi_civicrm_permission(&$permissions) {
   $permissions['access OSF API']    = 'GP-API: access OSF API';
-  // $permissions['access Engage API'] = 'GP-API: access Engage API';
+  $permissions['access Engage API'] = 'GP-API: access Engage API';
 }
 
 /**
@@ -153,6 +153,11 @@ function gpapi_civicrm_alterAPIPermissions($entity, $action, &$params, &$permiss
   $permissions['osf']['contract']     = array('access OSF API');
   $permissions['osf']['getcampaigns'] = array('access OSF API');
   $permissions['osf']['getproducts']  = array('access OSF API');
+
+  // Engage
+  $permissions['engage']['signpetition'] = array('access Engage API');
+  $permissions['engage']['getmedia']     = array('access Engage API');
+  $permissions['engage']['getpetitions'] = array('access Engage API');
 }
 
 

@@ -26,10 +26,12 @@ function civicrm_api3_engage_signpetition($params) {
   gpapi_civicrm_fix_API_UID();
 
   // check input
-  if (   (empty($params['first_name']) || empty($params['email']))
+  if (   (empty($params['bpk']))
+      && (empty($params['first_name']) || empty($params['email']))
       && (empty($params['last_name']) || empty($params['email']))
+      && (empty($params['first_name']) || empty($params['last_name'])  || empty($params['postal_code'])  || empty($params['street_address']))
       ) {
-    // we do not have enough information to match/create the contact
+    // we don not have enough information to match/create the contact
     return civicrm_api3_create_error("Insufficient contact data");
   }
 
@@ -68,11 +70,16 @@ function civicrm_api3_engage_signpetition($params) {
         'contact_id'       => $contact_id,
         'email'            => $params['email'],
         'is_primary'       => 1,
-        'is_bulkmail'      => empty($params['newsletter']) ? 0 : 1,
         'location_type_id' => 1 // TODO: which location type?
         ));
     }
   }
+
+  // GP-463: "für Group Donation Info soll jeder Eintrag via signpetition mit email automatisch angemeldet werden"
+  $newsletter_group = civicrm_api3('Group', 'getsingle', array('title' => 'Donation Info'));
+  civicrm_api3('GroupContact', 'create', array(
+    'contact_id' => $contact_id,
+    'group_id'   => $newsletter_group['id']));
 
   // find petition
   if (empty($params['petition_id'])) {
@@ -99,6 +106,7 @@ function civicrm_api3_engage_signpetition($params) {
     'source_contact_id'   => $contact_id,
     'activity_type_id'    => CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature'),
     'status_id'           => CRM_Core_OptionGroup::getValue('activity_status', 'Completed'),
+    'medium_id'           => $params['medium_id'],
     'target_contact_id'   => $contact_id,
     'source_record_id'    => $petition['id'],
     'subject'             => $petition['title'],
@@ -138,6 +146,21 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Last Name',
     );
+  $params['birth_date'] = array(
+    'name'         => 'birth_date',
+    'api.required' => 0,
+    'title'        => 'Birth Date',
+    );
+  $params['bpk'] = array(
+    'name'         => 'bpk',
+    'api.required' => 0,
+    'title'        => 'bereichsspezifische Personenkennzeichen (AT)',
+    );
+  $params['phone'] = array(
+    'name'         => 'phone',
+    'api.required' => 0,
+    'title'        => 'Phone',
+    );
   $params['email'] = array(
     'name'         => 'email',
     'api.required' => 0,
@@ -154,10 +177,38 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'title'        => 'CiviCRM Campaign ID',
     'description'  => 'Overwrites "campaign"',
     );
+  $params['medium_id'] = array(
+    'name'         => 'medium_id',
+    'api.required' => 0,
+    'title'        => 'CiviCRM Medium ID',
+    'description'  => 'see results of Engage.getmedia',
+    );
   $params['petition_id'] = array(
     'name'         => 'petition_id',
     'api.required' => 0,
     'title'        => 'CiviCRM Petition ID',
     'description'  => 'Overwrites "campaign" and "campaign_id"',
+    );
+
+  // CONTACT ADDRESS
+  $params['street_address'] = array(
+    'name'         => 'street_address',
+    'api.required' => 0,
+    'title'        => 'Street and house number',
+    );
+  $params['postal_code'] = array(
+    'name'         => 'postal_code',
+    'api.required' => 0,
+    'title'        => 'Postal Code',
+    );
+  $params['city'] = array(
+    'name'         => 'city',
+    'api.required' => 0,
+    'title'        => 'City',
+    );
+  $params['country'] = array(
+    'name'         => 'country',
+    'api.required' => 0,
+    'title'        => 'Country',
     );
 }
