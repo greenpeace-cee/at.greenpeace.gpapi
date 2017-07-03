@@ -80,15 +80,26 @@ function civicrm_api3_engage_signpetition($params) {
     }
   }
 
-  // GP-463: "für Group Donation Info soll jeder Eintrag via signpetition mit email automatisch angemeldet werden"
-  $newsletter_group = civicrm_api3('Group', 'getsingle', array(
+  // GP-463: "der Group "Donation Info" Eintrag soll immer gesetzt werden..."
+  $donation_info_group = civicrm_api3('Group', 'getsingle', array(
     'check_permissions' => 0,
     'title'             => 'Donation Info',
     ));
   civicrm_api3('GroupContact', 'create', array(
     'check_permissions' => 0,
     'contact_id'        => $contact_id,
-    'group_id'          => $newsletter_group['id']));
+    'group_id'          => $donation_info_group['id']));
+
+  // GP-463: "...aber der "Group Community NL" Eintrag soll nur bei übergebenem newsletter=1 Wert gesetzt werden."
+  if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
+    $newsletter_group = civicrm_api3('Group', 'getsingle', array(
+      'check_permissions' => 0,
+      'title'             => 'Community NL'));
+    civicrm_api3('GroupContact', 'create', array(
+      'check_permissions' => 0,
+      'contact_id'        => $contact_id,
+      'group_id'          => $newsletter_group['id']));
+  }
 
   // find petition
   if (empty($params['petition_id'])) {
@@ -201,6 +212,13 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'api.required' => 0,
     'title'        => 'CiviCRM Petition ID',
     'description'  => 'Overwrites "campaign" and "campaign_id"',
+    );
+
+  // NEWSLETTER
+  $params['newsletter'] = array(
+    'name'         => 'newsletter',
+    'api.default'  => '0',
+    'title'        => 'Sign up for newsletter?',
     );
 
   // CONTACT ADDRESS
