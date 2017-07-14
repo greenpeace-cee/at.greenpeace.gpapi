@@ -175,13 +175,13 @@ function _civicrm_api3_engage_subscribe_spec(&$params) {
   $params['newsletter'] = array(
     'name'         => 'newsletter',
     'api.default'  => '0',
-    'title'        => 'Sign up for newsletter?',
+    'title'        => 'Sign up for community newsletter',
     );
 
-  $params['newsletter'] = array(
+  $params['donation_info'] = array(
     'name'         => 'donation_info',
     'api.default'  => '0',
-    'title'        => 'Sign up for Donation Info group?',
+    'title'        => 'Sign up for donation info mailing group',
     );
 
   // CONTACT ADDRESS
