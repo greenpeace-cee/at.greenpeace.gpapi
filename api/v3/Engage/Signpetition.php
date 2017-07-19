@@ -80,6 +80,26 @@ function civicrm_api3_engage_signpetition($params) {
     }
   }
 
+  // process phone: if the phone doesn't exist with the contact -> create
+  if (!empty($params['phone'])) {
+    $contact_phones = civicrm_api3('Phone', 'get', array(
+      'check_permissions' => 0,
+      'contact_id'        => $contact_id,
+      'phone'             => $params['phone'],
+      'option.limit'      => 2));
+    if ($contact_phones['count'] == 0) {
+      // phone is not present -> create
+      civicrm_api3('Phone', 'create', array(
+        'check_permissions' => 0,
+        'contact_id'        => $contact_id,
+        'phone'             => $params['phone'],
+        'is_primary'        => 1,
+        'location_type_id'  => 1, // TODO: which location type?
+        'phone_type_id'     => 1 // TODO: which phone type?
+        ));
+    }
+  }
+
   // GP-463: "der Group "Donation Info" Eintrag soll immer gesetzt werden..."
   $donation_info_group = civicrm_api3('Group', 'getsingle', array(
     'check_permissions' => 0,
