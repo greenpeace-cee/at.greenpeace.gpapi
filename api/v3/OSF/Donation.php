@@ -24,8 +24,6 @@ include_once 'Contract.php';
 function civicrm_api3_o_s_f_donation($params) {
   CRM_Gpapi_Processor::preprocessCall($params, 'OSF.donation');
 
-  gpapi_civicrm_fix_API_UID();
-
   if (empty($params['contact_id'])) {
     return civicrm_api3_create_error("No 'contact_id' provided.");
   }
