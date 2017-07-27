@@ -21,9 +21,8 @@
  * @access public
  */
 function civicrm_api3_engage_subscribe($params) {
-  CRM_Core_Error::debug_log_message("Engage.subscribe: " . json_encode($params));
+  CRM_Gpapi_Processor::preprocessCall($params, 'Engage.subscribe');
   $result = array();
-  gpapi_civicrm_fix_API_UID();
 
   // check input
   if (   (empty($params['bpk']))

@@ -21,21 +21,14 @@
  * @access public
  */
 function civicrm_api3_o_s_f_order($params) {
-  CRM_Core_Error::debug_log_message("OSF.order: " . json_encode($params));
-  gpapi_civicrm_fix_API_UID();
+  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.order');
 
   if (empty($params['contact_id'])) {
     return civicrm_api3_create_error("No 'contact_id' provided.");
   }
 
   // resolve campaign ID
-  if (empty($params['campaign_id']) && !empty($params['campaign'])) {
-    $campaign = civicrm_api3('Campaign', 'getsingle', array(
-      'check_permissions'   => 0,
-      'external_identifier' => $params['campaign']));
-    $params['campaign_id'] = $campaign['id'];
-    unset($params['campaign']);
-  }
+  CRM_Gpapi_Processor::resolveCampaign($params);
 
   // adjust fields
   $params['target_id'] = $params['contact_id'];
@@ -45,7 +38,7 @@ function civicrm_api3_o_s_f_order($params) {
   $params['check_permissions'] = 0;
 
   // resolve custom fields
-  gpapi_civicrm_resolveCustomFields($params, array('webshop_information'));
+  CRM_Gpapi_Processor::resolveCustomFields($params, array('webshop_information'));
 
   // create Webshop Order activity
   return civicrm_api3('Activity', 'create', $params);

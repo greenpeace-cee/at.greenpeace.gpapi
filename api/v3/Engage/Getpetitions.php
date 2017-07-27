@@ -21,7 +21,7 @@
  * @access public
  */
 function civicrm_api3_engage_getpetitions($params) {
-  CRM_Core_Error::debug_log_message("Engage.getpetitions: " . json_encode($params));
+  CRM_Gpapi_Processor::preprocessCall($params, 'Engage.getpetitions');
 
   // get all active campaigns
   $active_campaign_query = civicrm_api3('Campaign', 'get', array(

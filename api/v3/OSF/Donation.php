@@ -22,7 +22,8 @@ include_once 'Contract.php';
  * @access public
  */
 function civicrm_api3_o_s_f_donation($params) {
-  CRM_Core_Error::debug_log_message("OSF.donation: " . json_encode($params));
+  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.donation');
+
   gpapi_civicrm_fix_API_UID();
 
   if (empty($params['contact_id'])) {
@@ -31,14 +32,7 @@ function civicrm_api3_o_s_f_donation($params) {
 
   $params['check_permissions'] = 0;
 
-  // resolve campaign ID
-  if (empty($params['campaign_id']) && !empty($params['campaign'])) {
-    $campaign = civicrm_api3('Campaign', 'getsingle', array(
-      'check_permissions'   => 0,
-      'external_identifier' => $params['campaign']));
-    $params['campaign_id'] = $campaign['id'];
-    unset($params['campaign']);
-  }
+  CRM_Gpapi_Processor::resolveCampaign($params);
 
   // format amount
   $params['total_amount'] = number_format($params['total_amount'], 2, '.', '');

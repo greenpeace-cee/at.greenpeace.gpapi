@@ -21,7 +21,7 @@
  * @access public
  */
 function civicrm_api3_o_s_f_getcampaigns($params) {
-  CRM_Core_Error::debug_log_message("OSF.getcampaigns: " . json_encode($params));
+  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.getcampaigns');
 
   // restrict IDs: load all subcampaigns under campaign "Online Marketing" (Web)
   $root_campaign_id = CRM_Core_DAO::singleValueQuery("SELECT id AS campaign_id FROM civicrm_campaign WHERE external_identifier='Web'");

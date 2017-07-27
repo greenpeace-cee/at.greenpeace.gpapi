@@ -21,7 +21,7 @@
  * @access public
  */
 function civicrm_api3_o_s_f_getproducts($params) {
-  CRM_Core_Error::debug_log_message("OSF.getproducts: " . json_encode($params));
+  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.getproducts');
 
   // prepare call to pass on to Campaign.get
   $params['check_permissions'] = 0;

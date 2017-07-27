@@ -21,7 +21,7 @@
  * @access public
  */
 function civicrm_api3_engage_getmedia($params) {
-  CRM_Core_Error::debug_log_message("Engage.getmedia: " . json_encode($params));
+  CRM_Gpapi_Processor::preprocessCall($params, 'Engage.getmedia');
 
   // prepare call to pass on to Campaign.get
   $params['option.limit']      = 0;

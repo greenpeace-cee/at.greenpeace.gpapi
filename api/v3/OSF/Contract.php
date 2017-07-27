@@ -21,8 +21,7 @@
  * @access public
  */
 function civicrm_api3_o_s_f_contract($params) {
-  CRM_Core_Error::debug_log_message("OSF.contract: " . json_encode($params));
-  gpapi_civicrm_fix_API_UID();
+  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.contract');
 
   if (empty($params['contact_id'])) {
     return civicrm_api3_create_error("No 'contact_id' provided.");
@@ -35,13 +34,7 @@ function civicrm_api3_o_s_f_contract($params) {
   }
 
   // resolve campaign ID
-  if (empty($params['campaign_id']) && !empty($params['campaign'])) {
-    $campaign = civicrm_api3('Campaign', 'getsingle', array(
-      'check_permissions'   => 0,
-      'external_identifier' => $params['campaign']));
-    $params['campaign_id'] = $campaign['id'];
-    unset($params['campaign']);
-  }
+  CRM_Gpapi_Processor::resolveCampaign($params);
 
   // prepare parameters
   $params['member_since'] = date('YmdHis'); // now

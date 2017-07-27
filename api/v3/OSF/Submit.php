@@ -21,10 +21,9 @@
  * @access public
  */
 function civicrm_api3_o_s_f_submit($params) {
-  CRM_Core_Error::debug_log_message("OSF.submit: " . json_encode($params));
+  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.submit');
   $error_list = array();
   $result = array();
-  gpapi_civicrm_fix_API_UID();
 
   // check input
   if (   (empty($params['bpk']))
@@ -37,93 +36,19 @@ function civicrm_api3_o_s_f_submit($params) {
     return civicrm_api3_create_error("Insufficient contact data");
   }
 
-  // prepare data: prefix
-  if (empty($params['prefix_id']) && !empty($params['prefix'])) {
-    $params['prefix_id'] = CRM_Core_OptionGroup::getValue('individual_prefix', $params['prefix']);
-    $params['prefix_id'] = $params['prefix'];
-    if ($params['prefix'] == 'Herr') {
-      $params['gender_id'] = 2; // male
-    } elseif ($params['prefix'] == 'Frau') {
-      $params['gender_id'] = 1; // female
-    }
-  }
-
-  // prepare data: country
-  if (empty($params['country_id']) && !empty($params['country'])) {
-    $country_search = civicrm_api3('Country', 'get', array(
-      'check_permissions'   => 0,
-      'name'                => $params['country']));
-    if (!empty($country_search['id'])) {
-      $params['country_id'] = $country_search['id'];
-    }
-  }
-
-  // match contact using XCM
-  $params['check_permissions'] = 0;
-  $contact_match = civicrm_api3('Contact', 'getorcreate', $params);
-  $contact_id = $contact_match['id'];
+  // process contact
+  CRM_Gpapi_Processor::preprocessContactData($params);
+  CRM_Gpapi_Processor::resolveCampaign($params);
+  $contact_id = CRM_Gpapi_Processor::getOrCreateContact($params);
   $result['id'] = $contact_id;
 
-  // resolve campaign ID
-  if (empty($params['campaign_id']) && !empty($params['campaign'])) {
-    $campaign = civicrm_api3('Campaign', 'getsingle', array(
-      'check_permissions'   => 0,
-      'external_identifier' => $params['campaign']));
-    $params['campaign_id'] = $campaign['id'];
-    unset($params['campaign']);
-  }
-
-  // process email: if the email doesn't exist with the contact -> create
-  if (!empty($params['email'])) {
-    $contact_emails = civicrm_api3('Email', 'get', array(
-      'check_permissions' => 0,
-      'contact_id'        => $contact_id,
-      'email'             => $params['email'],
-      'option.limit'      => 2));
-    if ($contact_emails['count'] == 0) {
-      // email is not present -> create
-      civicrm_api3('Email', 'create', array(
-        'check_permissions' => 0,
-        'contact_id'        => $contact_id,
-        'email'             => $params['email'],
-        'is_primary'        => 1,
-        'is_bulkmail'       => empty($params['newsletter']) ? 0 : 1,
-        'location_type_id'  => 1 // TODO: which location type?
-        ));
-    }
-  }
-
-  // process phone: if the phone doesn't exist with the contact -> create
-  if (!empty($params['phone'])) {
-    $contact_phones = civicrm_api3('Phone', 'get', array(
-      'check_permissions' => 0,
-      'contact_id'        => $contact_id,
-      'phone'             => $params['phone'],
-      'option.limit'      => 2));
-    if ($contact_phones['count'] == 0) {
-      // phone is not present -> create
-      civicrm_api3('Phone', 'create', array(
-        'check_permissions' => 0,
-        'contact_id'        => $contact_id,
-        'phone'             => $params['phone'],
-        'is_primary'        => 1,
-        'location_type_id'  => 1, // TODO: which location type?
-        'phone_type_id'     => 1 // TODO: which phone type?
-        ));
-    }
-  }
-
+  // store data
+  CRM_Gpapi_Processor::storeEmail($contact_id, $params);
+  CRM_Gpapi_Processor::storePhone($contact_id, $params);
 
   // process newsletter
-  // TODO: double opt in?
   if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
-    $newsletter_group = civicrm_api3('Group', 'getsingle', array(
-      'check_permissions' => 0,
-      'title'             => 'Community NL'));
-    civicrm_api3('GroupContact', 'create', array(
-      'check_permissions' => 0,
-      'contact_id'        => $contact_id,
-      'group_id'          => $newsletter_group['id']));
+    CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
   }
 
   // pass through WebShop orders/donations/contracts
