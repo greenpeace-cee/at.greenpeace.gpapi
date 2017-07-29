@@ -59,25 +59,10 @@ function civicrm_api3_engage_signpetition($params) {
     CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
   }
 
-  // find petition
-  if (empty($params['petition_id'])) {
-    if (empty($params['campaign_id'])) {
-      return civicrm_api3_create_error("Unable to identify campaign");
-    }
-
-    // indetify/load petition based on the campaign
-    $petition = civicrm_api3('Survey', 'getsingle', array(
-      'check_permissions' => 0,
-      'bypass_confirm'    => '1',
-      'campaign_id'       => $params['campaign_id'],
-      'activity_type_id'  => CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature')
-      ));
-  } else {
-    // simply load the petition
-    $petition = civicrm_api3('Survey', 'getsingle', array(
-      'id'                => (int) $params['petition_id'],
-      'check_permissions' => 0));
-  }
+  // simply load the petition
+  $petition = civicrm_api3('Survey', 'getsingle', array(
+    'id'                => (int) $params['petition_id'],
+    'check_permissions' => 0));
 
   // TODO: check if not signed already
   // TODO: add to petition group?
@@ -92,7 +77,7 @@ function civicrm_api3_engage_signpetition($params) {
     'target_contact_id'   => $contact_id,
     'source_record_id'    => $petition['id'],
     'subject'             => $petition['title'],
-    'campaign_id'         => $petition['campaign_id'],
+    'campaign_id'         => $params['campaign_id'],
     'activity_date_time'  => date('YmdHis')
   ));
 
@@ -167,9 +152,9 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     );
   $params['petition_id'] = array(
     'name'         => 'petition_id',
-    'api.required' => 0,
+    'api.required' => 1,
     'title'        => 'CiviCRM Petition ID',
-    'description'  => 'Overwrites "campaign" and "campaign_id"',
+    'description'  => 'ID of the petition to sign',
     );
 
   // NEWSLETTER
