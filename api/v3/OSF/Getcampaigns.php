@@ -29,19 +29,22 @@ function civicrm_api3_o_s_f_getcampaigns($params) {
     return civicrm_api3_create_error('Root campaign "Online Marketing" [Web] not found!');
   }
 
+  $max_depth     = (int) $params['max_depth'];
+  $depth         = 0;
   $all_campaigns = array();
   $new_campaigns = array($root_campaign_id);
 
   // now keep loading the next generations until there's no more new IDs
-  while (count($new_campaigns) > 0) {
+  while (count($new_campaigns) > 0 && $depth < $max_depth) {
     // load the next generation
-    $all_campaigns += $new_campaigns;
     $current_generation = implode(',', $new_campaigns);
     $nexgen_query = CRM_Core_DAO::executeQuery("SELECT id AS campaign_id FROM civicrm_campaign WHERE parent_id IN ($current_generation)");
     $new_campaigns = array();
     while ($nexgen_query->fetch()) {
       $new_campaigns[] = $nexgen_query->campaign_id;
+      $all_campaigns[] = $nexgen_query->campaign_id;
     }
+    $depth += 1;
   }
 
   // prepare call to pass on to Campaign.get
@@ -61,4 +64,10 @@ function civicrm_api3_o_s_f_getcampaigns($params) {
  * @param array $params array or parameters determined by getfields
  */
 function _civicrm_api3_o_s_f_getcampaigns_spec(&$params) {
+  $params['max_depth'] = array(
+    'name'         => 'max_depth',
+    'title'        => 'Max Search Depth',
+    'api.default'  => 10,
+    'description'  => 'Maximum number of generations to pull below "Web" campaign',
+    );
 }
