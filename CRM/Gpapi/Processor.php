@@ -11,6 +11,10 @@
 | copyright header is strictly prohibited without        |
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
+
+use libphonenumber\PhoneNumberUtil;
+use libphonenumber\PhoneNumberFormat;
+
 /**
  * Common functions for GP API
  */
@@ -56,6 +60,27 @@ class CRM_Gpapi_Processor {
         if (!empty($country_search['id'])) {
           $params['country_id'] = $country_search['id'];
         }
+      }
+    }
+
+    // normalise phone
+    if (!empty($params['phone'])) {
+      try { // try to normalise phone
+        $include_file = dirname( __FILE__ ) . '/../../../com.cividesk.normalize/packages/libphonenumber/PhoneNumberUtil.php';
+        if (file_exists($include_file)) {
+          require_once $include_file;
+          $phoneUtil = PhoneNumberUtil::getInstance();
+          $phoneProto = $phoneUtil->parse($params['phone'], 'AT');
+          if ($phoneUtil->isValidNumber($phoneProto)) {
+            $params['phone'] = $phoneUtil->format($phoneProto, PhoneNumberFormat::INTERNATIONAL);
+          } else {
+            // remove invlid phones
+            CRM_Core_Error::debug_log_message("GPAPI: Removed invalid phone number '{$params['phone']}'");
+            unset($params['phone']);
+          }
+        }
+      } catch (Exception $e) {
+        CRM_Core_Error::debug_log_message("GPAPI: Exception when formatting phone number: " . $e->getMessage());
       }
     }
   }
