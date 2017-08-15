@@ -83,6 +83,16 @@ function _civicrm_api3_o_s_f_order_spec(&$params) {
     'api.required' => 1,
     'title'        => 'Webshop Order Count',
     );
+  $params['linked_contribution'] = array(
+    'name'         => 'linked_contribution',
+    'api.required' => 0,
+    'title'        => 'Linked Contribution ID',
+    );
+  $params['linked_membership'] = array(
+    'name'         => 'linked_membership',
+    'api.required' => 0,
+    'title'        => 'Linked Membership ID',
+    );
   $params['payment_received'] = array(
     'name'         => 'payment_received',
     'api.required' => 1,
