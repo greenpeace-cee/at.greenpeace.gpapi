@@ -14,14 +14,14 @@
 
 
 /**
- * Process Engage newsletter subscription
+ * Process Newsletter newsletter subscription
  *
- * @param see specs below (_civicrm_api3_engage_unsubscribe_spec)
+ * @param see specs below (_civicrm_api3_newsletter_unsubscribe_spec)
  * @return array API result array
  * @access public
  */
-function civicrm_api3_engage_unsubscribe($params) {
-  CRM_Gpapi_Processor::preprocessCall($params, 'Engage.unsubscribe');
+function civicrm_api3_newsletter_unsubscribe($params) {
+  CRM_Gpapi_Processor::preprocessCall($params, 'Newsletter.unsubscribe');
   $result = array();
 
   if (empty($params['group_ids']) && empty($params['opt_out'])) {
@@ -63,7 +63,7 @@ function civicrm_api3_engage_unsubscribe($params) {
  * The metadata is used for setting defaults, documentation & validation
  * @param array $params array or parameters determined by getfields
  */
-function _civicrm_api3_engage_unsubscribe_spec(&$params) {
+function _civicrm_api3_newsletter_unsubscribe_spec(&$params) {
   $params['contact_id'] = array(
     'name'         => 'contact_id',
     'api.required' => 1,

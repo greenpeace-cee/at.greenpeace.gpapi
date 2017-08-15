@@ -14,14 +14,14 @@
 
 
 /**
- * Process Engage newsletter subscription
+ * Process Newsletter newsletter subscription
  *
- * @param see specs below (_civicrm_api3_engage_subscribe_spec)
+ * @param see specs below (_civicrm_api3_newsletter_subscribe_spec)
  * @return array API result array
  * @access public
  */
-function civicrm_api3_engage_subscribe($params) {
-  CRM_Gpapi_Processor::preprocessCall($params, 'Engage.subscribe');
+function civicrm_api3_newsletter_subscribe($params) {
+  CRM_Gpapi_Processor::preprocessCall($params, 'Newsletter.subscribe');
   $result = array();
 
   // check input
@@ -127,7 +127,7 @@ function civicrm_api3_engage_subscribe($params) {
  * The metadata is used for setting defaults, documentation & validation
  * @param array $params array or parameters determined by getfields
  */
-function _civicrm_api3_engage_subscribe_spec(&$params) {
+function _civicrm_api3_newsletter_subscribe_spec(&$params) {
   // CONTACT BASE
   $params['contact_type'] = array(
     'name'         => 'contact_type',

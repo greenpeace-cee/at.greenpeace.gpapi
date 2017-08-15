@@ -138,8 +138,9 @@ function gpapi_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  * Define custom (Drupal) permissions
  */
 function gpapi_civicrm_permission(&$permissions) {
-  $permissions['access OSF API']    = 'GP-API: access OSF API';
-  $permissions['access Engage API'] = 'GP-API: access Engage API';
+  $permissions['access OSF API']        = 'GP-API: access OSF API';
+  $permissions['access Engage API']     = 'GP-API: access Engage API';
+  $permissions['access Newsletter API'] = 'GP-API: access Newsletter API';
 }
 
 /**
@@ -158,7 +159,9 @@ function gpapi_civicrm_alterAPIPermissions($entity, $action, &$params, &$permiss
   $permissions['engage']['signpetition'] = array('access Engage API');
   $permissions['engage']['getmedia']     = array('access Engage API');
   $permissions['engage']['getpetitions'] = array('access Engage API');
-  $permissions['engage']['subscribe']    = array('access Engage API');
-  $permissions['engage']['unsubscribe']    = array('access Engage API');
+
+  // Newsletter
+  $permissions['newsletter']['subscribe']   = array('access Newsletter API');
+  $permissions['newsletter']['unsubscribe'] = array('access Newsletter API');
 }
 
