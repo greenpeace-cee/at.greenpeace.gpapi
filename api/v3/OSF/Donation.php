@@ -65,7 +65,18 @@ function civicrm_api3_o_s_f_donation($params) {
     // add bank accounts
     _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
 
-    return civicrm_api3('SepaMandate', 'createfull', $params);
+    // create mandate
+    $mandate = civicrm_api3('SepaMandate', 'createfull', $params);
+
+    // reload mandate
+    $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
+      'id'     => $mandate['id'],
+      'return' => 'entity_id'));
+
+    // return the created contribution (see GP-1029)
+    return civicrm_api3('Contribution', 'get', array(
+      'id'         => $mandate['entity_id'],
+      'sequential' => CRM_Utils_Array::value('sequential', $params, '0')));
 
   } else {
 
