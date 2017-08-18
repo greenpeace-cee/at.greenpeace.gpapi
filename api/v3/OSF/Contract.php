@@ -82,6 +82,7 @@ function civicrm_api3_o_s_f_contract($params) {
   // create the contract
   $result = civicrm_api3('Contract', 'create', array(
     'check_permissions'                                    => 0,
+    'sequential'                                           => empty($params['sequential']) ? 0 : 1,
     'contact_id'                                           => $params['contact_id'],
     'membership_type_id'                                   => $params['membership_type_id'],
     'join_date'                                            => $params['start_date'],
