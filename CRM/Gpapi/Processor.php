@@ -20,6 +20,11 @@ use libphonenumber\PhoneNumberFormat;
  */
 class CRM_Gpapi_Processor {
 
+  // static list of address attributes
+  protected static $address_attributes = array('street_address', 'postal_code', 'city', 'country', 'country_id', 'supplemental_address_1', 'supplemental_address_2', 'supplemental_address_3');
+  protected static $required_address_attributes = array('street_address', 'postal_code', 'city');
+
+
   /**
    * generic preprocessor for every call
    */
@@ -60,6 +65,28 @@ class CRM_Gpapi_Processor {
         if (!empty($country_search['id'])) {
           $params['country_id'] = $country_search['id'];
         }
+      }
+    }
+
+    // make sure only complete addresses (street+city+ZIP)
+    //  are submitted (see GP-1161)
+    foreach (self::$address_attributes as $any_attribute) {
+      if (!empty($params[$any_attribute])) {
+        // submission contains an address attribute -
+        // check if all required ones are there, too:
+        foreach (self::$required_address_attributes as $required_attribute) {
+          if (empty($params[$required_attribute])) {
+            // one of the required atrributes is missing! remove all!!
+            CRM_Core_Error::debug_log_message("Incomplete address, missing {$required_attribute}. Stripping address data.");
+            foreach (self::$address_attributes as $remove_attribute) {
+              if (isset($params[$remove_attribute])) {
+                unset($params[$remove_attribute]);
+              }
+            }
+            break 2;
+          }
+        }
+        break;
       }
     }
 
