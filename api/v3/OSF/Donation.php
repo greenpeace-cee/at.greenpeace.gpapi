@@ -35,52 +35,58 @@ function civicrm_api3_o_s_f_donation($params) {
   // format amount
   $params['total_amount'] = number_format($params['total_amount'], 2, '.', '');
 
-  if ($params['payment_instrument'] == 'Credit Card') {
-    // PROCESS CREDIT CARD STATEMENT
-    $params['payment_instrument_id']  = 1; // 'Credit Card'
-    $params['contribution_status_id'] = 1; // Completed
-    unset($params['payment_instrument']);
-    if (empty($params['receive_date'])) {
-      $params['receive_date'] = date('YmdHis');
-    }
+  switch (strtolower($params['payment_instrument'])) {
+    case 'credit card':
+      // CREATE CREDIT CARD CONTRIBUTION
+      return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 1);
 
-    return civicrm_api3('Contribution', 'create', $params);
+    case 'paypal':
+      // CREATE PAYPAL CONTRIBUTION
+      return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 9);
 
-  } elseif ($params['payment_instrument'] == 'OOFF') {
-    // PROCESS SEPA OOFF STATEMENT
-    if (empty($params['iban'])) {
-      return civicrm_api3_create_error("No 'iban' provided.");
-    }
-    if (empty($params['bic'])) {
-      return civicrm_api3_create_error("No 'bic' provided.");
-    }
-    if (empty($params['creation_date'])) {
-      $params['creation_date'] = date('YmdHis');
-    }
-    $params['type'] = 'OOFF';
-    $params['amount'] = $params['total_amount'];
-    unset($params['total_amount']);
-    unset($params['payment_instrument']);
+    case 'sofortüberweisung':
+    case 'sofortueberweisung':
+      // CREATE SOFORTÜBERWEISUNG CONTRIBUTION
+      return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 15);
 
-    // add bank accounts
-    _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
+    case 'eps':
+      // CREATE EPS CONTRIBUTION
+      return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 16);
 
-    // create mandate
-    $mandate = civicrm_api3('SepaMandate', 'createfull', $params);
+    case 'ooff':
+      // PROCESS SEPA OOFF STATEMENT
+      if (empty($params['iban'])) {
+        return civicrm_api3_create_error("No 'iban' provided.");
+      }
+      if (empty($params['bic'])) {
+        return civicrm_api3_create_error("No 'bic' provided.");
+      }
+      if (empty($params['creation_date'])) {
+        $params['creation_date'] = date('YmdHis');
+      }
+      $params['type'] = 'OOFF';
+      $params['amount'] = $params['total_amount'];
+      unset($params['total_amount']);
+      unset($params['payment_instrument']);
 
-    // reload mandate
-    $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
-      'id'     => $mandate['id'],
-      'return' => 'entity_id'));
+      // add bank accounts
+      _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
 
-    // return the created contribution (see GP-1029)
-    return civicrm_api3('Contribution', 'get', array(
-      'id'         => $mandate['entity_id'],
-      'sequential' => CRM_Utils_Array::value('sequential', $params, '0')));
+      // create mandate
+      $mandate = civicrm_api3('SepaMandate', 'createfull', $params);
 
-  } else {
+      // reload mandate
+      $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
+        'id'     => $mandate['id'],
+        'return' => 'entity_id'));
 
-    return civicrm_api3_create_error("Undefined 'payment_instrument' {$params['payment_instrument']}");
+      // return the created contribution (see GP-1029)
+      return civicrm_api3('Contribution', 'get', array(
+        'id'         => $mandate['entity_id'],
+        'sequential' => CRM_Utils_Array::value('sequential', $params, '0')));
+
+    default:
+      return civicrm_api3_create_error("Undefined 'payment_instrument' {$params['payment_instrument']}");
   }
 }
 
@@ -143,4 +149,18 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'api.required' => 0,
     'title'        => 'BIC (only for payment_instrument=OOFF)',
     );
+}
+
+
+/**
+ * Helper function to generate NON-SEPA payments
+ */
+function _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, $payment_instrument_id) {
+  $params['payment_instrument_id']  = $payment_instrument_id;
+  $params['contribution_status_id'] = 1; // Completed
+  unset($params['payment_instrument']);
+  if (empty($params['receive_date'])) {
+    $params['receive_date'] = date('YmdHis');
+  }
+  return civicrm_api3('Contribution', 'create', $params);
 }
