@@ -72,7 +72,7 @@ function civicrm_api3_o_s_f_contract($params) {
     'frequency_interval'  => (int) (12.0 / $params['frequency']),
     'start_date'          => $params['start_date'],
     'campaign_id'         => $params['campaign_id'],
-    'financial_type_id'   => 3, // Membership Dues
+    'financial_type_id'   => 2, // Membership Dues
     ));
   // reload mandate
   $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
