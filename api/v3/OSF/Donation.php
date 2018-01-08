@@ -14,6 +14,8 @@
 
 include_once 'Contract.php';
 
+define('GPAPI_GP_ORG_CONTACT_ID', 1);
+
 /**
  * Process OSF (online donation form) DONATION submission
  *
@@ -149,6 +151,11 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'api.required' => 0,
     'title'        => 'BIC (only for payment_instrument=OOFF)',
     );
+  $params['gp_iban'] = array(
+    'name'         => 'gp_iban',
+    'api.required' => 0,
+    'title'        => 'GP IBAN (incoming bank account)',
+    );
 }
 
 
@@ -162,5 +169,17 @@ function _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, $paym
   if (empty($params['receive_date'])) {
     $params['receive_date'] = date('YmdHis');
   }
+
+  // add bank account (see GP-1356)
+  if (!empty($params['gp_iban'])) {
+    $to_ba_field = civicrm_api3('CustomField', 'get', array(
+      'name'            => 'to_ba',
+      'custom_group_id' => 'contribution_information',
+      'return'          => 'id'));
+    if (!empty($to_ba_field['id'])) {
+      $params["custom_{$to_ba_field['id']}"] = _civicrm_api3_o_s_f_contract_getBA($params['gp_iban'], GPAPI_GP_ORG_CONTACT_ID, array());
+    }
+  }
+
   return civicrm_api3('Contribution', 'create', $params);
 }
