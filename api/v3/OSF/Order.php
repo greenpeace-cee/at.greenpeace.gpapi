@@ -80,12 +80,12 @@ function _civicrm_api3_o_s_f_order_spec(&$params) {
     );
   $params['shirt_type'] = array(
     'name'         => 'shirt_type',
-    'api.required' => 1,
+    'api.required' => 0,
     'title'        => 'T-Shirt Type: M/W',
     );
   $params['shirt_size'] = array(
     'name'         => 'shirt_size',
-    'api.required' => 1,
+    'api.required' => 0,
     'title'        => 'T-Shirt Size: S/M/L/XL',
     );
   $params['order_count'] = array(
