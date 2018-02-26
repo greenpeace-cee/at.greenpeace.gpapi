@@ -59,28 +59,35 @@ function civicrm_api3_engage_signpetition($params) {
     CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
   }
 
-  // simply load the petition
-  $petition = civicrm_api3('Survey', 'getsingle', array(
-    'id'                => (int) $params['petition_id'],
-    'check_permissions' => 0));
+  // check if this is a 'fake petition' (and actually a case)
+  if (CRM_Gpapi_CaseHandler::isCase($params['petition_id'])) {
+    // it is. so let's do that:
+    CRM_Gpapi_CaseHandler::apiStartCase($params['petition_id'], $contact_id, $params);
 
-  // TODO: check if not signed already
-  // TODO: add to petition group?
+  } else {
+    // default behaviour: sign petition:
+    // simply load the petition first
+    $petition = civicrm_api3('Survey', 'getsingle', array(
+      'id'                => (int) $params['petition_id'],
+      'check_permissions' => 0));
 
-  // create signature activity
-  civicrm_api3('Activity', 'create', array(
-    'check_permissions'   => 0,
-    'source_contact_id'   => $contact_id,
-    'activity_type_id'    => CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature'),
-    'status_id'           => CRM_Core_OptionGroup::getValue('activity_status', 'Completed'),
-    'medium_id'           => $params['medium_id'],
-    'target_contact_id'   => $contact_id,
-    'source_record_id'    => $petition['id'],
-    'subject'             => $petition['title'],
-    'campaign_id'         => $params['campaign_id'],
-    'activity_date_time'  => date('YmdHis')
-  ));
+    // TODO: check if not signed already
+    // TODO: add to petition group?
 
+    // create signature activity
+    civicrm_api3('Activity', 'create', array(
+      'check_permissions'   => 0,
+      'source_contact_id'   => $contact_id,
+      'activity_type_id'    => CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature'),
+      'status_id'           => CRM_Core_OptionGroup::getValue('activity_status', 'Completed'),
+      'medium_id'           => $params['medium_id'],
+      'target_contact_id'   => $contact_id,
+      'source_record_id'    => $petition['id'],
+      'subject'             => $petition['title'],
+      'campaign_id'         => $params['campaign_id'],
+      'activity_date_time'  => date('YmdHis')
+    ));
+  }
 
   // create result
   if (!empty($params['sequential'])) {

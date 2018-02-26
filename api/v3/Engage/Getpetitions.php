@@ -39,7 +39,12 @@ function civicrm_api3_engage_getpetitions($params) {
   $params['option.limit']      = 0;
   $params['check_permissions'] = 0;
 
-  return civicrm_api3('Survey', 'get', $params);
+  $petitions = civicrm_api3('Survey', 'get', $params);
+
+  // add CiviCase 'fake petitions' (see GP-1413)
+  CRM_Gpapi_CaseHandler::addCases($petitions);
+
+  return $petitions;
 }
 
 /**
