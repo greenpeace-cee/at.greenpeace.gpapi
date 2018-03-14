@@ -146,7 +146,7 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     );
   $params['medium_id'] = array(
     'name'         => 'medium_id',
-    'api.required' => 0,
+    'api.default'  => '6',
     'title'        => 'CiviCRM Medium ID',
     'description'  => 'see results of Engage.getmedia',
     );
