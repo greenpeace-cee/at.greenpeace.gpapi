@@ -205,7 +205,6 @@ class CRM_Gpapi_Processor {
    * with the appropriate custom_XX notation.
    */
   public static function resolveCustomFields(&$data, $customgroups) {
-    // error_log("BEFORE: ".json_encode($data));
     $custom_fields = civicrm_api3('CustomField', 'get', array(
       'custom_group_id' => array('IN' => $customgroups),
       'option.limit'    => 0,
@@ -226,7 +225,6 @@ class CRM_Gpapi_Processor {
         unset($data[$key]);
       }
     }
-    // error_log("AFTER: ".json_encode($data));
   }
 
 

@@ -14,7 +14,7 @@
 
 
 /**
- * Process OSF (online donation form) base submission
+ * Process Engage.signpetition calls
  *
  * @param see specs below (_civicrm_api3_engage_signpetition_spec)
  * @return array API result array
@@ -62,7 +62,7 @@ function civicrm_api3_engage_signpetition($params) {
   // check if this is a 'fake petition' (and actually a case)
   if (CRM_Gpapi_CaseHandler::isCase($params['petition_id'])) {
     // it is. so let's do that:
-    CRM_Gpapi_CaseHandler::apiStartCase($params['petition_id'], $contact_id, $params);
+    CRM_Gpapi_CaseHandler::petitionStartCase($params['petition_id'], $contact_id, $params);
 
   } else {
     // default behaviour: sign petition:

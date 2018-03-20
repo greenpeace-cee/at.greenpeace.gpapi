@@ -25,6 +25,17 @@ class CRM_Gpapi_CaseHandler {
   public static $case_petition_offset = 100000;
 
   /**
+   * list of case types to be re-opened
+   * instead of creating an new one
+   * along with the default activity_id
+   * @todo: settings page?
+   */
+  public static $reopen_case_type_to_acitivity_id = array(
+      3 => 100,
+      // 1 => 1  // TODO: remove test code
+    );
+
+  /**
    * Add the 'fake' cases to the getPetitions call
    */
   public static function addCases(&$get_petition_result) {
@@ -33,8 +44,6 @@ class CRM_Gpapi_CaseHandler {
       'return'    => 'title,id',
       'is_active' => 1
     ));
-
-    // error_log("PRE  " . json_encode($get_petition_result));
 
     // add to result
     $get_petition_result['count'] += $case_types['count'];
@@ -48,6 +57,66 @@ class CRM_Gpapi_CaseHandler {
         'bypass_confirm' => 0,
         'title'          => $case_type['title'],
       );
+    }
+  }
+
+  /**
+   * Check if the given petition ID is really a CiviCase
+   */
+  public static function isCase($petition_id) {
+    return $petition_id > self::$case_petition_offset
+        && $petition_id < self::$case_petition_offset + 99999;
+  }
+
+  /**
+   * Will start a case given the fake petition ID
+   */
+  public static function petitionStartCase($fake_petition_id, $contact_id, $params) {
+    $case_type_id = (int) ($fake_petition_id - self::$case_petition_offset);
+    if (!$case_type_id) {
+      throw new Exception("Bad (fake) petition ID: {$fake_petition_id}");
+    }
+
+    // pass it on to the case handler
+    $params['case_type_id']      = $case_type_id;
+    $params['contact_id']        = $contact_id;
+    $params['check_permissions'] = 0;
+
+    return civicrm_api3('Engage', 'startcase', $params);
+  }
+
+
+  /**
+   * Will start a case given the fake petition ID
+   *
+   * Expected params:
+
+   */
+  public static function startCase($params) {
+
+    // generate a default subject
+    if (empty($params['subject'])) {
+      if (empty($params['medium_id'])) {
+        $params['subject'] = "Case (Engage)";
+      } else {
+        $medium = civicrm_api3('OptionValue', 'getvalue', array(
+        'return'          => 'label',
+        'option_group_id' => "encounter_medium",
+        'value'           => $params['medium_id']));
+        $params['subject'] = "Case (Engage/{$medium})";
+      }
+    }
+
+    // check if this case exists and could/should be re-opened
+    //  see GP-1413
+    $case_id = self::reopenCase($params);
+
+    if (!$case_id) {
+      // create a new case
+      $params['check_permissions'] = 0;
+      $case = civicrm_api3('Case', 'create', $params);
+      $case_id = $case['id'];
+
       // not set:
       // "activity_type_id": "32",
       // "campaign_id": "19",
@@ -57,41 +126,67 @@ class CRM_Gpapi_CaseHandler {
       // "last_modified_id": "23",
     }
 
-    // error_log("POST " . json_encode($get_petition_result));
-  }
-
-  /**
-   * Check if the given petition ID is really a CiviCase
-   */
-  public static function isCase($petition_id) {
-    return $petition_id > self::$case_petition_offset;
-  }
-
-  /**
-   * Will start a case given the fake petition ID
-   */
-  public static function apiStartCase($fake_petition_id, $contact_id, $params) {
-    $case_type_id = (int) ($fake_petition_id - self::$case_petition_offset);
-    if (!$case_type_id) {
-      throw new Exception("Bad (fake) petition ID: {$fake_petition_id}");
-    }
-
-    // create subject
-    if (empty($params['medium_id'])) {
-      $subject = "Case (Engage)";
+    // create a reply
+    if (!empty($params['sequential'])) {
+      return civicrm_api3_create_success(array(array('id' => $case_id)));
     } else {
-      $medium = civicrm_api3('OptionValue', 'getvalue', array(
-      'return'          => 'label',
-      'option_group_id' => "encounter_medium",
-      'value'           => $params['medium_id']));
-      $subject = "Case (Engage/{$medium})";
+      return civicrm_api3_create_success(array($case_id => array('id' => $case_id)));
+    }
+  }
+
+
+  /**
+   * re-open an existing case rather than creating a new one,
+   *  but first check if:
+   *   - this is a case type that should be re-opened
+   *   - is there an existing case
+   *
+   * @return int case id if found and re-openend
+   */
+  public static function reopenCase($params) {
+    // first check if this is one of the types to be re-opened
+    if (!isset(self::$reopen_case_type_to_acitivity_id[$params['case_type_id']])) {
+      return NULL;
     }
 
-    // create a new case
-    return civicrm_api3('Case', 'create', array(
-      'contact_id'   => $contact_id,
-      'case_type_id' => $case_type_id,
-      'subject'      => $subject));
+    // find an existing case
+    $existing_cases = civicrm_api3('Case', 'get', array(
+      'case_type_id' => $params['case_type_id'],
+      'contact_id'   => $params['contact_id'],
+      'is_deleted'   => 0,
+      'return'       => 'id,status_id',
+      'options'      => array('sort'  => 'status_id asc',
+                              'limit' => 1),
+    ));
+
+    if (empty($existing_cases['count'])) {
+      // no case found
+      return NULL;
+    }
+    $case = reset($existing_cases['values']);
+
+    // if it's status 2 (closed) -> re-open (status 1)
+    if ($case['status_id'] == 2) {
+      civicrm_api3('Case', 'create', array(
+        'id'        => $case['id'],
+        'status_id' => 1
+      ));
+    }
+
+    // create new activity for the case
+    if (empty($params['activity_type_id'])) {
+      $params['activity_type_id'] = self::$reopen_case_type_to_acitivity_id[$params['case_type_id']];
+    }
+
+    // prepare params
+    $params['case_id']   = $case['id'];
+    $params['target_id'] = $case['contact_id'];
+    $params['status_id'] = 1; // scheduled
+
+    // finally: create activity
+    civicrm_api3('Activity', 'create', $params);
+
+    return $case['id'];
   }
 }
 
