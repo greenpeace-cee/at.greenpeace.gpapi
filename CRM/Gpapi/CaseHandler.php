@@ -31,7 +31,7 @@ class CRM_Gpapi_CaseHandler {
    * @todo: settings page?
    */
   public static $reopen_case_type_to_acitivity_id = array(
-      3 => 100,
+      3 => 87,
       // 1 => 1  // TODO: remove test code
     );
 
