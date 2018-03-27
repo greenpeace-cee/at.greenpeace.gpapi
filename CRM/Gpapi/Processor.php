@@ -21,7 +21,7 @@ use libphonenumber\PhoneNumberFormat;
 class CRM_Gpapi_Processor {
 
   // static list of address attributes
-  protected static $address_attributes = array('street_address', 'postal_code', 'city', 'country', 'country_id', 'supplemental_address_1', 'supplemental_address_2', 'supplemental_address_3');
+  protected static $address_attributes = array('street_address', 'postal_code', 'city', 'state_province_id', 'country', 'country_id', 'supplemental_address_1', 'supplemental_address_2', 'supplemental_address_3');
   protected static $required_address_attributes = array('street_address', 'postal_code', 'city');
 
 
@@ -64,6 +64,29 @@ class CRM_Gpapi_Processor {
           'name'                => $params['country']));
         if (!empty($country_search['id'])) {
           $params['country_id'] = $country_search['id'];
+        }
+      }
+    }
+
+    // see if we should look up the state (if postcode-AT is installed)
+    if (empty($params['state_province_id']) && function_exists('civicrm_api3_postcode_a_t_getatstate')) {
+      // first: build query
+      $query = array();
+      $query_parameter_mapping = array(
+        'street_address' => 'stroffi',
+        'postal_code'    => 'plznr',
+        'city'           => 'ortnam');
+      foreach ($query_parameter_mapping as $attribute_name => $parameter_name) {
+        if (!empty($params[$attribute_name])) {
+          $query[$parameter_name] = trim($params[$attribute_name]);
+        }
+      }
+
+      // then: if there is something worth sending, do so
+      if (!empty($query)) {
+        $result = civicrm_api3('PostcodeAT', 'getstate', $query);
+        if (!empty($result['id'])) {
+          $params['state_province_id'] = $result['id'];
         }
       }
     }
