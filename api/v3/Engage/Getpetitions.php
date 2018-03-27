@@ -44,6 +44,9 @@ function civicrm_api3_engage_getpetitions($params) {
   // add CiviCase 'fake petitions' (see GP-1413)
   CRM_Gpapi_CaseHandler::addCases($petitions);
 
+  // add Activity 'fake petitions' (see GP-1588)
+  CRM_Gpapi_ActivityHandler::addActivities($petitions);
+
   return $petitions;
 }
 
