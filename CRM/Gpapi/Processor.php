@@ -74,11 +74,15 @@ class CRM_Gpapi_Processor {
       // make sure we have the required attributes...
       if (!empty($params['country_id']) && !empty($params['postal_code'])) {
         // and then query the postal code
-        $result = civicrm_api3('PostcodeAT', 'getstate', array(
-          'country_id'  => $params['country_id'],
-          'postal_code' => $params['postal_code']));
-        if (!empty($result['id'])) {
-          $params['state_province_id'] = $result['id'];
+        try {
+          $result = civicrm_api3('PostcodeAT', 'getstate', array(
+            'country_id'  => $params['country_id'],
+            'postal_code' => $params['postal_code']));
+          if (!empty($result['id'])) {
+            $params['state_province_id'] = $result['id'];
+          }
+        } catch (Exception $e) {
+          // lookup didn't work
         }
       }
     }
