@@ -79,11 +79,14 @@ function civicrm_api3_engage_signpetition($params) {
     // TODO: check if not signed already
     // TODO: add to petition group?
 
+    // remove critical stuff from params
+    if (isset($params['id'])) unset($params['id']);
+
     // create signature activity
     civicrm_api3('Activity', 'create', array(
       'check_permissions'   => 0,
       'source_contact_id'   => $contact_id,
-      'activity_type_id'    => CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature'),
+      'activity_type_id'    => $petition['activity_type_id'],
       'status_id'           => CRM_Core_OptionGroup::getValue('activity_status', 'Completed'),
       'medium_id'           => $params['medium_id'],
       'target_contact_id'   => $contact_id,
@@ -91,7 +94,7 @@ function civicrm_api3_engage_signpetition($params) {
       'subject'             => $petition['title'],
       'campaign_id'         => $params['campaign_id'],
       'activity_date_time'  => date('YmdHis')
-    ));
+    ) + $params); // add other params
   }
 
   // create result
