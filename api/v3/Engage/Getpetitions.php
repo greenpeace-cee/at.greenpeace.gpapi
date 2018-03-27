@@ -35,7 +35,7 @@ function civicrm_api3_engage_getpetitions($params) {
   }
 
   $params['campaign_id']       = array('IN' => $active_campaign_ids);
-  $params['activity_type_id']  = CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature');
+  // $params['activity_type_id']  = CRM_Core_OptionGroup::getValue('activity_type', 'Petition Signature');
   $params['option.limit']      = 0;
   $params['check_permissions'] = 0;
 
