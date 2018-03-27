@@ -69,22 +69,14 @@ class CRM_Gpapi_Processor {
     }
 
     // see if we should look up the state (if postcode-AT is installed)
-    if (empty($params['state_province_id']) && function_exists('civicrm_api3_postcode_a_t_getatstate')) {
-      // first: build query
-      $query = array();
-      $query_parameter_mapping = array(
-        'street_address' => 'stroffi',
-        'postal_code'    => 'plznr',
-        'city'           => 'ortnam');
-      foreach ($query_parameter_mapping as $attribute_name => $parameter_name) {
-        if (!empty($params[$attribute_name])) {
-          $query[$parameter_name] = trim($params[$attribute_name]);
-        }
-      }
-
-      // then: if there is something worth sending, do so
-      if (!empty($query)) {
-        $result = civicrm_api3('PostcodeAT', 'getstate', $query);
+    //  see GP-736
+    if (empty($params['state_province_id']) && function_exists('postcodeat_civicrm_config')) {
+      // make sure we have the required attributes...
+      if (!empty($params['country_id']) && !empty($params['postal_code'])) {
+        // and then query the postal code
+        $result = civicrm_api3('PostcodeAT', 'getstate', array(
+          'country_id'  => $params['country_id'],
+          'postal_code' => $params['postal_code']));
         if (!empty($result['id'])) {
           $params['state_province_id'] = $result['id'];
         }
