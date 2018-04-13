@@ -26,9 +26,21 @@ class CRM_Gpapi_ActivityHandler {
   public static $activity_petition_offset = 200000;
 
   protected static $allowed_activities = array(
-      1 => 'TEST - REMOVE',
-    105 => 'Contact Update',
-     75 => 'Webshop Order'
+    // 1 => array(
+    //   'title'     => 'TEST - PLEASE REMOVE',
+    //   'subject'   => 'TEST - PLEASE REMOVE',
+    //   'status_id' => 2 // Completed
+    // ),
+    105 => array(
+      'title'     => 'Contact Update',
+      'subject'   => 'Contact Update',
+      'status_id' => 2 // Completed
+    ),
+    75 => array(
+      'title'     => 'Webshop Order',
+      'subject'   => 'Webshop Order',
+      'status_id' => 1 // Scheduled
+    ),
   );
 
   /**
@@ -36,14 +48,14 @@ class CRM_Gpapi_ActivityHandler {
    */
   public static function addActivities(&$get_petition_result) {
     // just add hard-coded activity values
-    foreach (self::$allowed_activities as $activity_type_id => $activity_title) {
+    foreach (self::$allowed_activities as $activity_type_id => $activity_spec) {
       $get_petition_result['values'][] = array(
         'id'             => $activity_type_id + self::$activity_petition_offset,
         'is_active'      => 1,
         'is_default'     => 0,
         'is_share'       => 0,
         'bypass_confirm' => 0,
-        'title'          => $activity_title,
+        'title'          => $activity_spec['title'],
       );
     }
   }
@@ -52,11 +64,11 @@ class CRM_Gpapi_ActivityHandler {
    * Check if the given petition ID is really a CiviCase
    */
   public static function isActivity($petition_id) {
-    return $petition_id > self::$activity_petition_offset
-        && $petition_id < self::$activity_petition_offset + 99999;
+    // return $petition_id > self::$activity_petition_offset
+    //     && $petition_id < self::$activity_petition_offset + 99999;
     // strict checking:
-    // $activity_type_id = $petition_id - self::$activity_petition_offset;
-    // return isset(self::$allowed_activities[$activity_type_id]);
+    $activity_type_id = $petition_id - self::$activity_petition_offset;
+    return isset(self::$allowed_activities[$activity_type_id]);
   }
 
   /**
@@ -68,9 +80,18 @@ class CRM_Gpapi_ActivityHandler {
       throw new Exception("Bad (fake) petition ID: {$fake_petition_id}");
     }
 
+    // get specs and compile activity
+    $specs = self::$allowed_activities[$activity_type_id];
+
     $params['source_contact_id'] = $contact_id;
     $params['target_contact_id'] = $contact_id;
     $params['activity_type_id']  = $activity_type_id;
+    $params['status_id']         = $specs['status_id'];
+    if (isset($params['activity_subject'])) {
+      $params['subject'] = trim($params['activity_subject']);
+    } else {
+      $params['subject'] = $specs['subject'];
+    }
 
     return civicrm_api3('Activity', 'create', $params);
   }
