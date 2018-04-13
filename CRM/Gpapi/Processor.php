@@ -73,7 +73,7 @@ class CRM_Gpapi_Processor {
     if (empty($params['state_province_id']) && function_exists('postcodeat_civicrm_config')) {
       // make sure we have the required attributes...
       if (!empty($params['country_id']) && !empty($params['postal_code'])) {
-        if ($params['country_id'] == '1014') {
+        if ($params['country_id'] == '1014' || strtoupper($params['country_id']) == 'AT') {
           // if this is Austria use PostcodeAT::getATstate
           try {
             // compile query
