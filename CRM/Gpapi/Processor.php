@@ -21,7 +21,7 @@ use libphonenumber\PhoneNumberFormat;
 class CRM_Gpapi_Processor {
 
   // static list of address attributes
-  protected static $address_attributes = array('street_address', 'postal_code', 'city', 'country', 'country_id', 'supplemental_address_1', 'supplemental_address_2', 'supplemental_address_3');
+  protected static $address_attributes = array('street_address', 'postal_code', 'city', 'state_province_id', 'country', 'country_id', 'supplemental_address_1', 'supplemental_address_2', 'supplemental_address_3');
   protected static $required_address_attributes = array('street_address', 'postal_code', 'city');
 
 
@@ -64,6 +64,50 @@ class CRM_Gpapi_Processor {
           'name'                => $params['country']));
         if (!empty($country_search['id'])) {
           $params['country_id'] = $country_search['id'];
+        }
+      }
+    }
+
+    // see if we should look up the state (if postcode-AT is installed)
+    //  see GP-736
+    if (empty($params['state_province_id']) && function_exists('postcodeat_civicrm_config')) {
+      // make sure we have the required attributes...
+      if (!empty($params['country_id']) && !empty($params['postal_code'])) {
+        if ($params['country_id'] == '1014' || strtoupper($params['country_id']) == 'AT') {
+          // if this is Austria use PostcodeAT::getATstate
+          try {
+            // compile query
+            $state_query = array(
+              'plznr' => trim($params['postal_code']));
+            if (!empty($params['city'])) {
+              $state_query['ortnam'] = trim($params['city']);
+            }
+            if (!empty($params['street_address'])) {
+              // street has to be stripped of numbers
+              if (preg_match('#^(?P<streetname>[A-Za-z-]+)#', trim($params['street_address']), $matches)) {
+                $state_query['stroffi'] = $matches['streetname'];
+              }
+            }
+            $result = civicrm_api3('PostcodeAT', 'getatstate', $state_query);
+            if (!empty($result['id'])) {
+              $params['state_province_id'] = $result['id'];
+            }
+          } catch (Exception $e) {
+            // lookup didn't work
+          }
+
+        } else {
+          // not AT? try to use PostcodeAT::getstate
+          try {
+            $result = civicrm_api3('PostcodeAT', 'getstate', array(
+              'country_id'  => $params['country_id'],
+              'postal_code' => $params['postal_code']));
+            if (!empty($result['id'])) {
+              $params['state_province_id'] = $result['id'];
+            }
+          } catch (Exception $e) {
+            // lookup didn't work
+          }
         }
       }
     }
