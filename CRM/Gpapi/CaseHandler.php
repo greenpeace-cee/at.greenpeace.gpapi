@@ -168,8 +168,9 @@ class CRM_Gpapi_CaseHandler {
     // if it's status 2 (closed) -> re-open (status 1)
     if ($case['status_id'] == 2) {
       civicrm_api3('Case', 'create', array(
-        'id'        => $case['id'],
-        'status_id' => 1
+        'check_permissions' => 0,
+        'id'                => $case['id'],
+        'status_id'         => 1
       ));
     }
 
@@ -179,9 +180,10 @@ class CRM_Gpapi_CaseHandler {
     }
 
     // prepare params
-    $params['case_id']   = $case['id'];
-    $params['target_id'] = $case['contact_id'];
-    $params['status_id'] = 1; // scheduled
+    $params['check_permissions'] = 0;
+    $params['case_id']           = $case['id'];
+    $params['target_id']         = $case['contact_id'];
+    $params['status_id']         = 1; // scheduled
 
     // finally: create activity
     civicrm_api3('Activity', 'create', $params);

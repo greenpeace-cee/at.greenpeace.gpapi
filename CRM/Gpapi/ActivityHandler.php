@@ -83,6 +83,7 @@ class CRM_Gpapi_ActivityHandler {
     // get specs and compile activity
     $specs = self::$allowed_activities[$activity_type_id];
 
+    $params['check_permissions'] = 0;
     $params['source_contact_id'] = $contact_id;
     $params['target_contact_id'] = $contact_id;
     $params['activity_type_id']  = $activity_type_id;
