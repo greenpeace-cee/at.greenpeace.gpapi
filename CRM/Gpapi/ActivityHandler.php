@@ -36,11 +36,6 @@ class CRM_Gpapi_ActivityHandler {
       'subject'   => 'Contact Update',
       'status_id' => 2 // Completed
     ),
-    75 => array(
-      'title'     => 'Webshop Order',
-      'subject'   => 'Webshop Order',
-      'status_id' => 1 // Scheduled
-    ),
   );
 
   /**

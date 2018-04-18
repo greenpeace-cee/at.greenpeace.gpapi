@@ -47,6 +47,9 @@ function civicrm_api3_engage_getpetitions($params) {
   // add Activity 'fake petitions' (see GP-1588)
   CRM_Gpapi_ActivityHandler::addActivities($petitions);
 
+  // add Activity 'webshop orders' (see GP-1588)
+  CRM_Gpapi_OrderHandler::addOrders($petitions);
+
   return $petitions;
 }
 

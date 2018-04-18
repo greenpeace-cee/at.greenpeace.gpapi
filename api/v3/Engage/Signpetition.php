@@ -64,6 +64,11 @@ function civicrm_api3_engage_signpetition($params) {
     // it is. so let's do that:
     CRM_Gpapi_CaseHandler::petitionStartCase($params['petition_id'], $contact_id, $params);
 
+  // check if this is a 'fake petition' (and actually a webshop order)
+  } elseif (CRM_Gpapi_OrderHandler::isActivity($params['petition_id'])) {
+    // it is. so let's do that:
+    CRM_Gpapi_OrderHandler::petitionCreateWebshopOrder($params['petition_id'], $contact_id, $params);
+
   // check if this is a 'fake petition' (and actually an activity)
   } elseif (CRM_Gpapi_ActivityHandler::isActivity($params['petition_id'])) {
     // it is. so let's do that:
