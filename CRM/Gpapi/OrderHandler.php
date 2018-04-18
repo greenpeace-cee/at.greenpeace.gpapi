@@ -86,9 +86,10 @@ class CRM_Gpapi_OrderHandler {
     $params['target_contact_id'] = $contact_id;
     $params['activity_type_id']  = self::$activity_type_webshop_order;
     $params['status_id']         = self::$activity_status_webshop_order;
-    $params['subject']           = "Webshop Order {$order_type['label']}";
+    $params['subject']           = "Engage Order {$order_type['label']}";
     $params['order_type']        = $order_type['value'];
     $params['order_count']       = 1;
+    $params['free_order']        = 1;
 
     CRM_Gpapi_Processor::resolveCustomFields($params, array('webshop_information'));
 
