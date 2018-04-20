@@ -114,6 +114,7 @@ class CRM_Gpapi_CaseHandler {
     if (!$case_id) {
       // create a new case
       $params['check_permissions'] = 0;
+      $params['status_id'] = 5; // Enquirer (see https://redmine.greenpeace.at/issues/1586#note-22)
       $case = civicrm_api3('Case', 'create', $params);
       $case_id = $case['id'];
 
