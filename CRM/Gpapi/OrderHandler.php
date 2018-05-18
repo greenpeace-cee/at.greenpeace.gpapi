@@ -82,7 +82,7 @@ class CRM_Gpapi_OrderHandler {
 
     // set base fields
     $params['check_permissions'] = 0;
-    //$params['source_contact_id'] = $contact_id;
+    $params['source_contact_id'] = CRM_Core_Session::singleton()->getLoggedInContactID();
     $params['target_contact_id'] = $contact_id;
     $params['activity_type_id']  = self::$activity_type_webshop_order;
     $params['status_id']         = self::$activity_status_webshop_order;
