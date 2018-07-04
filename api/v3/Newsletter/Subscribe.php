@@ -96,6 +96,20 @@ function civicrm_api3_newsletter_subscribe($params) {
     $subscribed = TRUE;
   }
 
+  // Subscribe to Group "Ehrenamtliche NL"
+  if (!empty($params['volunteer']) && strtolower($params['volunteer']) != 'no') {
+    $volunteer_group = civicrm_api3('Group', 'getsingle', [
+      'check_permissions' => 0,
+      'title'             => 'Ehrenamtliche NL'
+    ]);
+    civicrm_api3('GroupContact', 'create', [
+      'check_permissions' => 0,
+      'contact_id'        => $contact_id,
+      'group_id'          => $volunteer_group['id']
+    ]);
+    $subscribed = TRUE;
+  }
+
   // remove "Opt Out" and "do not email"
   if ($subscribed) {
     $contact = civicrm_api3('Contact', 'getsingle', array(
@@ -186,6 +200,12 @@ function _civicrm_api3_newsletter_subscribe_spec(&$params) {
     'api.default'  => '0',
     'title'        => 'Sign up for donation info mailing group',
     );
+
+  $params['volunteer'] = [
+    'name'         => 'volunteer',
+    'api.default'  => '0',
+    'title'        => 'Sign up for volunteer newsletter',
+  ];
 
   // CONTACT ADDRESS
   $params['street_address'] = array(
