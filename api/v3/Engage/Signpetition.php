@@ -35,9 +35,30 @@ function civicrm_api3_engage_signpetition($params) {
     return civicrm_api3_create_error("Insufficient contact data");
   }
 
+  if (!empty($params['phone']) && substr($params['phone'], 0, 3) == '436') {
+    // 436... -> +436..., libphonenumber can't handle country code without
+    // either a 00 or + prefix
+    $params['phone'] = '+' . $params['phone'];
+  }
+
   // make sure phone-only works
   if (!empty($params['phone']) && empty($params['display_name'])) {
     if (empty($params['email']) && (empty($params['first_name']) || empty($params['last_name']))) {
+      // if we receive only the phone number, don't create a new contact if the
+      // phone number is invalid.
+      try {
+        $include_file = dirname( __FILE__ ) . '/../../../../com.cividesk.normalize/packages/libphonenumber/PhoneNumberUtil.php';
+        if (file_exists($include_file)) {
+          require_once $include_file;
+          $phoneUtil = libphonenumber\PhoneNumberUtil::getInstance();
+          $phoneProto = $phoneUtil->parse($params['phone'], 'AT');
+          if (!$phoneUtil->isValidNumber($phoneProto)) {
+            return civicrm_api3_create_error("Invalid phone number");
+          }
+        }
+      } catch (Exception $e) {
+        return civicrm_api3_create_error("Invalid phone number");
+      }
       $params['display_name'] = $params['phone'];
     }
   }
