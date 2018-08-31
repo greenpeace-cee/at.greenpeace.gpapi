@@ -12,7 +12,7 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
-include_once 'Contract.php';
+include_once __DIR__ . '/Contract.php';
 
 define('GPAPI_GP_ORG_CONTACT_ID', 1);
 
@@ -62,6 +62,9 @@ function civicrm_api3_o_s_f_donation($params) {
       }
       if (empty($params['bic'])) {
         return civicrm_api3_create_error("No 'bic' provided.");
+      }
+      if (!empty($params['trxn_id'])) {
+        return civicrm_api3_create_error("Cannot use 'trxn_id' with payment_instrument=OOFF.");
       }
       if (empty($params['creation_date'])) {
         $params['creation_date'] = date('YmdHis');
@@ -156,6 +159,11 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'api.required' => 0,
     'title'        => 'GP IBAN (incoming bank account)',
     );
+  $params['trxn_id'] = [
+    'name'         => 'trxn_id',
+    'api.required' => 0,
+    'title'        => 'Transaction ID (only for payment_instrument!=OOFF)',
+  ];
 }
 
 
