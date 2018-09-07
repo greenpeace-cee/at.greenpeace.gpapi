@@ -27,7 +27,7 @@ function civicrm_api3_o_s_f_order($params) {
     return civicrm_api3_create_error("No 'contact_id' provided.");
   }
   
-  if ( empty($params['linked_contribution']) && empty($params['linked_membership']) ) {
+  if (empty($params['linked_contribution']) && empty($params['linked_membership'])) {
     return civicrm_api3_create_error("You need to provide a 'linked_contribution' or 'linked_membership' via OSF.order API.");
   }
 

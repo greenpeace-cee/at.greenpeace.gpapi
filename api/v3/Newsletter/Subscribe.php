@@ -110,6 +110,21 @@ function civicrm_api3_newsletter_subscribe($params) {
     $subscribed = TRUE;
   }
 
+  // process group subscribe
+  if (!empty($params['group_ids'])) {
+    $group_ids = explode(',', $params['group_ids']);
+    foreach ($group_ids as $group_id) {
+      $group_id = (int) $group_id;
+      if ($group_id) {
+        civicrm_api3('GroupContact', 'create', [
+          'group_id'   => $group_id,
+          'contact_id' => $contact_id,
+        ]);
+        $subscribed = TRUE;
+      }
+    }
+  }
+
   // remove "Opt Out" and "do not email"
   if ($subscribed) {
     $contact = civicrm_api3('Contact', 'getsingle', array(
@@ -192,19 +207,26 @@ function _civicrm_api3_newsletter_subscribe_spec(&$params) {
   $params['newsletter'] = array(
     'name'         => 'newsletter',
     'api.default'  => '0',
-    'title'        => 'Sign up for community newsletter',
+    'title'        => 'Sign up for community newsletter. DEPRECATED',
     );
 
   $params['donation_info'] = array(
     'name'         => 'donation_info',
     'api.default'  => '0',
-    'title'        => 'Sign up for donation info mailing group',
+    'title'        => 'Sign up for donation info mailing group. DEPRECATED',
     );
 
   $params['volunteer'] = [
     'name'         => 'volunteer',
     'api.default'  => '0',
-    'title'        => 'Sign up for volunteer newsletter',
+    'title'        => 'Sign up for volunteer newsletter. DEPRECATED',
+  ];
+
+  $params['group_ids'] = [
+    'name'         => 'group_ids',
+    'api.required' => 0,
+    'title'        => 'CiviCRM Group IDs',
+    'description'  => 'List of group IDs to subscribe the contact to, separated by a comma',
   ];
 
   // CONTACT ADDRESS
