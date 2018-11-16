@@ -22,16 +22,39 @@
  */
 function civicrm_api3_newsletter_unsubscribe($params) {
   CRM_Gpapi_Processor::preprocessCall($params, 'Newsletter.unsubscribe');
-  $result = array();
 
   if (empty($params['group_ids']) && empty($params['opt_out'])) {
     return civicrm_api3_create_error("Nothing to do");
   }
 
   // find contact (via identity tracker)
-  $contact = civicrm_api3('Contact', 'identify', array(
-    'identifier_type' => 'internal',
-    'identifier'      => (int) $params['contact_id']));
+  $contacts = [
+    civicrm_api3('Contact', 'identify', [
+      'identifier_type' => 'internal',
+      'identifier'      => (int) $params['contact_id']
+    ])['id']
+  ];
+
+  // find additional contacts with the same primary email
+  try {
+    $email = civicrm_api3('Contact', 'getvalue', [
+      'return' => 'email',
+      'id' => $contacts[0],
+    ]);
+    if (!empty($email)) {
+      $email_results = civicrm_api3('Contact', 'get', [
+        'return' => 'id',
+        'email' => $email,
+      ]);
+      foreach ($email_results['values'] as $contact) {
+        $contacts[] = $contact['id'];
+      }
+    }
+  } catch (CiviCRM_API3_Exception $e) {
+    CRM_Core_Error::debug_log_message("Newsletter.unsubscribe: Exception when looking up email for contact {$contacts[0]}: " . $e->getMessage());
+  }
+
+  $contacts = array_unique($contacts);
 
   // process group unsubscribe
   if (!empty($params['group_ids'])) {
@@ -39,19 +62,25 @@ function civicrm_api3_newsletter_unsubscribe($params) {
     foreach ($group_ids as $group_id) {
       $group_id = (int) $group_id;
       if ($group_id) {
-        civicrm_api3('GroupContact', 'create', array(
-          'group_id'   => $group_id,
-          'contact_id' => $contact['id'],
-          'status'     => 'Removed'));
+        foreach ($contacts as $contact) {
+          civicrm_api3('GroupContact', 'create', [
+            'group_id'   => $group_id,
+            'contact_id' => $contact,
+            'status'     => 'Removed'
+          ]);
+        }
       }
     }
   }
 
   // process opt-out
   if (!empty($params['opt_out'])) {
-    civicrm_api3('Contact', 'create', array(
-      'id'         => $contact['id'],
-      'is_opt_out' => 1));
+    foreach ($contacts as $contact) {
+      civicrm_api3('Contact', 'create', [
+        'id'         => $contact,
+        'is_opt_out' => 1
+      ]);
+    }
   }
 
   return civicrm_api3_create_success();
