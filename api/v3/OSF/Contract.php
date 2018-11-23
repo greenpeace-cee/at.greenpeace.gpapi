@@ -12,6 +12,7 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
+define('GPAPI_GP_ORG_CONTACT_ID', 1);
 
 /**
  * Process OSF (online donation form) DONATION submission
@@ -147,7 +148,7 @@ function civicrm_api3_o_s_f_contract($params) {
     'membership_payment.membership_annual'                 => number_format($params['amount'] * $params['frequency'], 2, '.', ''),
     'membership_payment.membership_frequency'              => $params['frequency'],
     'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
-    'membership_payment.to_ba'                             => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], $creditor['creditor_id']),
+    'membership_payment.to_ba'                             => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []),
     'membership_payment.from_ba'                           => $bank_account,
     'membership_payment.cycle_day'                         => $cycle_day,
     'membership_payment.payment_instrument'                => (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', $params['payment_instrument']),
@@ -181,10 +182,16 @@ function civicrm_api3_o_s_f_contract($params) {
       'id'                => $mandate['entity_id']
     ]);
 
+    // Tag "Contract_Signed" Activity for post-processing, see GP-1933
+    $activity_id = civicrm_api3('Activity', 'getvalue', [
+      'return' => 'id',
+      'activity_type_id' => 'Contract_Signed',
+      'source_record_id' => $result['id'],
+    ]);
     civicrm_api3('EntityTag', 'create', [
       'tag_id' => _civicrm_api3_o_s_f_contract_getPSPTagId(),
-      'entity_table' => 'civicrm_contribution_recur',
-      'entity_id' => $rec_contribution['id'],
+      'entity_table' => 'civicrm_activity',
+      'entity_id' => $activity_id,
     ]);
 
     $contribution_data = [
@@ -202,6 +209,14 @@ function civicrm_api3_o_s_f_contract($params) {
       'trxn_id' => $params['trxn_id'],
       'source' => 'OSF',
     ];
+    $to_ba_field = civicrm_api3('CustomField', 'get', [
+      'name'            => 'to_ba',
+      'custom_group_id' => 'contribution_information',
+      'return'          => 'id'
+    ]);
+    if (!empty($to_ba_field['id'])) {
+      $contribution_data["custom_{$to_ba_field['id']}"] = _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []);
+    }
     $contribution = civicrm_api3('Contribution', 'create', $contribution_data);
     CRM_Utils_SepaCustomisationHooks::installment_created($mandate['mandate_id'], $mandate['entity_id'], $contribution['id']);
   }

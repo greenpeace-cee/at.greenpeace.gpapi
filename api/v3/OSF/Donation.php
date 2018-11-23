@@ -14,8 +14,6 @@
 
 include_once __DIR__ . '/Contract.php';
 
-define('GPAPI_GP_ORG_CONTACT_ID', 1);
-
 /**
  * Process OSF (online donation form) DONATION submission
  *
