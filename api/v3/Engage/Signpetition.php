@@ -108,6 +108,9 @@ function civicrm_api3_engage_signpetition($params) {
     // remove critical stuff from params
     if (isset($params['id'])) unset($params['id']);
 
+    // API caller may provide fields like petition_dialoger
+    CRM_Gpapi_Processor::resolveCustomFields($params, ['petition_information']);
+
     // create signature activity
     civicrm_api3('Activity', 'create', array(
       'check_permissions'   => 0,
