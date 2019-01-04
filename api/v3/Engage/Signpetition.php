@@ -111,6 +111,12 @@ function civicrm_api3_engage_signpetition($params) {
     // API caller may provide fields like petition_dialoger
     CRM_Gpapi_Processor::resolveCustomFields($params, ['petition_information']);
 
+    $activity_date = date('YmdHis');
+
+    if (!empty($params['signature_date'])) {
+      $activity_date = $params['signature_date'];
+    }
+
     // create signature activity
     civicrm_api3('Activity', 'create', array(
       'check_permissions'   => 0,
@@ -122,7 +128,7 @@ function civicrm_api3_engage_signpetition($params) {
       'source_record_id'    => $petition['id'],
       'subject'             => $petition['title'],
       'campaign_id'         => $params['campaign_id'],
-      'activity_date_time'  => date('YmdHis')
+      'activity_date_time'  => $activity_date,
     ) + $params); // add other params
   }
 
@@ -200,6 +206,12 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'title'        => 'CiviCRM Petition ID',
     'description'  => 'ID of the petition to sign',
     );
+  $params['signature_date'] = [
+    'name'         => 'signature_date',
+    'api.required' => 0,
+    'title'        => 'Petition Signature Date',
+    'type'         => CRM_Utils_Type::T_TIMESTAMP
+  ];
 
   // NEWSLETTER
   $params['newsletter'] = array(
