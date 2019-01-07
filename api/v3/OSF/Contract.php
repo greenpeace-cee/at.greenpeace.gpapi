@@ -254,7 +254,7 @@ function civicrm_api3_o_s_f_contract($params) {
       } catch (CiviCRM_API3_Exception $e) {
         if ($e->getMessage() == 'Duplicate Relationship') {
           civicrm_api3('Activity', 'create', [
-            'activity_type_id'  => 'manual_update_required',
+            'activity_type_id'  => 'manual_check_required',
             'target_id'         => [$params['contact_id'], $referrer],
             'subject'           => 'Potential Referrer Fraud',
             'details'           => 'Contact already referred a membership to the referee.',
