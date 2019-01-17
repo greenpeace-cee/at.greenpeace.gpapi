@@ -38,6 +38,29 @@ function civicrm_api3_o_s_f_contract($params) {
     return civicrm_api3_create_error("Cannot use parameter 'trxn_id' when 'payment_received' is not set.");
   }
 
+  $referrer = NULL;
+  if (!empty($params['referrer_contact_id'])) {
+    try {
+      $referrer = civicrm_api3('Contact', 'identify', [
+        'identifier_type' => 'internal',
+        'identifier' => (int) $params['referrer_contact_id'],
+      ])['id'];
+      if ($referrer == $params['contact_id']) {
+        return civicrm_api3_create_error("Parameter 'referrer_contact_id' must not match 'contact_id'");
+      }
+    } catch (CiviCRM_API3_Exception $e) {
+      civicrm_api3('Activity', 'create', [
+        'activity_type_id' => 'manual_update_required',
+        'target_id' => $params['contact_id'],
+        'subject' => 'Invalid Referrer Submitted',
+        'details' => 'Membership was submitted with a referrer, but no contact was found for value "' . $params['referrer_contact_id'] . '"',
+        'status_id' => 'Scheduled',
+        'check_permissions' => 0,
+      ]);
+      CRM_Core_Error::debug_log_message("OSF.contract: Unable to find referrer {$params['referrer_contact_id']}: " . $e->getMessage());
+    }
+  }
+
   if (empty($params['payment_service_provider'])) {
     $creditor = (array) CRM_Sepa_Logic_Settings::defaultCreditor();
     $referenceType = 'IBAN';
@@ -221,58 +244,39 @@ function civicrm_api3_o_s_f_contract($params) {
     CRM_Utils_SepaCustomisationHooks::installment_created($mandate['mandate_id'], $mandate['entity_id'], $contribution['id']);
   }
 
-  if (!empty($params['referrer_contact_id'])) {
-    $referrer = NULL;
+  if (!empty($referrer)) {
+    $relationshipType = civicrm_api3('RelationshipType', 'getvalue', [
+      'return' => 'id',
+      'name_a_b' => 'Referrer of',
+    ]);
     try {
-      $referrer = civicrm_api3('Contact', 'identify', [
-        'identifier_type' => 'internal',
-        'identifier'      => (int) $params['referrer_contact_id'],
-      ])['id'];
+      civicrm_api3('Relationship', 'create', [
+        'contact_id_a'         => $referrer,
+        'contact_id_b'         => $params['contact_id'],
+        'relationship_type_id' => $relationshipType,
+        'start_date'           => date('Ymd'),
+      ]);
     } catch (CiviCRM_API3_Exception $e) {
-      civicrm_api3('Activity', 'create', [
-        'activity_type_id'  => 'manual_update_required',
-        'target_id'         => $params['contact_id'],
-        'subject'           => 'Invalid Referrer Submitted',
-        'details'           => 'Membership was submitted with a referrer, but no contact was found for value "' . $params['referrer_contact_id'] . '"',
-        'status_id'         => 'Scheduled',
-        'check_permissions' => 0,
-      ]);
-      CRM_Core_Error::debug_log_message("OSF.contract: Unable to find referrer {$params['referrer_contact_id']}: " . $e->getMessage());
-    }
-    if (!empty($referrer)) {
-      $relationshipType = civicrm_api3('RelationshipType', 'getvalue', [
-        'return' => 'id',
-        'name_a_b' => 'Referrer of',
-      ]);
-      try {
-        civicrm_api3('Relationship', 'create', [
-          'contact_id_a'         => $referrer,
-          'contact_id_b'         => $params['contact_id'],
-          'relationship_type_id' => $relationshipType,
-          'start_date'           => date('Ymd'),
+      if ($e->getMessage() == 'Duplicate Relationship') {
+        civicrm_api3('Activity', 'create', [
+          'activity_type_id'  => 'manual_check_required',
+          'target_id'         => [$params['contact_id'], $referrer],
+          'subject'           => 'Potential Referrer Fraud',
+          'details'           => 'Contact already referred a membership to the referee.',
+          'status_id'         => 'Scheduled',
+          'check_permissions' => 0,
         ]);
-      } catch (CiviCRM_API3_Exception $e) {
-        if ($e->getMessage() == 'Duplicate Relationship') {
-          civicrm_api3('Activity', 'create', [
-            'activity_type_id'  => 'manual_check_required',
-            'target_id'         => [$params['contact_id'], $referrer],
-            'subject'           => 'Potential Referrer Fraud',
-            'details'           => 'Contact already referred a membership to the referee.',
-            'status_id'         => 'Scheduled',
-            'check_permissions' => 0,
-          ]);
-          CRM_Core_Error::debug_log_message("OSF.contract: Potential Referrer Fraud with contacts {$params['contact_id']} and {$referrer}");
-        } else {
-          throw $e;
-        }
+        CRM_Core_Error::debug_log_message("OSF.contract: Potential Referrer Fraud with contacts {$params['contact_id']} and {$referrer}");
+      } else {
+        throw $e;
       }
-      $membership_data = [
-        'id'                  => $result['id'],
-        'membership_referrer' => $referrer,
-      ];
-      CRM_Gpapi_Processor::resolveCustomFields($membership_data, ['membership_referral']);
-      civicrm_api3('Membership', 'create', $membership_data);
     }
+    $membership_data = [
+      'id'                  => $result['id'],
+      'membership_referrer' => $referrer,
+    ];
+    CRM_Gpapi_Processor::resolveCustomFields($membership_data, ['membership_referral']);
+    civicrm_api3('Membership', 'create', $membership_data);
   }
 
   // and return the good news (otherwise an Exception would have occurred)
