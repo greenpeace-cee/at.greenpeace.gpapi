@@ -31,6 +31,10 @@ function civicrm_api3_o_s_f_order($params) {
     return civicrm_api3_create_error("You need to provide a 'linked_contribution' or 'linked_membership' via OSF.order API.");
   }
 
+  if (!empty($params['linked_contribution']) && !empty($params['linked_membership'])) {
+    return civicrm_api3_create_error("You must not provide both 'linked_contribution' and 'linked_membership' via OSF.order API.");
+  }
+
   // resolve campaign ID
   CRM_Gpapi_Processor::resolveCampaign($params);
 
