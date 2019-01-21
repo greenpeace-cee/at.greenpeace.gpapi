@@ -274,6 +274,7 @@ function civicrm_api3_o_s_f_contract($params) {
     $membership_data = [
       'id'                  => $result['id'],
       'membership_referrer' => $referrer,
+      'skip_handler'        => TRUE, // CE should ignore this change
     ];
     CRM_Gpapi_Processor::resolveCustomFields($membership_data, ['membership_referral']);
     civicrm_api3('Membership', 'create', $membership_data);
