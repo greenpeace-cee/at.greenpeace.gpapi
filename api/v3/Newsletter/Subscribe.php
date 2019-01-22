@@ -44,30 +44,10 @@ function civicrm_api3_newsletter_subscribe($params) {
     }
   }
 
+  CRM_Gpapi_Processor::preprocessContactData($params);
   // match contact using XCM
-  $params['check_permissions'] = 0;
-  $contact_match = civicrm_api3('Contact', 'getorcreate', $params);
-  $contact_id = $contact_match['id'];
+  $contact_id = CRM_Gpapi_Processor::getOrCreateContact($params);
   $result['id'] = $contact_id;
-
-  // process email: if the email doesn't exist with the contact -> create
-  if (!empty($params['email'])) {
-    $contact_emails = civicrm_api3('Email', 'get', array(
-      'check_permissions' => 0,
-      'contact_id'        => $contact_id,
-      'email'             => $params['email'],
-      'option.limit'      => 2));
-    if ($contact_emails['count'] == 0) {
-      // email is not present -> create
-      civicrm_api3('Email', 'create', array(
-        'check_permissions' => 0,
-        'contact_id'        => $contact_id,
-        'email'             => $params['email'],
-        'is_primary'        => 1,
-        'location_type_id'  => 1 // TODO: which location type?
-        ));
-    }
-  }
 
   $subscribed = FALSE;
 
@@ -139,7 +119,6 @@ function civicrm_api3_newsletter_subscribe($params) {
         'do_not_email'      => 0));
     }
   }
-
 
   // create result
   if (!empty($params['sequential'])) {

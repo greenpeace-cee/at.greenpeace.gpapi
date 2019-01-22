@@ -42,10 +42,6 @@ function civicrm_api3_o_s_f_submit($params) {
   $contact_id = CRM_Gpapi_Processor::getOrCreateContact($params);
   $result['id'] = $contact_id;
 
-  // store data
-  CRM_Gpapi_Processor::storeEmail($contact_id, $params);
-  CRM_Gpapi_Processor::storePhone($contact_id, $params);
-
   // process newsletter
   if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
     CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');

@@ -174,59 +174,11 @@ class CRM_Gpapi_Processor {
    */
   public static function getOrCreateContact($params) {
     $params['check_permissions'] = 0;
+    if (!array_key_exists('xcm_profile', $params)) {
+      $params['xcm_profile'] = 'web';
+    }
     $contact_match = civicrm_api3('Contact', 'getorcreate', $params);
     return $contact_match['id'];
-  }
-
-  /**
-   * Store the email (if given) with the contact,
-   * unless it's already there
-   */
-  public static function storeEmail($contact_id, $params) {
-    if (!empty($params['email'])) {
-      $contact_emails = civicrm_api3('Email', 'get', array(
-        'check_permissions' => 0,
-        'contact_id'        => $contact_id,
-        'email'             => $params['email'],
-        'option.limit'      => 2));
-      if ($contact_emails['count'] == 0) {
-        // email is not present -> create
-        civicrm_api3('Email', 'create', array(
-          'check_permissions' => 0,
-          'contact_id'        => $contact_id,
-          'email'             => $params['email'],
-          'is_primary'        => 1,
-          'is_bulkmail'       => empty($params['newsletter']) ? 0 : 1,
-          'location_type_id'  => 1 // TODO: which location type?
-          ));
-      }
-    }
-  }
-
-
-  /**
-   * Store the phone (if given) with the contact,
-   * unless it's already there
-   */
-  public static function storePhone($contact_id, $params) {
-    if (!empty($params['phone'])) {
-      $contact_phones = civicrm_api3('Phone', 'get', array(
-        'check_permissions' => 0,
-        'contact_id'        => $contact_id,
-        'phone'             => $params['phone'],
-        'option.limit'      => 2));
-      if ($contact_phones['count'] == 0) {
-        // phone is not present -> create
-        civicrm_api3('Phone', 'create', array(
-          'check_permissions' => 0,
-          'contact_id'        => $contact_id,
-          'phone'             => $params['phone'],
-          'is_primary'        => 1,
-          'location_type_id'  => 1, // TODO: which location type?
-          'phone_type_id'     => 1 // TODO: which phone type?
-          ));
-      }
-    }
   }
 
   /**
