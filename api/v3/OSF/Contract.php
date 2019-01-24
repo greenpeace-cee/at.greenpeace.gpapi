@@ -136,46 +136,58 @@ function civicrm_api3_o_s_f_contract($params) {
     }
   }
 
+  // add a mutex lock (see GP-1731)
+  $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
+  $lock->acquire();
+  if (!$lock->isAcquired()) {
+    return civicrm_api3_create_error("OSF.mandate lock timeout. Sorry. Try again later.");
+  }
+
   // first: create a mandate
-  $mandate = civicrm_api3('SepaMandate', 'createfull', array(
-    'check_permissions'   => 0,
-    'type'                => 'RCUR',
-    'iban'                => $params['iban'],
-    'bic'                 => $params['bic'],
-    'amount'              => $params['amount'],
-    'contact_id'          => $params['contact_id'],
-    'creditor_id'         => $creditor['id'],
-    'currency'            => $currency,
-    'frequency_unit'      => 'month',
-    'cycle_day'           => $cycle_day,
-    'frequency_interval'  => (int) (12.0 / $params['frequency']),
-    'start_date'          => $params['start_date'],
-    'campaign_id'         => $params['campaign_id'],
-    'financial_type_id'   => 2, // Membership Dues
+  try {
+    $mandate = civicrm_api3('SepaMandate', 'createfull', array(
+        'check_permissions'   => 0,
+        'type'                => 'RCUR',
+        'iban'                => $params['iban'],
+        'bic'                 => $params['bic'],
+        'amount'              => $params['amount'],
+        'contact_id'          => $params['contact_id'],
+        'creditor_id'         => $creditor['id'],
+        'currency'            => $currency,
+        'frequency_unit'      => 'month',
+        'cycle_day'           => $cycle_day,
+        'frequency_interval'  => (int) (12.0 / $params['frequency']),
+        'start_date'          => $params['start_date'],
+        'campaign_id'         => $params['campaign_id'],
+        'financial_type_id'   => 2, // Membership Dues
     ));
-  // reload mandate
-  $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
-    'check_permissions' => 0,
-    'id'                => $mandate['id']));
-  $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
-  // create the contract
-  $result = civicrm_api3('Contract', 'create', array(
-    'check_permissions'                                    => 0,
-    'sequential'                                           => empty($params['sequential']) ? 0 : 1,
-    'contact_id'                                           => $params['contact_id'],
-    'membership_type_id'                                   => $params['membership_type_id'],
-    'join_date'                                            => $params['member_since'],
-    'start_date'                                           => $params['start_date'],
-    'source'                                               => 'OSF',
-    'campaign_id'                                          => $params['campaign_id'],
-    'membership_payment.membership_annual'                 => number_format($params['amount'] * $params['frequency'], 2, '.', ''),
-    'membership_payment.membership_frequency'              => $params['frequency'],
-    'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
-    'membership_payment.to_ba'                             => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []),
-    'membership_payment.from_ba'                           => $bank_account,
-    'membership_payment.cycle_day'                         => $cycle_day,
-    'membership_payment.payment_instrument'                => (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', $params['payment_instrument']),
+    // reload mandate
+    $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
+        'check_permissions' => 0,
+        'id'                => $mandate['id']));
+    $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
+    // create the contract
+    $result = civicrm_api3('Contract', 'create', array(
+        'check_permissions'                                    => 0,
+        'sequential'                                           => empty($params['sequential']) ? 0 : 1,
+        'contact_id'                                           => $params['contact_id'],
+        'membership_type_id'                                   => $params['membership_type_id'],
+        'join_date'                                            => $params['member_since'],
+        'start_date'                                           => $params['start_date'],
+        'source'                                               => 'OSF',
+        'campaign_id'                                          => $params['campaign_id'],
+        'membership_payment.membership_annual'                 => number_format($params['amount'] * $params['frequency'], 2, '.', ''),
+        'membership_payment.membership_frequency'              => $params['frequency'],
+        'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
+        'membership_payment.to_ba'                             => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []),
+        'membership_payment.from_ba'                           => $bank_account,
+        'membership_payment.cycle_day'                         => $cycle_day,
+        'membership_payment.payment_instrument'                => (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', $params['payment_instrument']),
     ));
+  } catch(Exception $ex) {
+    $lock->release();
+    throw $ex;
+  }
 
   $bank_account_reference = civicrm_api3('BankingAccountReference', 'getvalue', [
     'return' => 'id',
@@ -281,6 +293,7 @@ function civicrm_api3_o_s_f_contract($params) {
   }
 
   // and return the good news (otherwise an Exception would have occurred)
+  $lock->release();
   return $result;
 }
 

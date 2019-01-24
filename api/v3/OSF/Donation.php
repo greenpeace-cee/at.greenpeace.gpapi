@@ -76,7 +76,20 @@ function civicrm_api3_o_s_f_donation($params) {
       _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
 
       // create mandate
-      $mandate = civicrm_api3('SepaMandate', 'createfull', $params);
+      // add a mutex lock (see GP-1731)
+      $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
+      $lock->acquire();
+      if (!$lock->isAcquired()) {
+        return civicrm_api3_create_error("OSF.mandate lock timeout. Sorry. Try again later.");
+      }
+
+      try {
+        $mandate = civicrm_api3('SepaMandate', 'createfull', $params);
+      } catch (Exception $ex) {
+        $lock->release();
+        throw $ex;
+      }
+      $lock->release();
 
       // reload mandate
       $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
