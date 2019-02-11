@@ -189,9 +189,16 @@ function civicrm_api3_o_s_f_contract($params) {
     throw $ex;
   }
 
+  // get BA reference type for IBAN to do BankingAccountReference lookup by type
+  $reference_type_iban = civicrm_api3('OptionValue', 'getvalue', [
+    'return'          => 'id',
+    'option_group_id' => 'civicrm_banking.reference_types',
+    'value'           => 'IBAN',
+  ]);
   $bank_account_reference = civicrm_api3('BankingAccountReference', 'getvalue', [
-    'return' => 'id',
-    'ba_id'  => $bank_account,
+    'return'            => 'id',
+    'ba_id'             => $bank_account,
+    'reference_type_id' => $reference_type_iban,
   ]);
   $reference_type = civicrm_api3('OptionValue', 'getvalue', array(
     'return'          => 'id',
