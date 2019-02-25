@@ -155,7 +155,7 @@ class CRM_Gpapi_CaseHandler {
       'case_type_id' => $params['case_type_id'],
       'contact_id'   => $params['contact_id'],
       'is_deleted'   => 0,
-      'return'       => 'id,status_id',
+      'return'       => 'id,status_id,contact_id',
       'options'      => array('sort'  => 'status_id asc',
                               'limit' => 1),
     ));
