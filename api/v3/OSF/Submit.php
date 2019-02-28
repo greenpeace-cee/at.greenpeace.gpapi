@@ -17,80 +17,105 @@
  * Process OSF (online donation form) base submission
  *
  * @param see specs below (_civicrm_api3_o_s_f_submit_spec)
+ *
  * @return array API result array
  * @access public
+ * @throws \Exception
  */
 function civicrm_api3_o_s_f_submit($params) {
-  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.submit');
-  $error_list = array();
-  $result = array();
-
-  // check input
-  if (   (empty($params['bpk']))
-      && (empty($params['first_name']) || empty($params['email']))
-      && (empty($params['last_name']) || empty($params['email']))
-      && (empty($params['iban']) || empty($params['birth_date']))
-      && (empty($params['first_name']) || empty($params['last_name'])  || empty($params['postal_code'])  || empty($params['street_address']))
-      ) {
-    // we don not have enough information to match/create the contact
-    return civicrm_api3_create_error("Insufficient contact data");
+  try {
+    return civicrm_api3_o_s_f_submit_process($params);
+  } catch (Exception $e) {
+    CRM_Gpapi_Error::create('OSF.submit', $e, $params);
+    throw $e;
   }
+}
 
-  // process contact
-  CRM_Gpapi_Processor::preprocessContactData($params);
-  CRM_Gpapi_Processor::resolveCampaign($params);
-  $contact_id = CRM_Gpapi_Processor::getOrCreateContact($params);
-  $result['id'] = $contact_id;
+/**
+ * Process OSF.submit in single transaction
+ *
+ * @param $params
+ *
+ * @return array
+ * @throws \Exception
+ */
+function civicrm_api3_o_s_f_submit_process($params) {
+  $tx = new CRM_Core_Transaction();
+  try {
+    CRM_Gpapi_Processor::preprocessCall($params, 'OSF.submit');
+    $error_list = array();
+    $result = array();
 
-  // store data
-  CRM_Gpapi_Processor::storeEmail($contact_id, $params);
-  CRM_Gpapi_Processor::storePhone($contact_id, $params);
+    // check input
+    if (   (empty($params['bpk']))
+        && (empty($params['first_name']) || empty($params['email']))
+        && (empty($params['last_name']) || empty($params['email']))
+        && (empty($params['iban']) || empty($params['birth_date']))
+        && (empty($params['first_name']) || empty($params['last_name'])  || empty($params['postal_code'])  || empty($params['street_address']))
+        ) {
+      // we don not have enough information to match/create the contact
+      return civicrm_api3_create_error("Insufficient contact data");
+    }
 
-  // process newsletter
-  if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
-    CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
-  }
+    // process contact
+    CRM_Gpapi_Processor::preprocessContactData($params);
+    CRM_Gpapi_Processor::resolveCampaign($params);
+    $contact_id = CRM_Gpapi_Processor::getOrCreateContact($params);
+    $result['id'] = $contact_id;
 
-  // pass through WebShop orders/donations/contracts
-  $pass_through = array('wsorders'  => 'order',
-                        'donations' => 'donation',
-                        'contracts' => 'contract');
-  foreach ($pass_through as $field_name => $action) {
-    if (!empty($params[$field_name]) && is_array($params[$field_name])) {
-      foreach ($params[$field_name] as $call_data) {
-        // set contact ID
-        $call_data['contact_id'] = $contact_id;
-        $call_data['check_permissions'] = 0;
+    // store data
+    CRM_Gpapi_Processor::storeEmail($contact_id, $params);
+    CRM_Gpapi_Processor::storePhone($contact_id, $params);
 
-        if (isset($params['sequential'])) {
-          $call_data['sequential'] = $params['sequential'];
-        }
+    // process newsletter
+    if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
+      CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
+    }
 
-        // fill campaign_id
-        if (empty($call_data['campaign_id']) && !empty($params['campaign_id'])) {
-          $call_data['campaign_id'] = $params['campaign_id'];
-        }
+    // pass through WebShop orders/donations/contracts
+    $pass_through = array('wsorders'  => 'order',
+                          'donations' => 'donation',
+                          'contracts' => 'contract');
+    foreach ($pass_through as $field_name => $action) {
+      if (!empty($params[$field_name]) && is_array($params[$field_name])) {
+        foreach ($params[$field_name] as $call_data) {
+          // set contact ID
+          $call_data['contact_id'] = $contact_id;
+          $call_data['check_permissions'] = 0;
 
-        // run the sub-call
-        try {
-          $call_result = civicrm_api3('OSF', $action, $call_data);
-          $result[$field_name][] = $call_result['id'];
-        } catch (Exception $e) {
-          $error_list[] = $e->getMessage();
+          if (isset($params['sequential'])) {
+            $call_data['sequential'] = $params['sequential'];
+          }
+
+          // fill campaign_id
+          if (empty($call_data['campaign_id']) && !empty($params['campaign_id'])) {
+            $call_data['campaign_id'] = $params['campaign_id'];
+          }
+
+          // run the sub-call
+          try {
+            $call_result = civicrm_api3('OSF', $action, $call_data);
+            $result[$field_name][] = $call_result['id'];
+          } catch (Exception $e) {
+            $error_list[] = $e->getMessage();
+          }
         }
       }
     }
-  }
 
-  // create result
-  if (!empty($error_list)) {
-    return civicrm_api3_create_error($error_list);
-  }
+    // create result
+    if (!empty($error_list)) {
+      return civicrm_api3_create_error($error_list);
+    }
 
-  if (!empty($params['sequential'])) {
-    return civicrm_api3_create_success(array($result));
-  } else {
-    return civicrm_api3_create_success(array($contact_id => $result));
+    if (!empty($params['sequential'])) {
+      return civicrm_api3_create_success(array($result));
+    } else {
+      return civicrm_api3_create_success(array($contact_id => $result));
+    }
+  } catch (Exception $e) {
+    $tx->rollback();
+    throw $e;
   }
 }
 

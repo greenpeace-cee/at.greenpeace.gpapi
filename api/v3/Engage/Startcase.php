@@ -17,14 +17,29 @@
  * Process OSF (online donation form) base submission
  *
  * @param see specs below (_civicrm_api3_engage_signpetition_spec)
+ *
  * @return array API result array
  * @access public
+ * @throws \Exception
  */
 function civicrm_api3_engage_startcase($params) {
-  CRM_Gpapi_Processor::preprocessCall($params, 'Engage.startcase');
-  $result = array();
+  try {
+    return civicrm_api3_engage_startcase_process($params);
+  } catch (Exception $e) {
+    CRM_Gpapi_Error::create('Engage.startcase', $e, $params);
+    throw $e;
+  }
+}
 
-  return CRM_Gpapi_CaseHandler::startCase($params);
+function civicrm_api3_engage_startcase_process($params) {
+  $tx = new CRM_Core_Transaction();
+  try {
+    CRM_Gpapi_Processor::preprocessCall($params, 'Engage.startcase');
+    return CRM_Gpapi_CaseHandler::startCase($params);
+  } catch (Exception $e) {
+    $tx->rollback();
+    throw $e;
+  }
 }
 
 /**

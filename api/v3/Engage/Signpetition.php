@@ -17,36 +17,59 @@
  * Process Engage.signpetition calls
  *
  * @param see specs below (_civicrm_api3_engage_signpetition_spec)
- * @return array API result array
+ *
+ * @return void API result array
  * @access public
+ * @throws \Exception
  */
 function civicrm_api3_engage_signpetition($params) {
-  CRM_Gpapi_Processor::preprocessCall($params, 'Engage.signpetition');
-  $result = array();
-
-  // check input
-  if (   (empty($params['bpk']))
-      && (empty($params['phone']))
-      && (empty($params['first_name']) || empty($params['email']))
-      && (empty($params['last_name']) || empty($params['email']))
-      && (empty($params['first_name']) || empty($params['last_name'])  || empty($params['postal_code'])  || empty($params['street_address']))
-      ) {
-    // we don not have enough information to match/create the contact
-    return civicrm_api3_create_error("Insufficient contact data");
+  try {
+    return civicrm_api3_engage_signpetition_process($params);
+  } catch (Exception $e) {
+    CRM_Gpapi_Error::create('Engage.signpetition', $e, $params);
+    throw $e;
   }
+}
 
-  if (!empty($params['phone']) && substr($params['phone'], 0, 3) == '436') {
-    // 436... -> +436..., libphonenumber can't handle country code without
-    // either a 00 or + prefix
-    $params['phone'] = '+' . $params['phone'];
-  }
+/**
+ * Process Engage.signpetition in single transaction
+ *
+ * @param $params
+ *
+ * @return array
+ * @throws \Exception
+ */
+function civicrm_api3_engage_signpetition_process($params) {
+  $tx = new CRM_Core_Transaction();
+  try {
+    CRM_Gpapi_Processor::preprocessCall($params, 'Engage.signpetition');
+    $result = array();
 
-  // make sure phone-only works
-  if (!empty($params['phone']) && empty($params['display_name'])) {
-    if (empty($params['email']) && (empty($params['first_name']) || empty($params['last_name']))) {
+    // check input
+    if (   (empty($params['bpk']))
+        && (empty($params['phone']))
+        && (empty($params['first_name']) || empty($params['email']))
+        && (empty($params['last_name']) || empty($params['email']))
+        && (empty($params['first_name']) || empty($params['last_name'])  || empty($params['postal_code'])  || empty($params['street_address']))
+        ) {
+      // we don not have enough information to match/create the contact
+      return civicrm_api3_create_error("Insufficient contact data");
+    }
+
+    if (!empty($params['phone']) && substr($params['phone'], 0, 3) == '436') {
+      // 436... -> +436..., libphonenumber can't handle country code without
+      // either a 00 or + prefix
+      $params['phone'] = '+' . $params['phone'];
+    }
+
+    // make sure phone-only works
+    if (!empty($params['phone']) && empty($params['display_name'])
+        && empty($params['email']) && empty($params['first_name'])
+        && empty($params['last_name'])) {
       // if we receive only the phone number, don't create a new contact if the
       // phone number is invalid.
       try {
+        // TODO: find a more robust way to do this
         $include_file = dirname( __FILE__ ) . '/../../../../com.cividesk.normalize/packages/libphonenumber/PhoneNumberUtil.php';
         if (file_exists($include_file)) {
           require_once $include_file;
@@ -59,84 +82,94 @@ function civicrm_api3_engage_signpetition($params) {
       } catch (Exception $e) {
         return civicrm_api3_create_error("Invalid phone number");
       }
-      $params['display_name'] = $params['phone'];
-    }
-  }
-
-  CRM_Gpapi_Processor::preprocessContactData($params);
-  CRM_Gpapi_Processor::resolveCampaign($params);
-  $contact_id = CRM_Gpapi_Processor::getOrCreateContact($params);
-  $result['id'] = $contact_id;
-
-  // store data
-  CRM_Gpapi_Processor::storeEmail($contact_id, $params);
-  CRM_Gpapi_Processor::storePhone($contact_id, $params);
-
-  // GP-463: "der Group "Donation Info" Eintrag soll immer gesetzt werden..."
-  CRM_Gpapi_Processor::addToGroup($contact_id, 'Donation Info');
-
-  // GP-463: "...aber der "Group Community NL" Eintrag soll nur bei übergebenem newsletter=1 Wert gesetzt werden."
-  if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
-    CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
-  }
-
-  // check if this is a 'fake petition' (and actually a case)
-  if (CRM_Gpapi_CaseHandler::isCase($params['petition_id'])) {
-    // it is. so let's do that:
-    CRM_Gpapi_CaseHandler::petitionStartCase($params['petition_id'], $contact_id, $params);
-
-  // check if this is a 'fake petition' (and actually a webshop order)
-  } elseif (CRM_Gpapi_OrderHandler::isActivity($params['petition_id'])) {
-    // it is. so let's do that:
-    CRM_Gpapi_OrderHandler::petitionCreateWebshopOrder($params['petition_id'], $contact_id, $params);
-
-  // check if this is a 'fake petition' (and actually an activity)
-  } elseif (CRM_Gpapi_ActivityHandler::isActivity($params['petition_id'])) {
-    // it is. so let's do that:
-    CRM_Gpapi_ActivityHandler::petitionCreateActivity($params['petition_id'], $contact_id, $params);
-
-  } else {
-    // default behaviour: sign petition:
-    // simply load the petition first
-    $petition = civicrm_api3('Survey', 'getsingle', array(
-      'id'                => (int) $params['petition_id'],
-      'check_permissions' => 0));
-
-    // TODO: check if not signed already
-    // TODO: add to petition group?
-
-    // remove critical stuff from params
-    if (isset($params['id'])) unset($params['id']);
-
-    // API caller may provide fields like petition_dialoger
-    CRM_Gpapi_Processor::resolveCustomFields($params, ['petition_information']);
-
-    $activity_date = date('YmdHis');
-
-    if (!empty($params['signature_date'])) {
-      $activity_date = $params['signature_date'];
+      // set display_name if we can't find a matching phone number
+      if (!_civicrm_api3_engage_signpetition_phone_exists($params)) {
+        $params['display_name'] = $params['phone'];
+      }
     }
 
-    // create signature activity
-    civicrm_api3('Activity', 'create', array(
-      'check_permissions'   => 0,
-      'source_contact_id'   => CRM_Core_Session::singleton()->getLoggedInContactID(),
-      'activity_type_id'    => $petition['activity_type_id'],
-      'status_id'           => CRM_Core_OptionGroup::getValue('activity_status', 'Completed'),
-      'medium_id'           => $params['medium_id'],
-      'target_contact_id'   => $contact_id,
-      'source_record_id'    => $petition['id'],
-      'subject'             => $petition['title'],
-      'campaign_id'         => $params['campaign_id'],
-      'activity_date_time'  => $activity_date,
-    ) + $params); // add other params
-  }
+    CRM_Gpapi_Processor::preprocessContactData($params);
+    CRM_Gpapi_Processor::resolveCampaign($params);
+    $contact_id = CRM_Gpapi_Processor::getOrCreateContact($params);
+    $result['id'] = $contact_id;
 
-  // create result
-  if (!empty($params['sequential'])) {
-    return civicrm_api3_create_success(array($result));
-  } else {
-    return civicrm_api3_create_success(array($contact_id => $result));
+    // store data
+    CRM_Gpapi_Processor::storeEmail($contact_id, $params);
+    CRM_Gpapi_Processor::storePhone($contact_id, $params);
+
+    // GP-463: "der Group "Donation Info" Eintrag soll immer gesetzt werden..."
+    CRM_Gpapi_Processor::addToGroup($contact_id, 'Donation Info');
+
+    // GP-463: "...aber der "Group Community NL" Eintrag soll nur bei übergebenem newsletter=1 Wert gesetzt werden."
+    if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
+      CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
+    }
+
+    // check if this is a 'fake petition' (and actually a case)
+    if (CRM_Gpapi_CaseHandler::isCase($params['petition_id'])) {
+      // it is. so let's do that:
+      CRM_Gpapi_CaseHandler::petitionStartCase($params['petition_id'], $contact_id, $params);
+
+    // check if this is a 'fake petition' (and actually a webshop order)
+    } elseif (CRM_Gpapi_OrderHandler::isActivity($params['petition_id'])) {
+      // it is. so let's do that:
+      CRM_Gpapi_OrderHandler::petitionCreateWebshopOrder($params['petition_id'], $contact_id, $params);
+
+    // check if this is a 'fake petition' (and actually an activity)
+    } elseif (CRM_Gpapi_ActivityHandler::isActivity($params['petition_id'])) {
+      // it is. so let's do that:
+      CRM_Gpapi_ActivityHandler::petitionCreateActivity($params['petition_id'], $contact_id, $params);
+
+    } else {
+      // default behaviour: sign petition:
+      // simply load the petition first
+      $petition = civicrm_api3('Survey', 'getsingle', array(
+        'id'                => (int) $params['petition_id'],
+        'check_permissions' => 0));
+
+      // TODO: check if not signed already
+      // TODO: add to petition group?
+
+      // remove critical stuff from params
+      if (isset($params['id'])) unset($params['id']);
+
+      // API caller may provide fields like petition_dialoger
+      CRM_Gpapi_Processor::resolveCustomFields($params, ['petition_information']);
+
+      $activity_date = date('YmdHis');
+
+      if (!empty($params['signature_date'])) {
+        $activity_date = $params['signature_date'];
+      }
+
+      // create signature activity
+      civicrm_api3('Activity', 'create', array(
+        'check_permissions'   => 0,
+        'source_contact_id'   => CRM_Core_Session::singleton()->getLoggedInContactID(),
+        'activity_type_id'    => $petition['activity_type_id'],
+        'status_id'           => CRM_Core_PseudoConstant::getKey(
+          'CRM_Activity_BAO_Activity',
+          'activity_status',
+          'Completed'
+        ),
+        'medium_id'           => $params['medium_id'],
+        'target_contact_id'   => $contact_id,
+        'source_record_id'    => $petition['id'],
+        'subject'             => $petition['title'],
+        'campaign_id'         => $params['campaign_id'],
+        'activity_date_time'  => $activity_date,
+      ) + $params); // add other params
+    }
+
+    // create result
+    if (!empty($params['sequential'])) {
+      return civicrm_api3_create_success(array($result));
+    } else {
+      return civicrm_api3_create_success(array($contact_id => $result));
+    }
+  } catch (Exception $e) {
+    $tx->rollback();
+    throw $e;
   }
 }
 
@@ -241,4 +274,31 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Country',
     );
+}
+
+/**
+ * Check whether a contact with matching phone number exists
+ *
+ * @param $params
+ *
+ * @return bool
+ * @throws \CiviCRM_API3_Exception
+ */
+function _civicrm_api3_engage_signpetition_phone_lookup($params) {
+  $normalized_phone = [
+    'phone_type_id' => 2, // use a dummy value
+    'phone' => $params['phone']
+  ];
+  $normalizer = new CRM_Utils_Normalize();
+  $normalizer->normalize_phone($normalized_phone);
+  // strip non-numeric characters
+  $phone_numeric = preg_replace('#[^0-9]#', '', $normalized_phone['phone']);
+
+  // find phones
+  $phone_query['phone_numeric'] = $phone_numeric;
+  $phone_query['return'] = 'contact_id';
+  $phone_query['option.limit'] = 0;
+  return civicrm_api3('Phone', 'getcount',[
+    'phone_numeric' => $phone_numeric,
+  ]) > 0;
 }

@@ -19,6 +19,7 @@
   <develStage>stable</develStage>
   <requires>
     <ext>de.systopia.xcm</ext>
+    <ext>com.cividesk.normalize</ext>
   </requires>
   <compatibility>
     <ver>4.6</ver>

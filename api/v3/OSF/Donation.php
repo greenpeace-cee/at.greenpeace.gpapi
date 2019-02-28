@@ -18,91 +18,116 @@ include_once __DIR__ . '/Contract.php';
  * Process OSF (online donation form) DONATION submission
  *
  * @param see specs below (_civicrm_api3_o_s_f_donation_spec)
+ *
  * @return array API result array
  * @access public
+ * @throws \Exception
  */
 function civicrm_api3_o_s_f_donation($params) {
-  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.donation');
-
-  if (empty($params['contact_id'])) {
-    return civicrm_api3_create_error("No 'contact_id' provided.");
+  try {
+    return civicrm_api3_o_s_f_donation_process($params);
+  } catch (Exception $e) {
+    CRM_Gpapi_Error::create('OSF.donation', $e, $params);
+    throw $e;
   }
+}
 
-  $params['check_permissions'] = 0;
+/**
+ * Process OSF.donate in single transaction
+ *
+ * @param $params
+ *
+ * @return array
+ * @throws \Exception
+ */
+function civicrm_api3_o_s_f_donation_process($params) {
+  $tx = new CRM_Core_Transaction();
+  try {
+    CRM_Gpapi_Processor::preprocessCall($params, 'OSF.donation');
 
-  CRM_Gpapi_Processor::resolveCampaign($params);
+    if (empty($params['contact_id'])) {
+      return civicrm_api3_create_error("No 'contact_id' provided.");
+    }
 
-  // format amount
-  $params['total_amount'] = number_format($params['total_amount'], 2, '.', '');
+    $params['check_permissions'] = 0;
 
-  switch (strtolower($params['payment_instrument'])) {
-    case 'credit card':
-      // CREATE CREDIT CARD CONTRIBUTION
-      return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 1);
+    CRM_Gpapi_Processor::resolveCampaign($params);
 
-    case 'paypal':
-      // CREATE PAYPAL CONTRIBUTION
-      return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 9);
+    // format amount
+    $params['total_amount'] = number_format($params['total_amount'], 2, '.', '');
 
-    case 'sofortüberweisung':
-    case 'sofortueberweisung':
-      // CREATE SOFORTÜBERWEISUNG CONTRIBUTION
-      return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 15);
+    switch (strtolower($params['payment_instrument'])) {
+      case 'credit card':
+        // CREATE CREDIT CARD CONTRIBUTION
+        return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 1);
 
-    case 'eps':
-      // CREATE EPS CONTRIBUTION
-      return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 16);
+      case 'paypal':
+        // CREATE PAYPAL CONTRIBUTION
+        return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 9);
 
-    case 'ooff':
-      // PROCESS SEPA OOFF STATEMENT
-      if (empty($params['iban'])) {
-        return civicrm_api3_create_error("No 'iban' provided.");
-      }
-      if (empty($params['bic'])) {
-        return civicrm_api3_create_error("No 'bic' provided.");
-      }
-      if (!empty($params['trxn_id'])) {
-        return civicrm_api3_create_error("Cannot use 'trxn_id' with payment_instrument=OOFF.");
-      }
-      if (empty($params['creation_date'])) {
-        $params['creation_date'] = date('YmdHis');
-      }
-      $params['type'] = 'OOFF';
-      $params['amount'] = $params['total_amount'];
-      unset($params['total_amount']);
-      unset($params['payment_instrument']);
+      case 'sofortüberweisung':
+      case 'sofortueberweisung':
+        // CREATE SOFORTÜBERWEISUNG CONTRIBUTION
+        return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 15);
 
-      // add bank accounts
-      _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
+      case 'eps':
+        // CREATE EPS CONTRIBUTION
+        return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 16);
 
-      // create mandate
-      // add a mutex lock (see GP-1731)
-      $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
-      $lock->acquire();
-      if (!$lock->isAcquired()) {
-        return civicrm_api3_create_error("OSF.mandate lock timeout. Sorry. Try again later.");
-      }
+      case 'ooff':
+        // PROCESS SEPA OOFF STATEMENT
+        if (empty($params['iban'])) {
+          return civicrm_api3_create_error("No 'iban' provided.");
+        }
+        if (empty($params['bic'])) {
+          return civicrm_api3_create_error("No 'bic' provided.");
+        }
+        if (!empty($params['trxn_id'])) {
+          return civicrm_api3_create_error("Cannot use 'trxn_id' with payment_instrument=OOFF.");
+        }
+        if (empty($params['creation_date'])) {
+          $params['creation_date'] = date('YmdHis');
+        }
+        $params['type'] = 'OOFF';
+        $params['amount'] = $params['total_amount'];
+        unset($params['total_amount']);
+        unset($params['payment_instrument']);
 
-      try {
-        $mandate = civicrm_api3('SepaMandate', 'createfull', $params);
-      } catch (Exception $ex) {
+        // add bank accounts
+        _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
+
+        // create mandate
+        // add a mutex lock (see GP-1731)
+        $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
+        $lock->acquire();
+        if (!$lock->isAcquired()) {
+          return civicrm_api3_create_error("OSF.mandate lock timeout. Sorry. Try again later.");
+        }
+
+        try {
+          $mandate = civicrm_api3('SepaMandate', 'createfull', $params);
+        } catch (Exception $ex) {
+          $lock->release();
+          throw $ex;
+        }
         $lock->release();
-        throw $ex;
-      }
-      $lock->release();
 
-      // reload mandate
-      $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
-        'id'     => $mandate['id'],
-        'return' => 'entity_id'));
+        // reload mandate
+        $mandate = civicrm_api3('SepaMandate', 'getsingle', array(
+          'id'     => $mandate['id'],
+          'return' => 'entity_id'));
 
-      // return the created contribution (see GP-1029)
-      return civicrm_api3('Contribution', 'get', array(
-        'id'         => $mandate['entity_id'],
-        'sequential' => CRM_Utils_Array::value('sequential', $params, '0')));
+        // return the created contribution (see GP-1029)
+        return civicrm_api3('Contribution', 'get', array(
+          'id'         => $mandate['entity_id'],
+          'sequential' => CRM_Utils_Array::value('sequential', $params, '0')));
 
-    default:
-      return civicrm_api3_create_error("Undefined 'payment_instrument' {$params['payment_instrument']}");
+      default:
+        return civicrm_api3_create_error("Undefined 'payment_instrument' {$params['payment_instrument']}");
+    }
+  } catch (Exception $e) {
+    $tx->rollback();
+    throw $e;
   }
 }
 

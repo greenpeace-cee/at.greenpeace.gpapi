@@ -1,0 +1,29 @@
+site_name: Greenpeace Custom API
+repo_url: https://github.com/greenpeace-cee/at.greenpeace.gpapi
+theme:
+  name: material
+  palette:
+    primary: 'green'
+    accent: 'light green'
+  logo: 'images/logo.png'
+
+nav:
+  - Introduction: index.md
+  - Online Donations: donations.md
+  - Engagement: engagement.md
+  - Newsletter: newsletter.md
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - def_list
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.tilde
+  - pymdownx.betterem
+  - pymdownx.mark
+  - pymdownx.magiclink
+  - footnotes

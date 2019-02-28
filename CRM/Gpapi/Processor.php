@@ -43,10 +43,20 @@ class CRM_Gpapi_Processor {
   public static function preprocessContactData(&$params) {
     // prepare data: prefix
     if (empty($params['prefix_id']) && !empty($params['prefix'])) {
-      $params['prefix_id'] = CRM_Core_OptionGroup::getValue('individual_prefix', $params['prefix']);
-      if ($params['prefix'] == 'Herr') {
+      $params['prefix_id'] = CRM_Core_PseudoConstant::getKey(
+        'CRM_Contact_BAO_Contact',
+        'individual_prefix',
+        $params['prefix']
+      );
+      unset($params['prefix']);
+    }
+
+    // map prefix to gender
+    if (!empty($params['prefix_id'])) {
+      if ($params['prefix_id'] == 3) {
         $params['gender_id'] = 2; // male
-      } elseif ($params['prefix'] == 'Frau') {
+      }
+      elseif ($params['prefix_id'] == 2) {
         $params['gender_id'] = 1; // female
       }
     }
@@ -152,6 +162,26 @@ class CRM_Gpapi_Processor {
         }
       } catch (Exception $e) {
         CRM_Core_Error::debug_log_message("GPAPI: Exception when formatting phone number: " . $e->getMessage());
+      }
+    }
+
+    self::unsetEmpty($params);
+  }
+
+  /**
+   * Unset parameters with empty values to prevent irrelevant XCM diffs
+   *
+   * @param $params
+   */
+  public static function unsetEmpty(&$params) {
+    $unsetListKeys = [
+      'contact_type', 'first_name', 'last_name', 'email', 'phone', 'prefix_id',
+      'gender_id', 'birth_date', 'street_address', 'postal_code', 'city',
+      'country_id',
+    ];
+    foreach ($unsetListKeys as $key) {
+      if (empty($params[$key])) {
+        unset($params[$key]);
       }
     }
   }

@@ -17,39 +17,64 @@
  * Process OSF (online donation form) DONATION submission
  *
  * @param see specs below (_civicrm_api3_o_s_f_order_spec)
+ *
  * @return array API result array
  * @access public
+ * @throws \Exception
  */
 function civicrm_api3_o_s_f_order($params) {
-  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.order');
-
-  if (empty($params['contact_id'])) {
-    return civicrm_api3_create_error("No 'contact_id' provided.");
+  try {
+    return civicrm_api3_o_s_f_order_process($params);
+  } catch (Exception $e) {
+    CRM_Gpapi_Error::create('OSF.order', $e, $params);
+    throw $e;
   }
-  
-  if (empty($params['linked_contribution']) && empty($params['linked_membership'])) {
-    return civicrm_api3_create_error("You need to provide a 'linked_contribution' or 'linked_membership' via OSF.order API.");
+}
+
+/**
+ * Process OSF.order in single transaction
+ *
+ * @param $params
+ *
+ * @return array
+ * @throws \Exception
+ */
+function civicrm_api3_o_s_f_order_process($params) {
+  $tx = new CRM_Core_Transaction();
+  try {
+    CRM_Gpapi_Processor::preprocessCall($params, 'OSF.order');
+
+    if (empty($params['contact_id'])) {
+      return civicrm_api3_create_error("No 'contact_id' provided.");
+    }
+
+    if (empty($params['linked_contribution']) && empty($params['linked_membership'])) {
+      return civicrm_api3_create_error("You need to provide a 'linked_contribution' or 'linked_membership' via OSF.order API.");
+    }
+
+    if (!empty($params['linked_contribution']) && !empty($params['linked_membership'])) {
+      return civicrm_api3_create_error("You must not provide both 'linked_contribution' and 'linked_membership' via OSF.order API.");
+    }
+
+    // resolve campaign ID
+    CRM_Gpapi_Processor::resolveCampaign($params);
+
+    // adjust fields
+    $params['target_id'] = $params['contact_id'];
+    unset($params['contact_id']);
+    $params['activity_type_id']  = 'Webshop Order';
+    $params['status_id']         = 'Scheduled';
+    $params['check_permissions'] = 0;
+
+    // resolve custom fields
+    CRM_Gpapi_Processor::resolveCustomFields($params, array('webshop_information'));
+
+    // create Webshop Order activity
+    return civicrm_api3('Activity', 'create', $params);
+  } catch (Exception $e) {
+    $tx->rollback();
+    throw $e;
   }
-
-  if (!empty($params['linked_contribution']) && !empty($params['linked_membership'])) {
-    return civicrm_api3_create_error("You must not provide both 'linked_contribution' and 'linked_membership' via OSF.order API.");
-  }
-
-  // resolve campaign ID
-  CRM_Gpapi_Processor::resolveCampaign($params);
-
-  // adjust fields
-  $params['target_id'] = $params['contact_id'];
-  unset($params['contact_id']);
-  $params['activity_type_id']  = 'Webshop Order';
-  $params['status_id']         = 'Scheduled';
-  $params['check_permissions'] = 0;
-
-  // resolve custom fields
-  CRM_Gpapi_Processor::resolveCustomFields($params, array('webshop_information'));
-
-  // create Webshop Order activity
-  return civicrm_api3('Activity', 'create', $params);
 }
 
 /**

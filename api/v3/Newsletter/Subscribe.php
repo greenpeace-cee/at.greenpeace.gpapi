@@ -17,135 +17,129 @@
  * Process Newsletter newsletter subscription
  *
  * @param see specs below (_civicrm_api3_newsletter_subscribe_spec)
+ *
  * @return array API result array
  * @access public
+ * @throws \Exception
  */
 function civicrm_api3_newsletter_subscribe($params) {
-  CRM_Gpapi_Processor::preprocessCall($params, 'Newsletter.subscribe');
-  $result = array();
-
-  // check input
-  if (   (empty($params['bpk']))
-      && (empty($params['first_name']) || empty($params['email']))
-      && (empty($params['last_name']) || empty($params['email']))
-      && (empty($params['first_name']) || empty($params['last_name'])  || empty($params['postal_code'])  || empty($params['street_address']))
-      ) {
-    // we don not have enough information to match/create the contact
-    return civicrm_api3_create_error("Insufficient contact data");
+  try {
+    return civicrm_api3_newsletter_subscribe_process($params);
+  } catch (Exception $e) {
+    CRM_Gpapi_Error::create('Newsletter.subscribe', $e, $params);
+    throw $e;
   }
+}
 
-  // prepare data: prefix
-  if (empty($params['prefix_id']) && !empty($params['prefix'])) {
-    $params['prefix_id'] = CRM_Core_OptionGroup::getValue('individual_prefix', $params['prefix']);
-    if ($params['prefix'] == 'Herr') {
-      $params['gender_id'] = 2; // male
-    } elseif ($params['prefix'] == 'Frau') {
-      $params['gender_id'] = 1; // female
+/**
+ * Process Newsletter.subscribe in single transaction
+ *
+ * @param $params
+ *
+ * @return array
+ * @throws \Exception
+ */
+function civicrm_api3_newsletter_subscribe_process($params) {
+  $tx = new CRM_Core_Transaction();
+  try {
+    CRM_Gpapi_Processor::preprocessCall($params, 'Newsletter.subscribe');
+    $result = array();
+
+    // check input
+    if (   (empty($params['bpk']))
+        && (empty($params['first_name']) || empty($params['email']))
+        && (empty($params['last_name']) || empty($params['email']))
+        && (empty($params['first_name']) || empty($params['last_name'])  || empty($params['postal_code'])  || empty($params['street_address']))
+        ) {
+      // we don not have enough information to match/create the contact
+      return civicrm_api3_create_error("Insufficient contact data");
     }
-  }
 
-  // match contact using XCM
-  $params['check_permissions'] = 0;
-  $contact_match = civicrm_api3('Contact', 'getorcreate', $params);
-  $contact_id = $contact_match['id'];
-  $result['id'] = $contact_id;
+    CRM_Gpapi_Processor::preprocessContactData($params);
+    $contact_id = CRM_Gpapi_Processor::getOrCreateContact($params);
+    $result['id'] = $contact_id;
 
-  // process email: if the email doesn't exist with the contact -> create
-  if (!empty($params['email'])) {
-    $contact_emails = civicrm_api3('Email', 'get', array(
-      'check_permissions' => 0,
-      'contact_id'        => $contact_id,
-      'email'             => $params['email'],
-      'option.limit'      => 2));
-    if ($contact_emails['count'] == 0) {
-      // email is not present -> create
-      civicrm_api3('Email', 'create', array(
+    $subscribed = FALSE;
+
+    // Subscribe to "Donation Info"
+    if (!empty($params['donation_info']) && strtolower($params['donation_info']) != 'no') {
+      $donation_info_group = civicrm_api3('Group', 'getsingle', array(
+        'check_permissions' => 0,
+        'title'             => 'Donation Info',
+        ));
+      civicrm_api3('GroupContact', 'create', array(
         'check_permissions' => 0,
         'contact_id'        => $contact_id,
-        'email'             => $params['email'],
-        'is_primary'        => 1,
-        'location_type_id'  => 1 // TODO: which location type?
-        ));
+        'group_id'          => $donation_info_group['id']));
+      $subscribed = TRUE;
     }
-  }
 
-  $subscribed = FALSE;
+    // Subscribe to "Group Community NL"
+    if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
+      $newsletter_group = civicrm_api3('Group', 'getsingle', array(
+        'check_permissions' => 0,
+        'title'             => 'Community NL'));
+      civicrm_api3('GroupContact', 'create', array(
+        'check_permissions' => 0,
+        'contact_id'        => $contact_id,
+        'group_id'          => $newsletter_group['id']));
+      $subscribed = TRUE;
+    }
 
-  // Subscribe to "Donation Info"
-  if (!empty($params['donation_info']) && strtolower($params['donation_info']) != 'no') {
-    $donation_info_group = civicrm_api3('Group', 'getsingle', array(
-      'check_permissions' => 0,
-      'title'             => 'Donation Info',
-      ));
-    civicrm_api3('GroupContact', 'create', array(
-      'check_permissions' => 0,
-      'contact_id'        => $contact_id,
-      'group_id'          => $donation_info_group['id']));
-    $subscribed = TRUE;
-  }
+    // Subscribe to Group "Ehrenamtliche NL"
+    if (!empty($params['volunteer']) && strtolower($params['volunteer']) != 'no') {
+      $volunteer_group = civicrm_api3('Group', 'getsingle', [
+        'check_permissions' => 0,
+        'title'             => 'Ehrenamtliche NL'
+      ]);
+      civicrm_api3('GroupContact', 'create', [
+        'check_permissions' => 0,
+        'contact_id'        => $contact_id,
+        'group_id'          => $volunteer_group['id']
+      ]);
+      $subscribed = TRUE;
+    }
 
-  // Subscribe to "Group Community NL"
-  if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
-    $newsletter_group = civicrm_api3('Group', 'getsingle', array(
-      'check_permissions' => 0,
-      'title'             => 'Community NL'));
-    civicrm_api3('GroupContact', 'create', array(
-      'check_permissions' => 0,
-      'contact_id'        => $contact_id,
-      'group_id'          => $newsletter_group['id']));
-    $subscribed = TRUE;
-  }
-
-  // Subscribe to Group "Ehrenamtliche NL"
-  if (!empty($params['volunteer']) && strtolower($params['volunteer']) != 'no') {
-    $volunteer_group = civicrm_api3('Group', 'getsingle', [
-      'check_permissions' => 0,
-      'title'             => 'Ehrenamtliche NL'
-    ]);
-    civicrm_api3('GroupContact', 'create', [
-      'check_permissions' => 0,
-      'contact_id'        => $contact_id,
-      'group_id'          => $volunteer_group['id']
-    ]);
-    $subscribed = TRUE;
-  }
-
-  // process group subscribe
-  if (!empty($params['group_ids'])) {
-    $group_ids = explode(',', $params['group_ids']);
-    foreach ($group_ids as $group_id) {
-      $group_id = (int) $group_id;
-      if ($group_id) {
-        civicrm_api3('GroupContact', 'create', [
-          'group_id'   => $group_id,
-          'contact_id' => $contact_id,
-        ]);
-        $subscribed = TRUE;
+    // process group subscribe
+    if (!empty($params['group_ids'])) {
+      $group_ids = explode(',', $params['group_ids']);
+      foreach ($group_ids as $group_id) {
+        $group_id = (int) $group_id;
+        if ($group_id) {
+          civicrm_api3('GroupContact', 'create', [
+            'group_id'   => $group_id,
+            'contact_id' => $contact_id,
+          ]);
+          $subscribed = TRUE;
+        }
       }
     }
-  }
 
-  // remove "Opt Out" and "do not email"
-  if ($subscribed) {
-    $contact = civicrm_api3('Contact', 'getsingle', array(
-      'check_permissions' => 0,
-      'id'                => $contact_id,
-      'return'            => 'do_not_email,is_opt_out'));
-    if (!empty($contact['do_not_email']) || !empty($contact['is_opt_out'])) {
-      civicrm_api3('Contact', 'create', array(
+    // remove "Opt Out" and "do not email"
+    if ($subscribed) {
+      $contact = civicrm_api3('Contact', 'getsingle', array(
         'check_permissions' => 0,
         'id'                => $contact_id,
-        'is_opt_out'        => 0,
-        'do_not_email'      => 0));
+        'return'            => 'do_not_email,is_opt_out'));
+      if (!empty($contact['do_not_email']) || !empty($contact['is_opt_out'])) {
+        civicrm_api3('Contact', 'create', array(
+          'check_permissions' => 0,
+          'id'                => $contact_id,
+          'is_opt_out'        => 0,
+          'do_not_email'      => 0));
+      }
     }
-  }
 
 
-  // create result
-  if (!empty($params['sequential'])) {
-    return civicrm_api3_create_success(array($result));
-  } else {
-    return civicrm_api3_create_success(array($contact_id => $result));
+    // create result
+    if (!empty($params['sequential'])) {
+      return civicrm_api3_create_success(array($result));
+    } else {
+      return civicrm_api3_create_success(array($contact_id => $result));
+    }
+  } catch (Exception $e) {
+    $tx->rollback();
+    throw $e;
   }
 }
 
