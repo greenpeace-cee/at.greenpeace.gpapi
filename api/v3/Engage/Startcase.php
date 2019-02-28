@@ -14,12 +14,13 @@
 
 
 /**
- * Process OSF (online donation form) base submission
+ * Create a new case
  *
- * @param see specs below (_civicrm_api3_engage_signpetition_spec)
+ * @see _civicrm_api3_engage_signpetition_spec
  *
- * @return array API result array
- * @access public
+ * @param $params
+ *
+ * @return array
  * @throws \Exception
  */
 function civicrm_api3_engage_startcase($params) {
@@ -31,6 +32,14 @@ function civicrm_api3_engage_startcase($params) {
   }
 }
 
+/**
+ * Process Engage.startcase in single transaction
+ *
+ * @param $params
+ *
+ * @return array
+ * @throws \Exception
+ */
 function civicrm_api3_engage_startcase_process($params) {
   $tx = new CRM_Core_Transaction();
   try {
@@ -43,21 +52,23 @@ function civicrm_api3_engage_startcase_process($params) {
 }
 
 /**
- * Adjust Metadata for Payment action
- *
- * The metadata is used for setting defaults, documentation & validation
- * @param array $params array or parameters determined by getfields
+ * @param $params
  */
 function _civicrm_api3_engage_startcase_spec(&$params) {
-  // CONTACT BASE
-  $params['case_type_id'] = array(
+  $params['case_type_id'] = [
     'name'         => 'case_type_id',
     'api.required' => 1,
     'title'        => 'Case Type ID',
-    );
-  $params['contact_id'] = array(
+  ];
+  $params['contact_id'] = [
     'name'         => 'contact_id',
     'api.required' => 1,
     'title'        => 'Contact ID',
-    );
+  ];
+  $params['timeline'] = [
+    'name'         => 'timeline',
+    'api.required' => 0,
+    'api.default'  => 'web_default',
+    'title'        => 'Case timeline to add to cases in addition to the standard timeline',
+  ];
 }

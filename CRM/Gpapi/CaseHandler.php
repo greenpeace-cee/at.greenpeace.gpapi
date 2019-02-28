@@ -30,33 +30,32 @@ class CRM_Gpapi_CaseHandler {
    * along with the default activity_id
    * @todo: settings page?
    */
-  public static $reopen_case_type_to_acitivity_id = array(
-      3 => 87,
-      // 1 => 1  // TODO: remove test code
-    );
+  public static $reopen_case_type_to_acitivity_id = [
+    3 => 87,
+  ];
 
   /**
    * Add the 'fake' cases to the getPetitions call
    */
   public static function addCases(&$get_petition_result) {
     // get cases
-    $case_types = civicrm_api3('CaseType', 'get', array(
+    $case_types = civicrm_api3('CaseType', 'get', [
       'return'    => 'title,id',
       'is_active' => 1
-    ));
+    ]);
 
     // add to result
     $get_petition_result['count'] += $case_types['count'];
     foreach ($case_types['values'] as $case_type) {
       $petition_id = $case_type['id'] + self::$case_petition_offset;
-      $get_petition_result['values'][] = array(
+      $get_petition_result['values'][] = [
         'id'             => $petition_id,
         'is_active'      => 1,
         'is_default'     => 0,
         'is_share'       => 0,
         'bypass_confirm' => 0,
         'title'          => $case_type['title'],
-      );
+      ];
     }
   }
 
@@ -99,10 +98,11 @@ class CRM_Gpapi_CaseHandler {
       if (empty($params['medium_id'])) {
         $params['subject'] = "Case (Engage)";
       } else {
-        $medium = civicrm_api3('OptionValue', 'getvalue', array(
+        $medium = civicrm_api3('OptionValue', 'getvalue', [
         'return'          => 'label',
         'option_group_id' => "encounter_medium",
-        'value'           => $params['medium_id']));
+        'value'           => $params['medium_id']
+        ]);
         $params['subject'] = "Case (Engage/{$medium})";
       }
     }
@@ -127,11 +127,28 @@ class CRM_Gpapi_CaseHandler {
       // "last_modified_id": "23",
     }
 
+    $case_type_definition = civicrm_api3('CaseType', 'getvalue', [
+      'return' => 'definition',
+      'id'     => $params['case_type_id'],
+    ]);
+
+    $timeline = array_search(
+      $params['timeline'],
+      array_column($case_type_definition['activitySets'], 'name')
+    );
+
+    if ($timeline !== FALSE) {
+      civicrm_api3('Case', 'addtimeline', [
+        'case_id'  => $case_id,
+        'timeline' => $timeline,
+      ]);
+    }
+
     // create a reply
     if (!empty($params['sequential'])) {
-      return civicrm_api3_create_success(array(array('id' => $case_id)));
+      return civicrm_api3_create_success([['id' => $case_id]]);
     } else {
-      return civicrm_api3_create_success(array($case_id => array('id' => $case_id)));
+      return civicrm_api3_create_success([$case_id => ['id' => $case_id]]);
     }
   }
 
@@ -151,14 +168,16 @@ class CRM_Gpapi_CaseHandler {
     }
 
     // find an existing case
-    $existing_cases = civicrm_api3('Case', 'get', array(
+    $existing_cases = civicrm_api3('Case', 'get', [
       'case_type_id' => $params['case_type_id'],
       'contact_id'   => $params['contact_id'],
       'is_deleted'   => 0,
       'return'       => 'id,status_id,contact_id',
-      'options'      => array('sort'  => 'status_id asc',
-                              'limit' => 1),
-    ));
+      'options'      => [
+        'sort'  => 'status_id asc',
+        'limit' => 1
+      ],
+    ]);
 
     if (empty($existing_cases['count'])) {
       // no case found
@@ -168,11 +187,11 @@ class CRM_Gpapi_CaseHandler {
 
     // if it's status 2 (closed) -> re-open (status 1)
     if ($case['status_id'] == 2) {
-      civicrm_api3('Case', 'create', array(
+      civicrm_api3('Case', 'create', [
         'check_permissions' => 0,
         'id'                => $case['id'],
         'status_id'         => 5 // Enquirer (see https://redmine.greenpeace.at/issues/1586#note-24)
-      ));
+      ]);
     }
 
     // create new activity for the case
