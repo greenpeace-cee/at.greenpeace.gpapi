@@ -97,10 +97,16 @@ class CRM_Gpapi_CaseHandler {
       'id'     => $params['case_type_id'],
     ]);
 
-    $timeline = array_search(
+    $timeline = NULL;
+
+    $timeline_exists = array_search(
       $params['timeline'],
       array_column($case_type_definition['activitySets'], 'name')
     );
+
+    if ($timeline_exists !== FALSE) {
+      $timeline = $params['timeline'];
+    }
 
     if (!$timeline && $params['timeline'] != GPAPI_DEFAULT_TIMELINE) {
       // custom timeline was provided but doesn't exist
@@ -134,16 +140,17 @@ class CRM_Gpapi_CaseHandler {
     } else {
       // if this is dealing with an existing case, check if there's a timeline
       // with the requested name + '_existing' and apply that instead
-      $timeline_existing = array_search(
-        $params['timeline'] . '_existing',
+      $modified_timeline_name = $params['timeline'] . '_existing';
+      $timeline_exists = array_search(
+        $modified_timeline_name,
         array_column($case_type_definition['activitySets'], 'name')
       );
-      if ($timeline_existing !== FALSE) {
-        $timeline = $timeline_existing;
+      if ($timeline_exists !== FALSE) {
+        $timeline = $modified_timeline_name;
       }
     }
 
-    if ($timeline !== FALSE) {
+    if (!is_null($timeline)) {
       // add the requested timeline
       civicrm_api3('Case', 'addtimeline', [
         'case_id'  => $case_id,
