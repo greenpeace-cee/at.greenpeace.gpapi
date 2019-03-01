@@ -12,6 +12,7 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
+define('GPAPI_DEFAULT_TIMELINE', 'web_default');
 
 /**
  * Create a new case
@@ -68,7 +69,7 @@ function _civicrm_api3_engage_startcase_spec(&$params) {
   $params['timeline'] = [
     'name'         => 'timeline',
     'api.required' => 0,
-    'api.default'  => 'web_default',
+    'api.default'  => GPAPI_DEFAULT_TIMELINE,
     'title'        => 'Case timeline to add to cases in addition to the standard timeline',
   ];
 }

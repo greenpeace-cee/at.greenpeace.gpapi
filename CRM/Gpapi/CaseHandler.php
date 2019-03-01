@@ -92,6 +92,20 @@ class CRM_Gpapi_CaseHandler {
 
    */
   public static function startCase($params) {
+    $case_type_definition = civicrm_api3('CaseType', 'getvalue', [
+      'return' => 'definition',
+      'id'     => $params['case_type_id'],
+    ]);
+
+    $timeline = array_search(
+      $params['timeline'],
+      array_column($case_type_definition['activitySets'], 'name')
+    );
+
+    if (!$timeline && $params['timeline'] != GPAPI_DEFAULT_TIMELINE) {
+      // custom timeline was provided but doesn't exist
+      return civicrm_api3_create_error("Case timeline '{$params['timeline']}' does not exist.");
+    }
 
     // generate a default subject
     if (empty($params['subject'])) {
@@ -117,27 +131,20 @@ class CRM_Gpapi_CaseHandler {
       $params['status_id'] = 5; // Enquirer (see https://redmine.greenpeace.at/issues/1586#note-22)
       $case = civicrm_api3('Case', 'create', $params);
       $case_id = $case['id'];
-
-      // not set:
-      // "activity_type_id": "32",
-      // "campaign_id": "19",
-      // "created_date": "2018-01-10 07:48:34",
-      // "created_id": "23",
-      // "last_modified_date": "2018-02-26 13:53:41",
-      // "last_modified_id": "23",
+    } else {
+      // if this is dealing with an existing case, check if there's a timeline
+      // with the requested name + '_existing' and apply that instead
+      $timeline_existing = array_search(
+        $params['timeline'] . '_existing',
+        array_column($case_type_definition['activitySets'], 'name')
+      );
+      if ($timeline_existing !== FALSE) {
+        $timeline = $timeline_existing;
+      }
     }
 
-    $case_type_definition = civicrm_api3('CaseType', 'getvalue', [
-      'return' => 'definition',
-      'id'     => $params['case_type_id'],
-    ]);
-
-    $timeline = array_search(
-      $params['timeline'],
-      array_column($case_type_definition['activitySets'], 'name')
-    );
-
     if ($timeline !== FALSE) {
+      // add the requested timeline
       civicrm_api3('Case', 'addtimeline', [
         'case_id'  => $case_id,
         'timeline' => $timeline,
@@ -193,20 +200,6 @@ class CRM_Gpapi_CaseHandler {
         'status_id'         => 5 // Enquirer (see https://redmine.greenpeace.at/issues/1586#note-24)
       ]);
     }
-
-    // create new activity for the case
-    if (empty($params['activity_type_id'])) {
-      $params['activity_type_id'] = self::$reopen_case_type_to_acitivity_id[$params['case_type_id']];
-    }
-
-    // prepare params
-    $params['check_permissions'] = 0;
-    $params['case_id']           = $case['id'];
-    $params['target_id']         = $case['contact_id'];
-    $params['status_id']         = 1; // scheduled
-
-    // finally: create activity
-    civicrm_api3('Activity', 'create', $params);
 
     return $case['id'];
   }
