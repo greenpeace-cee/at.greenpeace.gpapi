@@ -43,16 +43,22 @@ class CRM_Gpapi_Processor {
   public static function preprocessContactData(&$params) {
     // prepare data: prefix
     if (empty($params['prefix_id']) && !empty($params['prefix'])) {
+      // map OptionValue labels to names
+      $params['prefix'] = str_replace(
+        ['Herr', 'Frau'],
+        ['Mr.', 'Ms.'],
+        $params['prefix']
+      );
       $params['prefix_id'] = CRM_Core_PseudoConstant::getKey(
         'CRM_Contact_BAO_Contact',
-        'individual_prefix',
+        'prefix_id',
         $params['prefix']
       );
       unset($params['prefix']);
     }
 
     // map prefix to gender
-    if (!empty($params['prefix_id'])) {
+    if (!empty($params['prefix_id']) && empty($params['gender_id'])) {
       if ($params['prefix_id'] == 3) {
         $params['gender_id'] = 2; // male
       }
