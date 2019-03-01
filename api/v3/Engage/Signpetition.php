@@ -82,10 +82,6 @@ function _civicrm_api3_engage_signpetition_process($params) {
       } catch (Exception $e) {
         return civicrm_api3_create_error("Invalid phone number");
       }
-      // set display_name if we can't find a matching phone number
-      if (!_civicrm_api3_engage_signpetition_phone_exists($params)) {
-        $params['display_name'] = $params['phone'];
-      }
     }
 
     CRM_Gpapi_Processor::preprocessContactData($params);
