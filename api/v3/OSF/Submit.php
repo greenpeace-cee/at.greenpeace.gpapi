@@ -24,7 +24,7 @@
  */
 function civicrm_api3_o_s_f_submit($params) {
   try {
-    return civicrm_api3_o_s_f_submit_process($params);
+    return _civicrm_api3_o_s_f_submit_process($params);
   } catch (Exception $e) {
     CRM_Gpapi_Error::create('OSF.submit', $e, $params);
     throw $e;
@@ -39,7 +39,7 @@ function civicrm_api3_o_s_f_submit($params) {
  * @return array
  * @throws \Exception
  */
-function civicrm_api3_o_s_f_submit_process($params) {
+function _civicrm_api3_o_s_f_submit_process($params) {
   $tx = new CRM_Core_Transaction();
   try {
     CRM_Gpapi_Processor::preprocessCall($params, 'OSF.submit');

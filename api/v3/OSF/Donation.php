@@ -25,7 +25,7 @@ include_once __DIR__ . '/Contract.php';
  */
 function civicrm_api3_o_s_f_donation($params) {
   try {
-    return civicrm_api3_o_s_f_donation_process($params);
+    return _civicrm_api3_o_s_f_donation_process($params);
   } catch (Exception $e) {
     CRM_Gpapi_Error::create('OSF.donation', $e, $params);
     throw $e;
@@ -40,7 +40,7 @@ function civicrm_api3_o_s_f_donation($params) {
  * @return array
  * @throws \Exception
  */
-function civicrm_api3_o_s_f_donation_process($params) {
+function _civicrm_api3_o_s_f_donation_process($params) {
   $tx = new CRM_Core_Transaction();
   try {
     CRM_Gpapi_Processor::preprocessCall($params, 'OSF.donation');
