@@ -47,6 +47,21 @@ function civicrm_api3_o_s_f_getcampaigns($params) {
     $depth += 1;
   }
 
+  // add campaigns where "Available in Online Donation Form?" is set
+  $odf_field = 'custom_' . CRM_Core_BAO_CustomField::getCustomFieldID(
+    'campaign_odf_enabled',
+    'campaign_information'
+  );
+  $extra_campaigns = civicrm_api3('Campaign', 'get', [
+    $odf_field => 1,
+  ]);
+
+  foreach ($extra_campaigns['values'] as $campaign) {
+    if (!in_array($campaign['id'], $all_campaigns)) {
+      $all_campaigns[] = $campaign['id'];
+    }
+  }
+
   // prepare call to pass on to Campaign.get
   $params['option.limit']      = 0;
   $params['is_active']         = 1;
