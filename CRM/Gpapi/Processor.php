@@ -152,6 +152,7 @@ class CRM_Gpapi_Processor {
 
     // normalise phone
     if (!empty($params['phone'])) {
+      $params['phone'] = self::fixPhoneFormat($params['phone']);
       try { // try to normalise phone
         $include_file = dirname( __FILE__ ) . '/../../../com.cividesk.normalize/packages/libphonenumber/PhoneNumberUtil.php';
         if (file_exists($include_file)) {
@@ -332,6 +333,20 @@ class CRM_Gpapi_Processor {
         $session->set('userID', $valid_user);
       }
     }
+  }
+
+  /**
+   * Fix common phone formatting errors
+   *
+   * @param $phone
+   *
+   * @return string fixed phone number
+   */
+  public static function fixPhoneFormat($phone) {
+    if (substr($phone, 0, 2) == '43') {
+      $phone = '+' . $phone;
+    }
+    return $phone;
   }
 }
 

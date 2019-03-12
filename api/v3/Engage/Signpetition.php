@@ -56,12 +56,6 @@ function _civicrm_api3_engage_signpetition_process($params) {
       return civicrm_api3_create_error("Insufficient contact data");
     }
 
-    if (!empty($params['phone']) && substr($params['phone'], 0, 3) == '436') {
-      // 436... -> +436..., libphonenumber can't handle country code without
-      // either a 00 or + prefix
-      $params['phone'] = '+' . $params['phone'];
-    }
-
     // make sure phone-only works
     if (!empty($params['phone']) && empty($params['display_name'])
         && empty($params['email']) && empty($params['first_name'])
@@ -74,7 +68,7 @@ function _civicrm_api3_engage_signpetition_process($params) {
         if (file_exists($include_file)) {
           require_once $include_file;
           $phoneUtil = libphonenumber\PhoneNumberUtil::getInstance();
-          $phoneProto = $phoneUtil->parse($params['phone'], 'AT');
+          $phoneProto = $phoneUtil->parse(CRM_Gpapi_Processor::fixPhoneFormat($params['phone']), 'AT');
           if (!$phoneUtil->isValidNumber($phoneProto)) {
             return civicrm_api3_create_error("Invalid phone number");
           }
@@ -270,31 +264,4 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Country',
     );
-}
-
-/**
- * Check whether a contact with matching phone number exists
- *
- * @param $params
- *
- * @return bool
- * @throws \CiviCRM_API3_Exception
- */
-function _civicrm_api3_engage_signpetition_phone_lookup($params) {
-  $normalized_phone = [
-    'phone_type_id' => 2, // use a dummy value
-    'phone' => $params['phone']
-  ];
-  $normalizer = new CRM_Utils_Normalize();
-  $normalizer->normalize_phone($normalized_phone);
-  // strip non-numeric characters
-  $phone_numeric = preg_replace('#[^0-9]#', '', $normalized_phone['phone']);
-
-  // find phones
-  $phone_query['phone_numeric'] = $phone_numeric;
-  $phone_query['return'] = 'contact_id';
-  $phone_query['option.limit'] = 0;
-  return civicrm_api3('Phone', 'getcount',[
-    'phone_numeric' => $phone_numeric,
-  ]) > 0;
 }
