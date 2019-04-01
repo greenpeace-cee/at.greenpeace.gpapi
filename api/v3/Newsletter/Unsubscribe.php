@@ -49,12 +49,16 @@ function _civicrm_api3_newsletter_unsubscribe_process($params) {
     }
 
     // find contact (via identity tracker)
-    $contacts = [
-      civicrm_api3('Contact', 'identify', [
-        'identifier_type' => 'internal',
-        'identifier'      => (int) $params['contact_id']
-      ])['id']
-    ];
+    $identity_result = civicrm_api3('Contact', 'findbyidentity', [
+      'identifier_type' => 'internal',
+      'identifier'      => (int) $params['contact_id']
+    ]);
+
+    if (empty($identity_result['id'])) {
+      return civicrm_api3_create_error('No contacts found.');
+    }
+
+    $contacts = [$identity_result['id']];
 
     // find additional contacts with the same primary email
     try {
