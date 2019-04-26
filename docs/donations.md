@@ -158,10 +158,10 @@ the Membership-ID in the Field `id`.
 | `campaign_id`              | Integer | | Overwrites `campaign` |
 | `frequency`*               | Integer | | Number of debits a year for this membership (ONLY to be used for NON PSP memberships!) |
 | `amount`*                  | Float   | | Amount for each debit, format: `0.00` |
-| `currency`                 | String  | CiviCRM default|  |
+| `currency`                 | String  | CiviCRM default |  |
 | `membership_type_id`*      | Integer | | CiviCRM Membership Type ID (get the IDs from the CRM) |
-| `iban`*                    | String  | | |
-| `bic`*                     | String  | | |
+| `iban`*                    | String  | | IBAN or PSP payment token (e.g. Adyen `shopperReference`) |
+| `bic`*                     | String  | | BIC or PSP account name (e.g. Adyen merchant name) |
 | `payment_received`         | Boolean | `false` | If `true`, create a contribution for the first payment and move the next debit about one month further (ONLY to be used for PSP memberships!) |
 | `payment_service_provider` | String  | `SEPA` | Choose from: `adyen` or `payu`  |
 | `trxn_id`                  | String  | | Transaction-ID from donation if `payment_received` = `true`, Unique field |
