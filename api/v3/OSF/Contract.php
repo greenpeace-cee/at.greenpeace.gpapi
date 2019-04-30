@@ -113,7 +113,6 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         $creditorLookup['currency'] = $params['currency'];
       }
       $creditor = civicrm_api3('SepaCreditor', 'getsingle', $creditorLookup);
-      $params['bic'] = substr($params['bic'], 0, 11);
     }
 
     $currency = $creditor['currency'];
