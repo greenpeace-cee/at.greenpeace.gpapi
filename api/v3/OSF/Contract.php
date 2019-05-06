@@ -304,29 +304,36 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         'return' => 'id',
         'name_a_b' => 'Referrer of',
       ]);
-      try {
-        civicrm_api3('Relationship', 'create', [
-          'contact_id_a' => $referrer,
-          'contact_id_b' => $params['contact_id'],
-          'relationship_type_id' => $relationshipType,
-          'start_date' => date('Ymd'),
-        ]);
-      } catch (CiviCRM_API3_Exception $e) {
-        if ($e->getMessage() == 'Duplicate Relationship') {
-          civicrm_api3('Activity', 'create', [
-            'activity_type_id' => 'manual_check_required',
-            'target_id' => [$params['contact_id'], $referrer],
-            'subject' => 'Potential Referrer Fraud',
-            'details' => 'Contact already referred a membership to the referee.',
-            'status_id' => 'Scheduled',
-            'check_permissions' => 0,
+      // it is necessary to wrap Relationship.create in a nested transaction to
+      // prevent a rollback from bubbling up to the main API transaction when a
+      // "Duplicate Relationship" exception occurs. This would otherwise cause
+      // us to return a success response even though a rollback is performed.
+      CRM_Core_Transaction::create(TRUE)->run(function($subTx) use ($referrer, $params, $relationshipType) {
+        try {
+          civicrm_api3('Relationship', 'create', [
+            'contact_id_a' => $referrer,
+            'contact_id_b' => $params['contact_id'],
+            'relationship_type_id' => $relationshipType,
+            'start_date' => date('Ymd'),
           ]);
-          CRM_Core_Error::debug_log_message("OSF.contract: Potential Referrer Fraud with contacts {$params['contact_id']} and {$referrer}");
         }
-        else {
-          throw $e;
+        catch (CiviCRM_API3_Exception $e) {
+          if ($e->getMessage() == 'Duplicate Relationship') {
+            civicrm_api3('Activity', 'create', [
+              'activity_type_id' => 'manual_check_required',
+              'target_id' => [$params['contact_id'], $referrer],
+              'subject' => 'Potential Referrer Fraud',
+              'details' => 'Contact already referred a membership to the referee.',
+              'status_id' => 'Scheduled',
+              'check_permissions' => 0,
+            ]);
+            CRM_Core_Error::debug_log_message("OSF.contract: Potential Referrer Fraud with contacts {$params['contact_id']} and {$referrer}");
+          }
+          else {
+            throw $e;
+          }
         }
-      }
+      });
       $membership_data = [
         'id' => $result['id'],
         'membership_referrer' => $referrer,
