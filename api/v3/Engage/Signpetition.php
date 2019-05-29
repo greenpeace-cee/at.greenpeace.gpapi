@@ -264,4 +264,12 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Country',
     );
+
+  $params['xcm_profile'] = [
+    'name'         => 'xcm_profile',
+    'api.required' => 0,
+    'api.default'  => 'engagement',
+    'title'        => 'XCM Profile',
+    'description'  => 'XCM profile to be used for contact matching',
+  ];
 }

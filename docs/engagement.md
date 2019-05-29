@@ -62,11 +62,13 @@ The `Engage.signpetition` endpoint allows clients to transparently get or create
 | `petition_dialoger` | Integer | | CiviCRM ID of the Direct Dialog Canvasser |
 | `signature_date` | String  | | Date of the petition_signature, Format: `YYYYMMDDHHIISS` (PHP Format: `YmdHis`) |
 | `newsletter`     | Boolean | `0` | Whether this contact opted-in to the "Community NL" email newsletter |
+| `xcm_profile`    | String | `engagement` | XCM profile to be used for contact matching |
 
 [^1]:
-    At least *one* of the following (combinations of) fields needs to be present: (Stimmt das wirklich? Nochmal nachsehen!)
+    At least *one* of the following (combinations of) fields needs to be present:
 
     - `bpk`
+    - `phone`
     - `first_name` and `email`
     - `last_name` and `email`
     - `first_name` and `last_name` and `postal_code` and `street_address`
