@@ -37,7 +37,7 @@ From the returned values you have to use for the `medium_id` field of the `Engag
 ### Contacts `(Engage.signpetition)`
 
 #### Description
-The `Engage.signpetition` endpoint allows clients to transparently get or create contacts in CiviCRM based on their contact details. CiviCRM matches the submitted data to existing contacts based on rules defined within CiviCRM and either returns a new contact or the matching existing contact and then creating an activity from type `petition_signature`.
+The `Engage.signpetition` endpoint allows clients to transparently get or create contacts in CiviCRM based on their contact details. CiviCRM matches the submitted data to existing contacts based on rules defined within CiviCRM and either returns a new contact or the matching existing contact and then creating an activity of type `petition_signature`.
 
 #### Parameters
 
@@ -55,6 +55,7 @@ The `Engage.signpetition` endpoint allows clients to transparently get or create
 | `postal_code`[^1] | String | | |
 | `city`           | String  | | |
 | `country`        | String  | | Country code according to ISO 3166-1 alpha-2 |
+| `external_identifier` | String | | Unique identifier of the petition signature in an external system. Make sure submitted values are either globally unique or use a prefix to partition identifiers.[^2] |
 | `medium_id`      | String  | | According `value` field from `Engage.getmedia` |
 | `campaign`       | String  | | External ID for donation-relevant campaign |
 | `campaign_id`    | Integer | | Overwrites `campaign` |
@@ -72,6 +73,11 @@ The `Engage.signpetition` endpoint allows clients to transparently get or create
     - `first_name` and `email`
     - `last_name` and `email`
     - `first_name` and `last_name` and `postal_code` and `street_address`
+
+[^2]:
+    Uniqueness of this value is enforced. When values are submitted more than once,
+    the error "Duplicate value for external_identifier" will be returned and the
+    request will be dropped.
 
 #### Return Value
 

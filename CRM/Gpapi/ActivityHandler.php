@@ -91,5 +91,16 @@ class CRM_Gpapi_ActivityHandler {
 
     return civicrm_api3('Activity', 'create', $params);
   }
-}
 
+  public static function countByExternalIdentifier($activity_type, $external_identifier) {
+    $field = 'custom_' . CRM_Core_BAO_CustomField::getCustomFieldID(
+      'external_identifier',
+      'petition_information'
+    );
+    return civicrm_api3('Activity', 'getcount', [
+      'activity_type_id' => $activity_type,
+      $field             => $external_identifier,
+    ]);
+  }
+
+}

@@ -78,8 +78,22 @@ function _civicrm_api3_engage_signpetition_process($params) {
       }
     }
 
+    if (!empty($params['external_identifier'])) {
+      $lock = new CRM_Core_Lock('Engage.signpetition.external_identifier.' . $params['external_identifier'], 60, TRUE);
+      $lock->acquire();
+      if (!$lock->isAcquired() || CRM_Gpapi_ActivityHandler::countByExternalIdentifier('Petition', $params['external_identifier']) > 0) {
+        return civicrm_api3_create_error('Duplicate value for external_identifier');
+      }
+    }
+
     CRM_Gpapi_Processor::preprocessContactData($params);
     CRM_Gpapi_Processor::resolveCampaign($params);
+    $contact_data = $params;
+    // external_identifier in the context of petitions is a petition custom field
+    // don't pass it to Contact.create
+    if (array_key_exists('external_identifier', $contact_data)) {
+      unset($contact_data['external_identifier']);
+    }
     $contact_id = CRM_Gpapi_Processor::getOrCreateContact($params);
     $result['id'] = $contact_id;
 
@@ -171,6 +185,12 @@ function _civicrm_api3_engage_signpetition_process($params) {
  */
 function _civicrm_api3_engage_signpetition_spec(&$params) {
   // CONTACT BASE
+  $params['external_identifier'] = [
+    'name'         => 'external_identifier',
+    'api.required' => 0,
+    'title'        => 'External Identifier',
+    'description'  => 'Unique identifier of the petition signature in an external system',
+  ];
   $params['contact_type'] = array(
     'name'         => 'contact_type',
     'api.default'  => 'Individual',
