@@ -109,6 +109,9 @@ function _civicrm_api3_engage_signpetition_process($params) {
       CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
     }
 
+    //remove "Opt Out" and "do not email"
+    CRM_Gpapi_Processor::enableSubscription($contact_id);
+
     // check if this is a 'fake petition' (and actually a case)
     if (CRM_Gpapi_CaseHandler::isCase($params['petition_id'])) {
       // it is. so let's do that:

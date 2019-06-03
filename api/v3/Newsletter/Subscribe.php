@@ -63,40 +63,22 @@ function _civicrm_api3_newsletter_subscribe_process($params) {
 
     // Subscribe to "Donation Info"
     if (!empty($params['donation_info']) && strtolower($params['donation_info']) != 'no') {
-      $donation_info_group = civicrm_api3('Group', 'getsingle', array(
-        'check_permissions' => 0,
-        'title'             => 'Donation Info',
-        ));
-      civicrm_api3('GroupContact', 'create', array(
-        'check_permissions' => 0,
-        'contact_id'        => $contact_id,
-        'group_id'          => $donation_info_group['id']));
+      CRM_Gpapi_Processor::addToGroup($contact_id, 'Donation Info');
+
       $subscribed = TRUE;
     }
 
     // Subscribe to "Group Community NL"
     if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
-      $newsletter_group = civicrm_api3('Group', 'getsingle', array(
-        'check_permissions' => 0,
-        'title'             => 'Community NL'));
-      civicrm_api3('GroupContact', 'create', array(
-        'check_permissions' => 0,
-        'contact_id'        => $contact_id,
-        'group_id'          => $newsletter_group['id']));
+      CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
+
       $subscribed = TRUE;
     }
 
     // Subscribe to Group "Ehrenamtliche NL"
     if (!empty($params['volunteer']) && strtolower($params['volunteer']) != 'no') {
-      $volunteer_group = civicrm_api3('Group', 'getsingle', [
-        'check_permissions' => 0,
-        'title'             => 'Ehrenamtliche NL'
-      ]);
-      civicrm_api3('GroupContact', 'create', [
-        'check_permissions' => 0,
-        'contact_id'        => $contact_id,
-        'group_id'          => $volunteer_group['id']
-      ]);
+      CRM_Gpapi_Processor::addToGroup($contact_id, 'Ehrenamtliche NL');
+
       $subscribed = TRUE;
     }
 
