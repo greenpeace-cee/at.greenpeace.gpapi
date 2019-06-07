@@ -99,19 +99,8 @@ function _civicrm_api3_newsletter_subscribe_process($params) {
 
     // remove "Opt Out" and "do not email"
     if ($subscribed) {
-      $contact = civicrm_api3('Contact', 'getsingle', array(
-        'check_permissions' => 0,
-        'id'                => $contact_id,
-        'return'            => 'do_not_email,is_opt_out'));
-      if (!empty($contact['do_not_email']) || !empty($contact['is_opt_out'])) {
-        civicrm_api3('Contact', 'create', array(
-          'check_permissions' => 0,
-          'id'                => $contact_id,
-          'is_opt_out'        => 0,
-          'do_not_email'      => 0));
-      }
+      CRM_Gpapi_Processor::enableSubscription($contact_id);
     }
-
 
     // create result
     if (!empty($params['sequential'])) {
