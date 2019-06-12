@@ -70,6 +70,9 @@ function _civicrm_api3_o_s_f_submit_process($params) {
     // process newsletter
     if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
       CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
+
+      //remove "Opt Out" and "do not email"
+      CRM_Gpapi_Processor::enableSubscription($contact_id);
     }
 
     // pass through WebShop orders/donations/contracts

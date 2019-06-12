@@ -107,6 +107,9 @@ function _civicrm_api3_engage_signpetition_process($params) {
     // GP-463: "...aber der "Group Community NL" Eintrag soll nur bei übergebenem newsletter=1 Wert gesetzt werden."
     if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
       CRM_Gpapi_Processor::addToGroup($contact_id, 'Community NL');
+
+      //remove "Opt Out" and "do not email"
+      CRM_Gpapi_Processor::enableSubscription($contact_id);
     }
 
     // check if this is a 'fake petition' (and actually a case)

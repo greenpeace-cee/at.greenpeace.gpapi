@@ -280,6 +280,22 @@ class CRM_Gpapi_Processor {
       'group_id'          => $selected_group['id']));
   }
 
+  /**
+   * Set "Opt Out" and "do not email" contact option to "0"
+   */
+  public static function enableSubscription($contact_id) {
+    $contact = civicrm_api3('Contact', 'getsingle', array(
+      'check_permissions' => 0,
+      'id'                => $contact_id,
+      'return'            => 'do_not_email,is_opt_out'));
+    if (!empty($contact['do_not_email']) || !empty($contact['is_opt_out'])) {
+      civicrm_api3('Contact', 'create', array(
+        'check_permissions' => 0,
+        'id'                => $contact_id,
+        'is_opt_out'        => 0,
+        'do_not_email'      => 0));
+    }
+  }
 
   /**
    * internal function to replace keys in the data
