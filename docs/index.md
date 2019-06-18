@@ -17,8 +17,9 @@ CiviCRM offers a number of ways to consume APIs. For typical use-cases of
 this extension, the [REST interface] is the most convenient option. The REST
 interface accepts GET and POST parameters and can return JSON or XML.
 
-For client applications written in PHP, CiviCRM offers an
-[object-oriented API client].
+!!! tip "Client Library"
+
+    For client applications written in PHP, CiviCRM offers an [object-oriented API client].
 
 To obtain the endpoint URL for staging and production environments, please
 contact the database team at Greenpeace CEE. Note that API endpoints are not
