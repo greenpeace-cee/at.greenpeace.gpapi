@@ -37,6 +37,7 @@ function civicrm_api3_engage_getpetitions($params) {
   $params['campaign_id']       = array('IN' => $active_campaign_ids);
   $params['option.limit']      = 0;
   $params['check_permissions'] = 0;
+  $params['is_active'] = isset($params['is_active']) ? $params['is_active'] : 1;
 
   $petitions = civicrm_api3('Survey', 'get', $params);
 
