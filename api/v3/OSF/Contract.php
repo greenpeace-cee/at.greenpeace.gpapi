@@ -343,6 +343,8 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       civicrm_api3('Membership', 'create', $membership_data);
     }
 
+    CRM_Gpapi_Processor::createActivityWithUTM($params, 'Contract_Signed');
+
     // and return the good news (otherwise an Exception would have occurred)
     return $result;
   } catch (Exception $e) {

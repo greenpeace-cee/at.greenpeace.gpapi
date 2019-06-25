@@ -52,6 +52,7 @@ function _civicrm_api3_o_s_f_donation_process($params) {
     $params['check_permissions'] = 0;
 
     CRM_Gpapi_Processor::resolveCampaign($params);
+    CRM_Gpapi_Processor::createActivityWithUTM($params, 'Contribution');
 
     // format amount
     $params['total_amount'] = number_format($params['total_amount'], 2, '.', '');

@@ -168,6 +168,9 @@ function _civicrm_api3_engage_signpetition_process($params) {
       ) + $params); // add other params
     }
 
+    CRM_Gpapi_Processor::createActivityWithUTM($params, 'Petition');
+    CRM_Gpapi_Processor::createActivityWithUTM($params, 'Open Case');
+
     // create result
     if (!empty($params['sequential'])) {
       return civicrm_api3_create_success(array($result));

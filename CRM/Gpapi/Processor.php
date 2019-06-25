@@ -364,5 +364,33 @@ class CRM_Gpapi_Processor {
     }
     return $phone;
   }
+
+  /**
+   * Creates Activity with UTM Tracking Parameters
+   *
+   * @param $params
+   * @param $activity_type
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  public static function createActivityWithUTM($params, $activity_type) {
+    if (empty($params['utm_source'])
+      && empty($params['utm_medium'])
+      && empty($params['utm_campaign'])
+      && empty($params['utm_content'])
+      || empty($params['contact_id'])) {
+      return;
+    }
+
+    $params['target_id'] = $params['contact_id'];
+    unset($params['contact_id']);
+    $params['activity_type_id'] = $activity_type;
+    $params['subject'] = 'UTM Tracking';
+    $params['status_id'] = 'Scheduled';
+    $params['check_permissions'] = 0;
+
+    CRM_Gpapi_Processor::resolveCustomFields($params, ['utm']);
+    civicrm_api3('Activity', 'create', $params);
+  }
 }
 
