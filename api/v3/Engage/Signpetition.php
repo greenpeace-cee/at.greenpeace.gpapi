@@ -304,21 +304,21 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
   $params['utm_source'] = [
     'name' => 'utm_source',
     'title' => 'UTM Source',
-    'api.required' => 1,
+    'api.required' => 0,
   ];
   $params['utm_medium'] = [
     'name' => 'utm_medium',
     'title' => 'UTM Medium',
-    'api.required' => 1,
+    'api.required' => 0,
   ];
   $params['utm_campaign'] = [
     'name' => 'utm_campaign',
     'title' => 'UTM Campaign',
-    'api.required' => 1,
+    'api.required' => 0,
   ];
   $params['utm_content'] = [
     'name' => 'utm_content',
     'title' => 'UTM Content',
-    'api.required' => 1,
+    'api.required' => 0,
   ];
 }
