@@ -131,7 +131,7 @@ class CRM_Gpapi_Processor {
     // make sure only complete addresses (street+city+ZIP)
     //  are submitted (see GP-1161)
     foreach (self::$address_attributes as $any_attribute) {
-      if (!empty($params[$any_attribute])) {
+      if (array_key_exists($any_attribute, $params)) {
         // submission contains an address attribute -
         // check if all required ones are there, too:
         foreach (self::$required_address_attributes as $required_attribute) {
@@ -139,7 +139,7 @@ class CRM_Gpapi_Processor {
             // one of the required atrributes is missing! remove all!!
             CRM_Core_Error::debug_log_message("Incomplete address, missing {$required_attribute}. Stripping address data.");
             foreach (self::$address_attributes as $remove_attribute) {
-              if (isset($params[$remove_attribute])) {
+              if (array_key_exists($remove_attribute, $params)) {
                 unset($params[$remove_attribute]);
               }
             }
