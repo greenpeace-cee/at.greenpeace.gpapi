@@ -201,6 +201,28 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Transaction ID (only for payment_instrument!=OOFF)',
   ];
+
+  // UTM fields:
+  $params['utm_source'] = [
+    'name' => 'utm_source',
+    'title' => 'UTM Source',
+    'api.required' => 1,
+  ];
+  $params['utm_medium'] = [
+    'name' => 'utm_medium',
+    'title' => 'UTM Medium',
+    'api.required' => 1,
+  ];
+  $params['utm_campaign'] = [
+    'name' => 'utm_campaign',
+    'title' => 'UTM Campaign',
+    'api.required' => 1,
+  ];
+  $params['utm_content'] = [
+    'name' => 'utm_content',
+    'title' => 'UTM Content',
+    'api.required' => 1,
+  ];
 }
 
 

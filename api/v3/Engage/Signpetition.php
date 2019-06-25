@@ -168,6 +168,7 @@ function _civicrm_api3_engage_signpetition_process($params) {
       ) + $params); // add other params
     }
 
+    $params['contact_id'] = $contact_id;
     CRM_Gpapi_Processor::createActivityWithUTM($params, 'Petition');
     CRM_Gpapi_Processor::createActivityWithUTM($params, 'Open Case');
 
@@ -297,5 +298,27 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'api.default'  => 'engagement',
     'title'        => 'XCM Profile',
     'description'  => 'XCM profile to be used for contact matching',
+  ];
+
+  // UTM fields:
+  $params['utm_source'] = [
+    'name' => 'utm_source',
+    'title' => 'UTM Source',
+    'api.required' => 1,
+  ];
+  $params['utm_medium'] = [
+    'name' => 'utm_medium',
+    'title' => 'UTM Medium',
+    'api.required' => 1,
+  ];
+  $params['utm_campaign'] = [
+    'name' => 'utm_campaign',
+    'title' => 'UTM Campaign',
+    'api.required' => 1,
+  ];
+  $params['utm_content'] = [
+    'name' => 'utm_content',
+    'title' => 'UTM Content',
+    'api.required' => 1,
   ];
 }
