@@ -14,12 +14,18 @@ CiviCRM.
 ## Usage
 
 CiviCRM offers a number of ways to consume APIs. For typical use-cases of
-this extension, the [REST interface] is the most convenient option. The REST
-interface accepts GET and POST parameters and can return JSON or XML.
+this extension, the [REST interface] is the most convenient option.
 
 !!! tip "Client Library"
 
     For client applications written in PHP, CiviCRM offers an [object-oriented API client].
+
+The REST interface accepts GET and POST parameters and can return JSON or XML.
+A sample `curl` request to the `OSF.getcampaigns` endpoint may look like this:
+
+```bash
+curl -X POST 'https://civicrm.example.com/sites/all/modules/civicrm/extern/rest.php' -d 'entity=OSF&action=getcampaigns&api_key={api_key}&key={site_key}&json={"max_depth":10,"version":3}'
+```
 
 To obtain the endpoint URL for staging and production environments, please
 contact the database team at Greenpeace CEE. Note that API endpoints are not

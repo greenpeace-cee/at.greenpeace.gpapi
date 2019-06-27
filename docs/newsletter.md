@@ -1,6 +1,6 @@
 ## General
 
-The Newsletter API, located in the "Newsletter" namespace, supports the following features:
+The Newsletter API, located in the "Newsletter" entity, supports the following features:
 
 - Creating or matching contacts
 - Retrieving a list of newsletter groups

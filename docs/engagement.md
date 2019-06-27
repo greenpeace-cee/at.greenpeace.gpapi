@@ -1,6 +1,6 @@
 ## General
 
-The Engage API, located in the "Engage" namespace, supports the following
+The Engage API, located in the "Engage" entity, supports the following
 features:
 
 - Creating or matching contacts

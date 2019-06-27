@@ -1,6 +1,6 @@
 ## General
 
-The donations API, located in the "OSF" namespace, supports the following
+The donations API, located in the "OSF" entity, supports the following
 features:
 
 - Creating or matching contacts
