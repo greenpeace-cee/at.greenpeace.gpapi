@@ -366,31 +366,29 @@ class CRM_Gpapi_Processor {
   }
 
   /**
-   * Creates Activity with UTM Tracking Parameters
+   * Updates Activity with UTM Tracking Parameters
    *
    * @param $params
-   * @param $activity_type
+   * @param $activity_id
    *
    * @throws \CiviCRM_API3_Exception
    */
-  public static function createActivityWithUTM($params, $activity_type) {
-    if (empty($params['utm_source'])
-      && empty($params['utm_medium'])
-      && empty($params['utm_campaign'])
-      && empty($params['utm_content'])
-      || empty($params['contact_id'])) {
-      return;
+  public static function updateActivityWithUTM($params, $activity_id) {
+    $activity_params['id'] = $activity_id;
+    $utm_keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
+    $count_of_not_empty_utm_params = 0;
+
+    foreach ($utm_keys as $utm_key) {
+      if (!empty($params[$utm_key])) {
+        $count_of_not_empty_utm_params++;
+        $activity_params[$utm_key] = $params[$utm_key];
+      }
     }
 
-    $params['target_id'] = $params['contact_id'];
-    unset($params['contact_id']);
-    $params['activity_type_id'] = $activity_type;
-    $params['subject'] = 'UTM Tracking';
-    $params['status_id'] = 'Scheduled';
-    $params['check_permissions'] = 0;
-
-    CRM_Gpapi_Processor::resolveCustomFields($params, ['utm']);
-    civicrm_api3('Activity', 'create', $params);
+    if ($count_of_not_empty_utm_params > 0) {
+      CRM_Gpapi_Processor::resolveCustomFields($activity_params, ['utm']);
+      civicrm_api3('Activity', 'create', $activity_params);
+    }
   }
 }
 

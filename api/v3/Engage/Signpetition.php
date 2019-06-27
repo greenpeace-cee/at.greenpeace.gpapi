@@ -115,7 +115,7 @@ function _civicrm_api3_engage_signpetition_process($params) {
     // check if this is a 'fake petition' (and actually a case)
     if (CRM_Gpapi_CaseHandler::isCase($params['petition_id'])) {
       // it is. so let's do that:
-      CRM_Gpapi_CaseHandler::petitionStartCase($params['petition_id'], $contact_id, $params);
+      $case = CRM_Gpapi_CaseHandler::petitionStartCase($params['petition_id'], $contact_id, $params);
 
     // check if this is a 'fake petition' (and actually a webshop order)
     } elseif (CRM_Gpapi_OrderHandler::isActivity($params['petition_id'])) {
@@ -150,7 +150,7 @@ function _civicrm_api3_engage_signpetition_process($params) {
       }
 
       // create signature activity
-      civicrm_api3('Activity', 'create', array(
+      $activity = civicrm_api3('Activity', 'create', array(
         'check_permissions'   => 0,
         'source_contact_id'   => CRM_Core_Session::singleton()->getLoggedInContactID(),
         'activity_type_id'    => $petition['activity_type_id'],
@@ -168,9 +168,19 @@ function _civicrm_api3_engage_signpetition_process($params) {
       ) + $params); // add other params
     }
 
-    $params['contact_id'] = $contact_id;
-    CRM_Gpapi_Processor::createActivityWithUTM($params, 'Petition');
-    CRM_Gpapi_Processor::createActivityWithUTM($params, 'Open Case');
+    if (!empty($activity['id'])) {
+      $activity_id = $activity['id'];
+    } elseif (!empty($case['id'])) {
+      $activity_id = civicrm_api3('Activity', 'getvalue', [
+        'return' => 'id',
+        'activity_type_id' => 'Open Case',
+        'case_id' => $case['id'],
+      ]);
+    }
+
+    if (!empty($activity_id)) {
+      CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
+    }
 
     // create result
     if (!empty($params['sequential'])) {

@@ -225,6 +225,14 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       $lock->release();
     }
 
+    $activity_id = civicrm_api3('Activity', 'getvalue', [
+      'return' => 'id',
+      'activity_type_id' => 'Contract_Signed',
+      'source_record_id' => $result['id'],
+    ]);
+
+    CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
+
     // get BA reference type for IBAN to do BankingAccountReference lookup by type
     $reference_type_iban = civicrm_api3('OptionValue', 'getvalue', [
       'return' => 'id',
@@ -261,11 +269,6 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       ]);
 
       // Tag "Contract_Signed" Activity for post-processing, see GP-1933
-      $activity_id = civicrm_api3('Activity', 'getvalue', [
-        'return' => 'id',
-        'activity_type_id' => 'Contract_Signed',
-        'source_record_id' => $result['id'],
-      ]);
       civicrm_api3('EntityTag', 'create', [
         'tag_id' => _civicrm_api3_o_s_f_contract_getPSPTagId(),
         'entity_table' => 'civicrm_activity',
@@ -342,8 +345,6 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       CRM_Gpapi_Processor::resolveCustomFields($membership_data, ['membership_referral']);
       civicrm_api3('Membership', 'create', $membership_data);
     }
-
-    CRM_Gpapi_Processor::createActivityWithUTM($params, 'Contract_Signed');
 
     // and return the good news (otherwise an Exception would have occurred)
     return $result;
