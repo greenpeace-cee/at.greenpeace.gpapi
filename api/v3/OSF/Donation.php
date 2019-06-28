@@ -59,20 +59,24 @@ function _civicrm_api3_o_s_f_donation_process($params) {
     switch (strtolower($params['payment_instrument'])) {
       case 'credit card':
         // CREATE CREDIT CARD CONTRIBUTION
-        return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 1);
+        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 1);
+        break;
 
       case 'paypal':
         // CREATE PAYPAL CONTRIBUTION
-        return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 9);
+        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 9);
+        break;
 
       case 'sofortüberweisung':
       case 'sofortueberweisung':
         // CREATE SOFORTÜBERWEISUNG CONTRIBUTION
-        return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 15);
+        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 15);
+        break;
 
       case 'eps':
         // CREATE EPS CONTRIBUTION
-        return _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 16);
+        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 16);
+        break;
 
       case 'ooff':
         // PROCESS SEPA OOFF STATEMENT
@@ -118,13 +122,25 @@ function _civicrm_api3_o_s_f_donation_process($params) {
           'return' => 'entity_id'));
 
         // return the created contribution (see GP-1029)
-        return civicrm_api3('Contribution', 'get', array(
+        $contribution = civicrm_api3('Contribution', 'get', array(
           'id'         => $mandate['entity_id'],
           'sequential' => CRM_Utils_Array::value('sequential', $params, '0')));
+
+        break;
 
       default:
         return civicrm_api3_create_error("Undefined 'payment_instrument' {$params['payment_instrument']}");
     }
+
+    $activity_id = civicrm_api3('Activity', 'getvalue', [
+      'return' => 'id',
+      'activity_type_id' => 'Contribution',
+      'source_record_id' => $contribution['id'],
+    ]);
+
+    CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
+
+    return $contribution;
   } catch (Exception $e) {
     $tx->rollback();
     throw $e;
@@ -199,6 +215,28 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'name'         => 'trxn_id',
     'api.required' => 0,
     'title'        => 'Transaction ID (only for payment_instrument!=OOFF)',
+  ];
+
+  // UTM fields:
+  $params['utm_source'] = [
+    'name' => 'utm_source',
+    'title' => 'UTM Source',
+    'api.required' => 0,
+  ];
+  $params['utm_medium'] = [
+    'name' => 'utm_medium',
+    'title' => 'UTM Medium',
+    'api.required' => 0,
+  ];
+  $params['utm_campaign'] = [
+    'name' => 'utm_campaign',
+    'title' => 'UTM Campaign',
+    'api.required' => 0,
+  ];
+  $params['utm_content'] = [
+    'name' => 'utm_content',
+    'title' => 'UTM Content',
+    'api.required' => 0,
   ];
 }
 

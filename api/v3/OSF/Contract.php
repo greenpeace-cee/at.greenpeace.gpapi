@@ -225,6 +225,14 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       $lock->release();
     }
 
+    $activity_id = civicrm_api3('Activity', 'getvalue', [
+      'return' => 'id',
+      'activity_type_id' => 'Contract_Signed',
+      'source_record_id' => $result['id'],
+    ]);
+
+    CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
+
     // get BA reference type for IBAN to do BankingAccountReference lookup by type
     $reference_type_iban = civicrm_api3('OptionValue', 'getvalue', [
       'return' => 'id',
@@ -261,11 +269,6 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       ]);
 
       // Tag "Contract_Signed" Activity for post-processing, see GP-1933
-      $activity_id = civicrm_api3('Activity', 'getvalue', [
-        'return' => 'id',
-        'activity_type_id' => 'Contract_Signed',
-        'source_record_id' => $result['id'],
-      ]);
       civicrm_api3('EntityTag', 'create', [
         'tag_id' => _civicrm_api3_o_s_f_contract_getPSPTagId(),
         'entity_table' => 'civicrm_activity',
@@ -505,5 +508,27 @@ function _civicrm_api3_o_s_f_contract_spec(&$params) {
     'name'         => 'referrer_contact_id',
     'api.required' => 0,
     'title'        => 'ID of the contact who referred this contract',
+  ];
+
+  // UTM fields:
+  $params['utm_source'] = [
+    'name' => 'utm_source',
+    'title' => 'UTM Source',
+    'api.required' => 0,
+  ];
+  $params['utm_medium'] = [
+    'name' => 'utm_medium',
+    'title' => 'UTM Medium',
+    'api.required' => 0,
+  ];
+  $params['utm_campaign'] = [
+    'name' => 'utm_campaign',
+    'title' => 'UTM Campaign',
+    'api.required' => 0,
+  ];
+  $params['utm_content'] = [
+    'name' => 'utm_content',
+    'title' => 'UTM Content',
+    'api.required' => 0,
   ];
 }

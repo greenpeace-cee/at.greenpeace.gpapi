@@ -364,5 +364,31 @@ class CRM_Gpapi_Processor {
     }
     return $phone;
   }
+
+  /**
+   * Updates Activity with UTM Tracking Parameters
+   *
+   * @param $params
+   * @param $activity_id
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  public static function updateActivityWithUTM($params, $activity_id) {
+    $activity_params['id'] = $activity_id;
+    $utm_keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
+    $count_of_not_empty_utm_params = 0;
+
+    foreach ($utm_keys as $utm_key) {
+      if (!empty($params[$utm_key])) {
+        $count_of_not_empty_utm_params++;
+        $activity_params[$utm_key] = $params[$utm_key];
+      }
+    }
+
+    if ($count_of_not_empty_utm_params > 0) {
+      CRM_Gpapi_Processor::resolveCustomFields($activity_params, ['utm']);
+      civicrm_api3('Activity', 'create', $activity_params);
+    }
+  }
 }
 
