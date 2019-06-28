@@ -103,6 +103,10 @@ the Contribution-ID in the Field `id`.
 | `bic`*              | String  | | BIC (only for payment_instrument=`OOFF`)
 | `gp_iban`           | String  | | IBAN for Organisation account, will be created, if not exist |
 | `trxn_id`           | String  | | Transaction-ID for donation, if payment_instrument is not `OOFF`. Unique |
+| `utm_source`        | String  | | UTM Source. Identifies which site sent the traffic |
+| `utm_medium`        | String  | | UTM Medium. Identifies what type of link was used |
+| `utm_campaign`      | String  | | UTM Campaign. Identifies a specific promotion or strategic campaign |
+| `utm_content`       | String  | | UTM Content. Identifies what specifically was clicked to bring the user to the site |
 <small>**\* mandatory field**</small>
 
 #### Return Value
@@ -167,6 +171,10 @@ the Membership-ID in the Field `id`.
 | `trxn_id`                  | String  | | Transaction-ID from donation if `payment_received` = `true`, Unique field |
 | `payment_instrument`       | String  | `RCUR` | If sending PSP-Membership choose: `Credit Card`, `PayPal`, `Sofortüberweisung`, `EPS`, if SEPA-Membership choose: `RCUR` |
 | `referrer_contact_id`      | Integer | | CiviCRM Contact ID of the Referrer (MemberGetMember programme). Invalid values will be accepted and logged for further checks |
+| `utm_source`               | String  | | UTM Source. Identifies which site sent the traffic |
+| `utm_medium`               | String  | | UTM Medium. Identifies what type of link was used |
+| `utm_campaign`             | String  | | UTM Campaign. Identifies a specific promotion or strategic campaign |
+| `utm_content`              | String  | | UTM Content. Identifies what specifically was clicked to bring the user to the site |
 <small>**\* mandatory field**</small>
 
 #### Return Value

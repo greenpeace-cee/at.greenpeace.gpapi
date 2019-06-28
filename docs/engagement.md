@@ -64,6 +64,10 @@ The `Engage.signpetition` endpoint allows clients to transparently get or create
 | `signature_date` | String  | | Date of the petition_signature, Format: `YYYYMMDDHHIISS` (PHP Format: `YmdHis`) |
 | `newsletter`     | Boolean | `0` | Whether this contact opted-in to the "Community NL" email newsletter |
 | `xcm_profile`    | String | `engagement` | XCM profile to be used for contact matching |
+| `utm_source`     | String  | | UTM Source. Identifies which site sent the traffic |
+| `utm_medium`     | String  | | UTM Medium. Identifies what type of link was used |
+| `utm_campaign`   | String  | | UTM Campaign. Identifies a specific promotion or strategic campaign |
+| `utm_content`    | String  | | UTM Content. Identifies what specifically was clicked to bring the user to the site |
 
 [^1]:
     At least *one* of the following (combinations of) fields needs to be present:
