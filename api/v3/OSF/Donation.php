@@ -132,23 +132,25 @@ function _civicrm_api3_o_s_f_donation_process($params) {
         return civicrm_api3_create_error("Undefined 'payment_instrument' {$params['payment_instrument']}");
     }
 
-    try {
-      $activity_id = civicrm_api3('Activity', 'getvalue', [
-        'return' => 'id',
-        'activity_type_id' => 'Contribution',
-        'source_record_id' => $contribution['id'],
-      ]);
-    } catch (CiviCRM_API3_Exception $e) {
-      $activity = civicrm_api3('Activity', 'create', [
-        'source_contact_id' => $params['contact_id'],
-        'source_record_id' => $contribution['id'],
-        'activity_type_id' => 'utm_tracking',
-        'subject' => 'Contribution',
-      ]);
-      $activity_id = $activity['id'];
-    }
+    if (count(CRM_Gpapi_Processor::extractUTMData($params)) > 0) {
+      try {
+        $activity_id = civicrm_api3('Activity', 'getvalue', [
+          'return' => 'id',
+          'activity_type_id' => 'Contribution',
+          'source_record_id' => $contribution['id'],
+        ]);
+      } catch (CiviCRM_API3_Exception $e) {
+        $activity = civicrm_api3('Activity', 'create', [
+          'source_contact_id' => $params['contact_id'],
+          'source_record_id' => $contribution['id'],
+          'activity_type_id' => 'UTM Tracking',
+          'subject' => 'Contribution',
+        ]);
+        $activity_id = $activity['id'];
+      }
 
-    CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
+      CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
+    }
 
     return $contribution;
   } catch (Exception $e) {

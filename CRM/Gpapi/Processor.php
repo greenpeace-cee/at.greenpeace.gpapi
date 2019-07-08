@@ -366,28 +366,38 @@ class CRM_Gpapi_Processor {
   }
 
   /**
+   * Extract UTM tracking data from $params
+   *
+   * @param array $params API parameters
+   *
+   * @return array all non-empty UTM tracking parameters
+   */
+  public static function extractUTMData(array $params) {
+    $utm_keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
+    $utm_params = [];
+    foreach ($utm_keys as $utm_key) {
+      if (!empty($params[$utm_key])) {
+        $utm_params[$utm_key] = $params[$utm_key];
+      }
+    }
+    return $utm_params;
+  }
+
+  /**
    * Updates Activity with UTM Tracking Parameters
    *
-   * @param $params
+   * @param array $params
    * @param $activity_id
    *
    * @throws \CiviCRM_API3_Exception
    */
-  public static function updateActivityWithUTM($params, $activity_id) {
-    $activity_params['id'] = $activity_id;
-    $utm_keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
-    $count_of_not_empty_utm_params = 0;
-
-    foreach ($utm_keys as $utm_key) {
-      if (!empty($params[$utm_key])) {
-        $count_of_not_empty_utm_params++;
-        $activity_params[$utm_key] = $params[$utm_key];
-      }
-    }
-
-    if ($count_of_not_empty_utm_params > 0) {
-      CRM_Gpapi_Processor::resolveCustomFields($activity_params, ['utm']);
-      civicrm_api3('Activity', 'create', $activity_params);
+  public static function updateActivityWithUTM(array $params, $activity_id) {
+    $utm_params = self::extractUTMData($params);
+    if (count($utm_params) > 0) {
+      $utm_params['id'] = $activity_id;
+      CRM_Gpapi_Processor::resolveCustomFields($utm_params, ['utm']);
+      var_dump($utm_params);
+      civicrm_api3('Activity', 'create', $utm_params);
     }
   }
 }
