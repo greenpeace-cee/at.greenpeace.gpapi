@@ -396,7 +396,6 @@ class CRM_Gpapi_Processor {
     if (count($utm_params) > 0) {
       $utm_params['id'] = $activity_id;
       CRM_Gpapi_Processor::resolveCustomFields($utm_params, ['utm']);
-      var_dump($utm_params);
       civicrm_api3('Activity', 'create', $utm_params);
     }
   }
