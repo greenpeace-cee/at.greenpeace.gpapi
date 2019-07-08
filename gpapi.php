@@ -164,5 +164,6 @@ function gpapi_civicrm_alterAPIPermissions($entity, $action, &$params, &$permiss
   // Newsletter
   $permissions['newsletter']['subscribe']   = array('access Newsletter API');
   $permissions['newsletter']['unsubscribe'] = array('access Newsletter API');
+  $permissions['newsletter']['getgroups'] = ['access Newsletter API'];
 }
 
