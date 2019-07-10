@@ -28,8 +28,13 @@ curl -X POST 'https://civicrm.example.com/sites/all/modules/civicrm/extern/rest.
 ```
 
 To obtain the endpoint URL for staging and production environments, please
-contact the database team at Greenpeace CEE. Note that API endpoints are not
-public and that network-level access will need to be set up.
+contact the database team at Greenpeace CEE.
+
+!!! warning "Network Access"
+    The API endpoints, both for the staging and production environments,
+    are behind a firewall, i.e. not publicly accessible. Network-level
+    access will need to be set up, preferably via IP whitelisting. This
+    generally works best with a static IP address (range) for API clients.
 
 ## Authentication
 
