@@ -160,7 +160,7 @@ the Membership-ID in the Field `id`.
 | `contact_id`*              | Integer | | CiviCRM Contact ID |
 | `campaign`                 | String  | | External ID for membership source campaign |
 | `campaign_id`              | Integer | | Overwrites `campaign` |
-| `frequency`*               | Integer | | Number of debits a year for this membership (ONLY to be used for NON PSP memberships!) |
+| `frequency`*               | Integer | | Number of debits a year for this membership (must always be 12 for PSP memberships!) |
 | `amount`*                  | Float   | | Amount for each debit, format: `0.00` |
 | `currency`                 | String  | CiviCRM default |  |
 | `membership_type_id`*      | Integer | | CiviCRM Membership Type ID (get the IDs from the CRM) |
