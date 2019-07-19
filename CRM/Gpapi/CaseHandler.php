@@ -35,6 +35,14 @@ class CRM_Gpapi_CaseHandler {
   ];
 
   /**
+   * @var array map of closed cases statuses to the status used when reopening
+   */
+  public static $closedStatuses = [
+    2 => 1, // Resolved => Ongoing
+    9 => 5, // Rejecter => Enquirer
+  ];
+
+  /**
    * Add the 'fake' cases to the getPetitions call
    */
   public static function addCases(&$get_petition_result) {
@@ -199,12 +207,16 @@ class CRM_Gpapi_CaseHandler {
     }
     $case = reset($existing_cases['values']);
 
-    // if it's status 2 (closed) -> re-open (status 1)
-    if ($case['status_id'] == 2) {
+    // if it's a closed status -> re-open with corresponding status
+    if (array_key_exists($case['status_id'], self::$closedStatuses)) {
       civicrm_api3('Case', 'create', [
-        'check_permissions' => 0,
-        'id'                => $case['id'],
-        'status_id'         => 5 // Enquirer (see https://redmine.greenpeace.at/issues/1586#note-24)
+        'check_permissions'      => 0,
+        'id'                     => $case['id'],
+        'status_id'              => self::$closedStatuses[$case['status_id']],
+        'track_status_change'    => TRUE, // create status change activity
+        'status_change_activity' => [
+          'medium_id' => $params['medium_id'],
+        ]
       ]);
     }
 
