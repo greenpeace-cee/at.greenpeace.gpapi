@@ -63,6 +63,12 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       );
     }
 
+    CRM_Gpapi_Processor::identifyContactID($params['contact_id']);
+
+    if (empty($params['contact_id'])) {
+      return civicrm_api3_create_error('No contact found.');
+    }
+
     $referrer = NULL;
     if (!empty($params['referrer_contact_id'])) {
       try {

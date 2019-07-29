@@ -399,5 +399,26 @@ class CRM_Gpapi_Processor {
       civicrm_api3('Activity', 'create', $utm_params);
     }
   }
-}
 
+  /**
+   * Resolves a CiviCRM contact ID by
+   *  "identity tracker extension" (if installed).
+   *
+   * @param $contact_id
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  public static function identifyContactID(&$contact_id) {
+    if (function_exists('identitytracker_civicrm_install')) {
+      // identitytracker is enabled
+      $contacts = civicrm_api3('Contact', 'findbyidentity', array(
+        'identifier_type' => 'internal',
+        'identifier'      => $contact_id));
+      if ($contacts['count'] == 1) {
+        $contact_id = $contacts['id'];
+        return;
+      }
+    }
+    $contact_id = 0;
+  }
+}
