@@ -465,7 +465,8 @@ function _civicrm_api3_o_s_f_contract_spec(&$params) {
   );
   $params['membership_type_id'] = array(
     'name'         => 'membership_type_id',
-    'api.required' => 1,
+    'api.required' => 0,
+    'api.default'  => Civi::settings()->get('gpapi_membership_type_id'),
     'title'        => 'Membership Type (CiviCRM ID)',
   );
   $params['iban'] = array(
