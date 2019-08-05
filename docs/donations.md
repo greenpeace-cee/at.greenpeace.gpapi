@@ -163,7 +163,7 @@ the Membership-ID in the Field `id`.
 | `frequency`*               | Integer | | Number of debits a year for this membership (must always be 12 for PSP memberships!) |
 | `amount`*                  | Float   | | Amount for each debit, format: `0.00` |
 | `currency`                 | String  | CiviCRM default |  |
-| `membership_type_id`*      | Integer | | CiviCRM Membership Type ID (get the IDs from the CRM) |
+| `membership_type_id`       | Integer | Value of the `gpapi_membership_type_id` CiviCRM setting (defaults to `1`) | CiviCRM Membership Type ID (get the IDs from the CRM) |
 | `iban`*                    | String  | | IBAN or PSP payment token (e.g. Adyen `shopperReference`) |
 | `bic`*                     | String  | | BIC or PSP account name (e.g. Adyen merchant name) |
 | `payment_received`         | Boolean | `false` | If `true`, create a contribution for the first payment and move the next debit about one month further (ONLY to be used for PSP memberships!) |
