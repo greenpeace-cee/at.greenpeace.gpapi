@@ -49,16 +49,13 @@ function _civicrm_api3_newsletter_unsubscribe_process($params) {
     }
 
     // find contact (via identity tracker)
-    $identity_result = civicrm_api3('Contact', 'findbyidentity', [
-      'identifier_type' => 'internal',
-      'identifier'      => (int) $params['contact_id']
-    ]);
+    CRM_Gpapi_Processor::identifyContactID($params['contact_id']);
 
-    if (empty($identity_result['id'])) {
+    if (empty($params['contact_id'])) {
       return civicrm_api3_create_error('No contacts found.');
     }
 
-    $contacts = [$identity_result['id']];
+    $contacts = [$params['contact_id']];
 
     // find additional contacts with the same primary email
     try {
