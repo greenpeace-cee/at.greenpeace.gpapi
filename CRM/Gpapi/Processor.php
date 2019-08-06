@@ -418,7 +418,8 @@ class CRM_Gpapi_Processor {
         $contact_id = $contacts['id'];
         return;
       }
+      $contact_id = 0;
+      return;
     }
-    $contact_id = 0;
   }
 }
