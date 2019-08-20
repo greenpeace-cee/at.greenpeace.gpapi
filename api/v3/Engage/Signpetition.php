@@ -182,7 +182,7 @@ function _civicrm_api3_engage_signpetition_process($params) {
       CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
 
       CRM_Gpapi_Processor::resolveCustomFields($contact_data, ['source_contact_data']);
-      civicrm_api3('Activity', 'create', array_merge($contact_data, ['id' => $activity_id]));
+      civicrm_api3('Activity', 'create', array_merge($contact_data, ['id' => $activity_id, 'check_permissions' => 0]));
     }
 
     // create result
