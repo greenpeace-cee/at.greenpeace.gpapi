@@ -89,9 +89,6 @@ function _civicrm_api3_o_s_f_donation_process($params) {
         if (empty($params['iban'])) {
           return civicrm_api3_create_error("No 'iban' provided.");
         }
-        if (empty($params['bic'])) {
-          return civicrm_api3_create_error("No 'bic' provided.");
-        }
         if (!empty($params['trxn_id'])) {
           return civicrm_api3_create_error("Cannot use 'trxn_id' with payment_instrument=OOFF.");
         }
@@ -104,7 +101,7 @@ function _civicrm_api3_o_s_f_donation_process($params) {
         unset($params['payment_instrument']);
 
         // add bank accounts
-        _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], array('BIC' => $params['bic']));
+        _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']);
 
         // create mandate
         // add a mutex lock (see GP-1731)

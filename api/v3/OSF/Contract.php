@@ -51,9 +51,6 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
     if (empty($params['iban'])) {
       return CRM_Gpapi_Error::create('OSF.contract', "No 'iban' provided.", $params);
     }
-    if (empty($params['bic'])) {
-      return CRM_Gpapi_Error::create('OSF.contract', "No 'bic' provided.", $params);
-    }
 
     if (empty($params['payment_received']) && !empty($params['trxn_id'])) {
       return CRM_Gpapi_Error::create(
@@ -206,7 +203,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         'check_permissions' => 0,
         'id' => $mandate['id']
       ]);
-      $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id'], ['BIC' => $params['bic']]);
+      $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']);
       // create the contract
       $result = civicrm_api3('Contract', 'create', [
         'check_permissions' => 0,
@@ -389,7 +386,7 @@ function _civicrm_api3_o_s_f_contract_getPSPTagId() {
  * @return int banking_account.id
  * @throws \CiviCRM_API3_Exception
  */
-function _civicrm_api3_o_s_f_contract_getBA($iban, $contact_id, $extra_data) {
+function _civicrm_api3_o_s_f_contract_getBA($iban, $contact_id, $extra_data = []) {
   // look up reference type option value ID(!)
   $reference_type_value = civicrm_api3('OptionValue', 'getsingle', array(
     'value'           => 'IBAN',
@@ -482,7 +479,7 @@ function _civicrm_api3_o_s_f_contract_spec(&$params) {
   );
   $params['bic'] = array(
     'name'         => 'bic',
-    'api.required' => 1,
+    'api.required' => 0,
     'title'        => 'BIC',
   );
   $params['payment_received'] = [

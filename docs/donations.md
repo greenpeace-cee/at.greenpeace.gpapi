@@ -100,7 +100,7 @@ the Contribution-ID in the Field `id`.
 | `financial_type_id` | Integer | `1` | 1 = Donation, 2 = Member Dues |
 | `source`            | String  | `OSF` | Source of the donation (not used yet) |
 | `iban`*             | String  | | IBAN (only for payment_instrument=`OOFF`) |
-| `bic`*              | String  | | BIC (only for payment_instrument=`OOFF`)
+| `bic`              | String  | | BIC (only for payment_instrument=`OOFF`) |
 | `gp_iban`           | String  | | IBAN for Organisation account, will be created, if not exist |
 | `trxn_id`           | String  | | Transaction-ID for donation, if payment_instrument is not `OOFF`. Unique |
 | `utm_source`        | String  | | UTM Source. Identifies which site sent the traffic |
@@ -165,7 +165,7 @@ the Membership-ID in the Field `id`.
 | `currency`                 | String  | CiviCRM default |  |
 | `membership_type_id`       | Integer | Value of the `gpapi_membership_type_id` CiviCRM setting (defaults to `1`) | CiviCRM Membership Type ID (get the IDs from the CRM) |
 | `iban`*                    | String  | | IBAN or PSP payment token (e.g. Adyen `shopperReference`) |
-| `bic`*                     | String  | | BIC or PSP account name (e.g. Adyen merchant name) |
+| `bic`[^2]                  | String  | | BIC or PSP account name (e.g. Adyen merchant name) |
 | `payment_received`         | Boolean | `false` | If `true`, create a contribution for the first payment and move the next debit about one month further (ONLY to be used for PSP memberships!) |
 | `payment_service_provider` | String  | `SEPA` | Choose from: `adyen` or `payu`  |
 | `trxn_id`                  | String  | | Transaction-ID from donation if `payment_received` = `true`, Unique field |
@@ -176,6 +176,9 @@ the Membership-ID in the Field `id`.
 | `utm_campaign`             | String  | | UTM Campaign. Identifies a specific promotion or strategic campaign |
 | `utm_content`              | String  | | UTM Content. Identifies what specifically was clicked to bring the user to the site |
 <small>**\* mandatory field**</small>
+
+[^2]:
+    BIC is required for PSP memberships, but optional for SEPA.
 
 #### Return Value
 
