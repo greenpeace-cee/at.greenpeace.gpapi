@@ -349,6 +349,11 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       civicrm_api3('Membership', 'create', $membership_data);
     }
 
+    //creates bank account by 'iban' and 'bic' fields from 'psp_result_data' params
+    if (!empty($params['psp_result_data']['iban']) && !empty($params['psp_result_data']['bic'])) {
+      _civicrm_api3_o_s_f_contract_getBA($params['psp_result_data']['iban'], $params['contact_id'], ['BIC' => $params['psp_result_data']['bic']]);
+    }
+
     // and return the good news (otherwise an Exception would have occurred)
     return $result;
   } catch (Exception $e) {
@@ -512,6 +517,11 @@ function _civicrm_api3_o_s_f_contract_spec(&$params) {
     'name'         => 'referrer_contact_id',
     'api.required' => 0,
     'title'        => 'ID of the contact who referred this contract',
+  ];
+  $params['psp_result_data'] = [
+    'name' => 'psp_result_data',
+    'title' => 'PSP Result Data',
+    'api.required' => 0,
   ];
 
   // UTM fields:
