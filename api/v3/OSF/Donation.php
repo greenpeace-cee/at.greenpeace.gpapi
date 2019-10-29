@@ -155,6 +155,11 @@ function _civicrm_api3_o_s_f_donation_process($params) {
       CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
     }
 
+    //creates bank account by 'iban' and 'bic' fields from 'psp_result_data' params
+    if (!empty($params['psp_result_data']['iban']) && !empty($params['psp_result_data']['bic'])) {
+      _civicrm_api3_o_s_f_contract_getBA($params['psp_result_data']['iban'], $params['contact_id'], ['BIC' => $params['psp_result_data']['bic']]);
+    }
+
     return $contribution;
   } catch (Exception $e) {
     $tx->rollback();
@@ -230,6 +235,11 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'name'         => 'trxn_id',
     'api.required' => 0,
     'title'        => 'Transaction ID (only for payment_instrument!=OOFF)',
+  ];
+  $params['psp_result_data'] = [
+    'name' => 'psp_result_data',
+    'title' => 'PSP Result Data',
+    'api.required' => 0,
   ];
 
   // UTM fields:
