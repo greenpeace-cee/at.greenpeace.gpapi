@@ -47,6 +47,7 @@ The `Engage.signpetition` endpoint allows clients to transparently get or create
 | `first_name`[^1] | String  | | |
 | `last_name`[^1]  | String  | | |
 | `prefix`         | String  | | Values available: `Herr` or `Frau`, @TODO: Gender/prefix gap? |
+| `gender_id`      | Integer | | Values available: CiviCRM Option Value ('gender' Option Group) |
 | `birth_date`[^1] | Date    | | Format: `YYYY-MM-DD` |
 | `bpk`[^1]        | String  | | Austrian tax office identifier for `contact_type` = `Individual` |
 | `email`[^1]      | String  | | Need to be valid format `%@%.%` otherwise it is garbaged by API |

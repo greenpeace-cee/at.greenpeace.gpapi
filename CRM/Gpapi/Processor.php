@@ -67,6 +67,18 @@ class CRM_Gpapi_Processor {
       }
     }
 
+    if (!empty($params['gender_id']) && empty($params['prefix_id']) && empty($params['prefix'])) {
+      $genderPrefixMap = Civi::settings()->get('gpapi_gender_to_prefix_map');
+      if (isset($genderPrefixMap[$params['gender_id']])) {
+        $params['prefix_id'] = CRM_Core_PseudoConstant::getKey(
+          'CRM_Contact_BAO_Contact',
+          'prefix_id',
+          $genderPrefixMap[$params['gender_id']]
+        );
+        unset($params['prefix']);
+      }
+    }
+
     // country_id needs to be set for XCM
     if (empty($params['country_id']) && !empty($params['country'])) {
       if (is_numeric($params['country'])) {

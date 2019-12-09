@@ -13,4 +13,17 @@ return array (
     'is_domain' => 1,
     'is_contact' => 0,
   ),
+  'gpapi_gender_to_prefix_map' => array(
+    'group_name' => 'gpapi',
+    'group' => 'gpapi',
+    'name' => 'gpapi_gender_to_prefix_map',
+    'type' => 'Array',
+    'default' => [
+      1 => 'Ms.',
+      2 => 'Mr.',
+    ],
+    'add' => '4.6',
+    'is_domain' => 1,
+    'is_contact' => 0,
+  ),
 );

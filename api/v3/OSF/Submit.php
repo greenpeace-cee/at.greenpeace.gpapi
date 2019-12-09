@@ -145,6 +145,11 @@ function _civicrm_api3_o_s_f_submit_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Last Name',
     );
+  $params['gender_id'] = array(
+    'name'         => 'gender_id',
+    'api.required' => 0,
+    'title'        => 'Gender ID',
+  );
   $params['prefix'] = array(
     'name'         => 'prefix',
     'api.required' => 0,
