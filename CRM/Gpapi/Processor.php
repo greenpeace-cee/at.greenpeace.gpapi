@@ -422,4 +422,27 @@ class CRM_Gpapi_Processor {
       return;
     }
   }
+
+  /**
+   * Set param contact id if it is found by contact hash
+   *
+   * @param $contact_data
+   *
+   * @return bool
+   */
+  public static function setContactIdByHash(&$contact_data) {
+    if (!empty($contact_data['hash'])) {
+      try {
+        $contact_by_hash = civicrm_api3('Contact', 'getsingle', [
+          'hash' => $contact_data['hash'],
+        ]);
+      } catch (CiviCRM_API3_Exception $e) {
+        return FALSE;
+      }
+
+      $contact_data['id'] = $contact_by_hash['id'];
+    }
+
+    return TRUE;
+  }
 }

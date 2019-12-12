@@ -94,6 +94,15 @@ function _civicrm_api3_engage_signpetition_process($params) {
     if (array_key_exists('external_identifier', $contact_data)) {
       unset($contact_data['external_identifier']);
     }
+
+    if (!CRM_Gpapi_Processor::setContactIdByHash($contact_data)) {
+      return civicrm_api3_create_error('Unknown contact hash');
+    }
+
+    if (!empty($contact_data['hash'])) {
+      unset($contact_data['hash']);
+    }
+
     $contact_id = CRM_Gpapi_Processor::getOrCreateContact($contact_data);
     $result['id'] = $contact_id;
 
@@ -231,6 +240,11 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Birth Date',
     );
+  $params['hash'] = array(
+    'name'         => 'hash',
+    'api.required' => 0,
+    'title'        => 'Hash',
+  );
   $params['bpk'] = array(
     'name'         => 'bpk',
     'api.required' => 0,
