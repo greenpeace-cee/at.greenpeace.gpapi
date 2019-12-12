@@ -100,11 +100,7 @@ function _civicrm_api3_engage_signpetition_process($params) {
     }
 
     if (!empty($contact_data['hash'])) {
-      $xcm_config = CRM_Core_BAO_Setting::getItem('de.systopia.xcm', 'xcm_config_profiles');
-
-      if (empty($xcm_config[$params['xcm_profile']]['options']['match_contact_id'])) {
-        unset($contact_data['hash']);
-      }
+      unset($contact_data['hash']);
     }
 
     $contact_id = CRM_Gpapi_Processor::getOrCreateContact($contact_data);
