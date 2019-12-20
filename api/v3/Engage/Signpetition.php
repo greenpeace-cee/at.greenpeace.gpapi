@@ -235,6 +235,11 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Last Name',
     );
+  $params['gender_id'] = array(
+    'name'         => 'gender_id',
+    'api.required' => 0,
+    'title'        => 'Gender ID',
+  );
   $params['birth_date'] = array(
     'name'         => 'birth_date',
     'api.required' => 0,
