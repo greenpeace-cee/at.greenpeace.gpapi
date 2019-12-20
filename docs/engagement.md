@@ -4,18 +4,18 @@ The Engage API, located in the "Engage" entity, supports the following
 features:
 
 - Creating or matching contacts
-- Creating activities from type `petition_signature` 
+- Creating activities from type `petition_signature`
 - Retrieving a list of petition related campaigns
-- Retrieving a list of available media for how a petiton can be transferred
+- Retrieving a list of available media for how a petition can be transferred
 
-A Standard use case would be that the API-using application sends the contact data and petition data to Civi. If the contact already exists in Civi, the petition signature activity is created at that found contact, otherwise a new contact is created and the petition signature activity is created at that found contact. 
+A Standard use case would be that the API-using application sends the contact data and petition data to Civi. If the contact already exists in Civi, the petition signature activity is created at that found contact, otherwise a new contact is created and the petition signature activity is created at that found contact.
 
 ## Endpoints
 
 ### Surveys `(Engage.getpetitions)`
 
 #### Description
-The `Engage.getpetitions` endpoint allows clients to retrieve a list of all the petitions in Civi. 
+The `Engage.getpetitions` endpoint allows clients to retrieve a list of all the petitions in Civi.
 
 #### Parameters
 From the return values you shall use for input fields:
@@ -27,7 +27,7 @@ From the return values you shall use for input fields:
 ### Option Value `(Engage.getmedia)`
 
 #### Description
-The `Engage.getmedia` endpoint allows clients to retrieve a list of all contact media used by the Engagement Tool. 
+The `Engage.getmedia` endpoint allows clients to retrieve a list of all contact media used by the Engagement Tool.
 
 #### Parameters
 From the returned values you have to use for the `medium_id` field of the `Engage.getmedia` action the field `value` NOT the returned field `id`!
@@ -46,8 +46,8 @@ The `Engage.signpetition` endpoint allows clients to transparently get or create
 | `contact_type`   | String  | `Individual` | CiviCRM contact type |
 | `first_name`[^1] | String  | | |
 | `last_name`[^1]  | String  | | |
-| `prefix`         | String  | | Values available: `Herr` or `Frau`, @TODO: Gender/prefix gap? |
-| `gender_id`      | Integer | | Values available: CiviCRM Option Value ('gender' Option Group) |
+| `prefix`         | String  | | Values available: `Herr`, `Frau`, `Familie`. <br /> **Note:** These values may be language- and instance-specific. It is preferred to set `gender_id` and leave this field empty whenever possible. |
+| `gender_id`      | String  | | Values available: `Male`, `Female`, `Other`. <br />**Note:** These values are case-sensitive. |
 | `birth_date`[^1] | Date    | | Format: `YYYY-MM-DD` |
 | `bpk`[^1]        | String  | | Austrian tax office identifier for `contact_type` = `Individual` |
 | `email`[^1]      | String  | | Need to be valid format `%@%.%` otherwise it is garbaged by API |
