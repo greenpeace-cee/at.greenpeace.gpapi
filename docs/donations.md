@@ -11,16 +11,17 @@ features:
 - Retrieving a list of available webshop products
 - Forwarding of Payment Service Provider (PSP) notifications
 
-A Standard use case would be that the API-using application sends the contact data to Civi to check, if the contact already exists there. If so, an existing contact_id is returned, otherwise a new contact_id is created and returned. Whith this information the application is able to send a contribution or a membership to Civi and connect it with the before communicated contact_id. If the membership or contribution is connected with an order of an item, the application will also create an activity from type `webshop_order`. 
+A Standard use case would be that the API-using application sends the contact data to Civi to check, if the contact already exists there. If so, an existing contact_id is returned, otherwise a new contact_id is created and returned. Whith this information the application is able to send a contribution or a membership to Civi and connect it with the before communicated contact_id. If the membership or contribution is connected with an order of an item, the application will also create an activity from type `webshop_order`.
 
 ## Endpoints
 
 ### Campaigns `(OSF.getcampaigns)`
 
 #### Description
-The `OSF.getcampaigns` endpoint allows clients to retrieve a list of all the campaigns in Civi which the OSF is allowed to see. 
+The `OSF.getcampaigns` endpoint allows clients to retrieve a list of all the campaigns in Civi which the OSF is allowed to see.
 
-#### Parameters
+#### Return Value
+
 From the return values you shall use for input fields:
 
 - `external_id` for `campaign`
@@ -31,10 +32,16 @@ From the return values you shall use for input fields:
 ### Option Value `(OSF.getproducts)`
 
 #### Description
-The `OSF.getproducts` endpoint allows clients to retrieve a list of all products for the OSF available. 
 
-#### Parameters
-From the returned values you have to use for the `order_type` field of the `OSF.order` action the field `value`!
+The `OSF.getproducts` endpoint allows clients to retrieve a list of all products for the OSF available.
+
+#### Return Value
+
+Returns an array of known products. The following properties are the most relevant:
+
+ * `label` contains the human-readable product name that should be used in the user interface.
+ * `value` is the identifier of the product that should be used as the value for the `order_type` parameter of the `OSF.order` endpoint.
+ * `weight` can be used to determine the order in which options are rendered in the user interface (lowest number first).
 
 ---
 
@@ -111,7 +118,7 @@ the Contribution-ID in the Field `id`.
 
 #### Return Value
 
-Returns the Contribution-ID in the field `id` 
+Returns the Contribution-ID in the field `id`
 
 ---
 
@@ -142,7 +149,7 @@ the Activity-ID in the Field `id`.
 
 #### Return Value
 
-Returns the Activity-ID of the order in the field `id` 
+Returns the Activity-ID of the order in the field `id`
 
 ---
 
@@ -182,7 +189,7 @@ the Membership-ID in the Field `id`.
 
 #### Return Value
 
-Returns the Membership-ID in the field `id` 
+Returns the Membership-ID in the field `id`
 
 
 
