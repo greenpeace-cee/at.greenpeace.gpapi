@@ -136,7 +136,6 @@ the Activity-ID in the Field `id`.
 | `contact_id`*         | Integer | | CiviCRM Contact ID |
 | `campaign`            | String  | | External ID for donation-relevant campaign |
 | `campaign_id`         | Integer | | Overwrites `campaign` |
-| `subject`             | String  | `Webshop Order` | Title of the created activity |
 | `order_type`*         | Integer | | Use `osf.getproducts` to get the right product value (use the `value` NOT the `id`) |
 | `order_count`*        | Integer | | Amount of ordered items |
 | `linked_contribution` | Integer | | CiviCRM ID of the contribution which paid the order (has to be empty if `linked_membership` is set!) |
@@ -145,6 +144,7 @@ the Activity-ID in the Field `id`.
 | `shirt_type`          | String  | | If order type = `11` then choose: `M`, `W` |
 | `payment_received`    | Boolean | | Set `true`, if the order is already payed |
 | `multi_purpose`       | String  | | Field for additional information, where there is no parameter yet in the API implemented |
+| <s>`subject`</s>             | <s>String</s>  | <s>`Webshop Order`</s> | <s>Title of the created activity</s> |
 <small>**\* mandatory field**</small>
 
 #### Return Value

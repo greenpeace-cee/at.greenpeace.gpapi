@@ -110,7 +110,7 @@ function _civicrm_api3_o_s_f_order_spec(&$params) {
   $params['subject'] = array(
     'name'         => 'subject',
     'api.default'  => "Webshop Order",
-    'title'        => 'Webshop Order Subject Line',
+    'title'        => 'Webshop Order Subject Line. DEPRECATED',
     );
   $params['order_type'] = array(
     'name'         => 'order_type',
