@@ -203,6 +203,12 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         'check_permissions' => 0,
         'id' => $mandate['id']
       ]);
+      // adjust payment_instrument_id (required for PSP-SEPA)
+      civicrm_api3('ContributionRecur', 'create', [
+        'id' => $mandate['entity_id'],
+        'payment_instrument_id' => (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', $params['payment_instrument']),
+        'currency' => $currency,
+      ]);
       $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']);
       // create the contract
       $result = civicrm_api3('Contract', 'create', [
@@ -220,7 +226,6 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         'membership_payment.to_ba' => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []),
         'membership_payment.from_ba' => $bank_account,
         'membership_payment.cycle_day' => $cycle_day,
-        'membership_payment.payment_instrument' => (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', $params['payment_instrument']),
       ]);
     } catch (Exception $ex) {
       throw $ex;
@@ -256,12 +261,6 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
     civicrm_api3('BankingAccountReference', 'create', [
       'reference_type_id' => $reference_type_id,
       'id' => $bank_account_reference,
-    ]);
-
-    civicrm_api3('ContributionRecur', 'create', [
-      'id' => $mandate['entity_id'],
-      'payment_instrument_id' => (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', $params['payment_instrument']),
-      'currency' => $currency,
     ]);
 
     if (!empty($params['payment_received'])) {
