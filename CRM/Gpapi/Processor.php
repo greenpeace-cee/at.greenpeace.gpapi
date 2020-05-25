@@ -457,4 +457,50 @@ class CRM_Gpapi_Processor {
 
     return TRUE;
   }
+
+  /**
+   * Update contact.
+   * Set param contact id if it is found by contact 'bpk_extern'
+   *
+   * @param $contact_data
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  public static function updateContactByBpk(&$contact_data) {
+    $bpk_extern_field_id = civicrm_api3('CustomField', 'getvalue', [
+      'return' => 'id',
+      'custom_group_id' => 'bpk',
+      'name' => 'bpk_extern',
+    ]);
+    $name = 'custom_' . $bpk_extern_field_id;
+    if (empty($contact_data[$name])) {
+      return;
+    }
+
+    $contacts = civicrm_api3('Contact', 'get', [
+      'return' => ['id'],
+      $name => $contact_data[$name],
+      'options' => ['limit' => 0],
+    ]);
+    if ($contacts['count'] < 1) {
+      return;
+    }
+
+    if (!empty($contact_data['first_name'])) {
+      $update_params['first_name'] = $contact_data['first_name'];
+    }
+    if (!empty($contact_data['last_name'])) {
+      $update_params['last_name'] = $contact_data['last_name'];
+    }
+    if (!empty($contact_data['birth_date'])) {
+      $update_params['birth_date'] = $contact_data['birth_date'];
+    }
+
+    foreach ($contacts['values'] as $value) {
+      $update_params['id'] = $value['id'];
+      civicrm_api3('Contact', 'create', $update_params);
+    }
+    $contact_data['id'] = min($contacts['values'])['id'];
+  }
+
 }
