@@ -467,21 +467,22 @@ class CRM_Gpapi_Processor {
    * @throws \CiviCRM_API3_Exception
    */
   public static function updateContactByBpk(&$contact_data) {
+    if (empty($contact_data['bpk'])) {
+      return;
+    }
+
     $bpk_extern_field_id = civicrm_api3('CustomField', 'getvalue', [
       'return' => 'id',
       'custom_group_id' => 'bpk',
       'name' => 'bpk_extern',
     ]);
     $name = 'custom_' . $bpk_extern_field_id;
-    if (empty($contact_data[$name])) {
-      return;
-    }
-
     $contacts = civicrm_api3('Contact', 'get', [
       'return' => ['id'],
-      $name => $contact_data[$name],
+      $name => $contact_data['bpk'],
       'options' => ['limit' => 0],
     ]);
+
     if ($contacts['count'] < 1) {
       return;
     }
