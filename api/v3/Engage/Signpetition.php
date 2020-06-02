@@ -95,6 +95,8 @@ function _civicrm_api3_engage_signpetition_process($params) {
       unset($contact_data['external_identifier']);
     }
 
+    CRM_Gpapi_Processor::updateContactByBpk($contact_data);
+
     if (!CRM_Gpapi_Processor::setContactIdByHash($contact_data)) {
       return civicrm_api3_create_error('Unknown contact hash');
     }
