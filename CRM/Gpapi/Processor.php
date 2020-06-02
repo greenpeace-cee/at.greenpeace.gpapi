@@ -475,18 +475,23 @@ class CRM_Gpapi_Processor {
       'return' => 'id',
       'custom_group_id' => 'bpk',
       'name' => 'bpk_extern',
+      'check_permissions' => 0,
     ]);
     $name = 'custom_' . $bpk_extern_field_id;
     $contacts = civicrm_api3('Contact', 'get', [
       'return' => ['id'],
       $name => $contact_data['bpk'],
       'options' => ['limit' => 0],
+      'check_permissions' => 0,
     ]);
 
     if ($contacts['count'] < 1) {
       return;
     }
 
+    $update_params = [
+      'check_permissions' => 0,
+    ];
     if (!empty($contact_data['first_name'])) {
       $update_params['first_name'] = $contact_data['first_name'];
     }
