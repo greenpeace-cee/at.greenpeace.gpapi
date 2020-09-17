@@ -355,4 +355,10 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'title' => 'UTM Content',
     'api.required' => 0,
   ];
+
+  $params['geoip_country_id'] = [
+    'name' => 'geoip_country_id',
+    'title' => 'GeoIP Country',
+    'api.required' => 0,
+  ];
 }

@@ -70,6 +70,7 @@ The `Engage.signpetition` endpoint allows clients to transparently get or create
 | `utm_medium`     | String  | | UTM Medium. Identifies what type of link was used |
 | `utm_campaign`   | String  | | UTM Campaign. Identifies a specific promotion or strategic campaign |
 | `utm_content`    | String  | | UTM Content. Identifies what specifically was clicked to bring the user to the site |
+| `geoip_country_id` | String | | **GeoIP** country code according to ISO 3166-1 alpha-2 |
 
 [^1]:
     At least *one* of the following (combinations of) fields needs to be present:
