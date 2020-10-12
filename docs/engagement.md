@@ -92,3 +92,17 @@ Returns the Contact-ID in the field `id` and in the `values` array an object wit
 
 ---
 
+### Campaigns `(Engage.getcampaigns)`
+
+#### Description
+
+The `Engage.getcampaigns` endpoint allows clients to retrieve a list of all root campaigns and campaigns that are enabled for for the Engagement Tool
+(Flag `campaign_et_enabled`).
+
+#### Parameters
+
+None.
+
+#### Return Value
+
+Returns a result object with a `values` array containing the requested campaigns.
