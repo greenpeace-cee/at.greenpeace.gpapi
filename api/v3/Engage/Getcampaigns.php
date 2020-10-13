@@ -8,6 +8,8 @@
  * @access public
  */
 function civicrm_api3_engage_getcampaigns($params) {
+    CRM_Gpapi_Processor::preprocessCall($params, 'Engage.getcampaigns');
+
     $etEnabledId = civicrm_api3("CustomField", "getsingle", [
         "name"   => "campaign_et_enabled",
         "return" => [ "id" ],
