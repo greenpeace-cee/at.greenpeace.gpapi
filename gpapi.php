@@ -157,6 +157,7 @@ function gpapi_civicrm_alterAPIPermissions($entity, $action, &$params, &$permiss
 
   // Engage
   $permissions['engage']['signpetition'] = array('access Engage API');
+  $permissions['engage']['getcampaigns'] = array('access Engage API');
   $permissions['engage']['getmedia']     = array('access Engage API');
   $permissions['engage']['getpetitions'] = array('access Engage API');
   $permissions['engage']['startcase']    = array('access Engage API');
