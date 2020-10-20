@@ -66,6 +66,12 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       return civicrm_api3_create_error('No contact found.');
     }
 
+    $payment_instrument = (int) CRM_Core_PseudoConstant::getKey(
+      'CRM_Contribute_BAO_Contribution',
+      'payment_instrument_id',
+      $params['payment_instrument']
+    );
+
     $referrer = NULL;
     if (!empty($params['referrer_contact_id'])) {
       try {
@@ -197,17 +203,12 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         'start_date' => $params['start_date'],
         'campaign_id' => $params['campaign_id'],
         'financial_type_id' => 2, // Membership Dues
+        'payment_instrument_id' => $payment_instrument,
       ]);
       // reload mandate
       $mandate = civicrm_api3('SepaMandate', 'getsingle', [
         'check_permissions' => 0,
         'id' => $mandate['id']
-      ]);
-      // adjust payment_instrument_id (required for PSP-SEPA)
-      civicrm_api3('ContributionRecur', 'create', [
-        'id' => $mandate['entity_id'],
-        'payment_instrument_id' => (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', $params['payment_instrument']),
-        'currency' => $currency,
       ]);
       $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']);
       // create the contract
@@ -223,6 +224,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         'membership_payment.membership_annual' => number_format($params['amount'] * $params['frequency'], 2, '.', ''),
         'membership_payment.membership_frequency' => $params['frequency'],
         'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
+        'membership_payment.payment_instrument' => $payment_instrument,
         'membership_payment.to_ba' => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []),
         'membership_payment.from_ba' => $bank_account,
         'membership_payment.cycle_day' => $cycle_day,
@@ -284,10 +286,9 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         'contact_id' => $mandate['contact_id'],
         'contribution_recur_id' => $mandate['entity_id'],
         'financial_type_id' => $rec_contribution['financial_type_id'],
-        'contribution_status_id' => $rec_contribution['contribution_status_id'],
         'campaign_id' => $rec_contribution['campaign_id'],
         'is_test' => $rec_contribution['is_test'],
-        'payment_instrument_id' => (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', 'FRST'),
+        'payment_instrument_id' => $payment_instrument,
         'contribution_status_id' => (int) CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed'),
         'trxn_id' => $params['trxn_id'],
         'source' => 'OSF',
