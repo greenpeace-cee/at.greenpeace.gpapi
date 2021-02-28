@@ -64,9 +64,12 @@ parameter `json=1` can be added to request a JSON response
 
 API responses may contain the following fields:
 
-| Field | Type | Description |
-| --------------- | ------------- | ----------------------------------------- |
-| `is_error` | `boolean`  | Whether an error occurred during the request. Errors can be anything from data validation issues (missing or invalid parameters) to runtime errors. |
+| Field        | Type      | Description                               |
+| ------------ | --------- | ----------------------------------------- |
+| `is_error`   | Boolean   | Whether an error occurred during the request. Errors can be anything from data validation issues (missing or invalid parameters) to runtime errors. |
+| `error_code` | String    | Error codes are provided in some error scenarios and, if available, are documented for each individual endpoint. |
+| `count`      | Integer   | Number of records in the response (if applicable) |
+| `values`     | Mixed     | Return value(s) as an array or scalar value, depending on the endpoint |
 
 In certain situations, for example during maintenance windows, the API may also
 use HTTP status codes in the `4xx` and `5xx` range to indicate that there was an

@@ -148,23 +148,26 @@ function gpapi_civicrm_permission(&$permissions) {
  */
 function gpapi_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions) {
   // OSF
-  $permissions['o_s_f']['submit']       = array('access OSF API');
-  $permissions['o_s_f']['donation']     = array('access OSF API');
-  $permissions['o_s_f']['order']        = array('access OSF API');
-  $permissions['o_s_f']['contract']     = array('access OSF API');
-  $permissions['o_s_f']['getcampaigns'] = array('access OSF API');
-  $permissions['o_s_f']['getproducts']  = array('access OSF API');
+  $permissions['o_s_f']['submit']       = ['access OSF API'];
+  $permissions['o_s_f']['donation']     = ['access OSF API'];
+  $permissions['o_s_f']['order']        = ['access OSF API'];
+  $permissions['o_s_f']['contract']     = ['access OSF API'];
+  $permissions['o_s_f']['getcampaigns'] = ['access OSF API'];
+  $permissions['o_s_f']['getproducts']  = ['access OSF API'];
+  $permissions['o_s_f']['getcontact']   = ['access OSF API'];
+  $permissions['o_s_f']['getcontract']  = ['access OSF API'];
+  $permissions['o_s_f']['updatecontract'] = ['access OSF API'];
 
   // Engage
-  $permissions['engage']['signpetition'] = array('access Engage API');
-  $permissions['engage']['getcampaigns'] = array('access Engage API');
-  $permissions['engage']['getmedia']     = array('access Engage API');
-  $permissions['engage']['getpetitions'] = array('access Engage API');
-  $permissions['engage']['startcase']    = array('access Engage API');
+  $permissions['engage']['signpetition'] = ['access Engage API'];
+  $permissions['engage']['getcampaigns'] = ['access Engage API'];
+  $permissions['engage']['getmedia']     = ['access Engage API'];
+  $permissions['engage']['getpetitions'] = ['access Engage API'];
+  $permissions['engage']['startcase']    = ['access Engage API'];
 
   // Newsletter
-  $permissions['newsletter']['subscribe']   = array('access Newsletter API');
-  $permissions['newsletter']['unsubscribe'] = array('access Newsletter API');
+  $permissions['newsletter']['subscribe']   = ['access Newsletter API'];
+  $permissions['newsletter']['unsubscribe'] = ['access Newsletter API'];
   $permissions['newsletter']['getgroups'] = ['access Newsletter API'];
 }
 

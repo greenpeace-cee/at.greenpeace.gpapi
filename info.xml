@@ -20,6 +20,7 @@
   <requires>
     <ext>de.systopia.xcm</ext>
     <ext>com.cividesk.normalize</ext>
+    <ext>de.systopia.contract</ext>
   </requires>
   <compatibility>
     <ver>4.7</ver>
@@ -28,4 +29,7 @@
   <civix>
     <namespace>CRM/Gpapi</namespace>
   </civix>
+  <classloader>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
 </extension>

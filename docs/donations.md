@@ -3,13 +3,14 @@
 The donations API, located in the "OSF" entity, supports the following
 features:
 
+- Fetching contact details given a contact hash
+- Fetching contract/membership data and payment-related information given a membership ID and contact hash
 - Creating or matching contacts
 - Creating one-off donations
 - Creating recurring donations (memberships/contracts)
 - Creating webshop orders
 - Retrieving a list of Web-related campaigns
 - Retrieving a list of available webshop products
-- Forwarding of Payment Service Provider (PSP) notifications
 
 A Standard use case would be that the API-using application sends the contact data to Civi to check, if the contact already exists there. If so, an existing contact_id is returned, otherwise a new contact_id is created and returned. Whith this information the application is able to send a contribution or a membership to Civi and connect it with the before communicated contact_id. If the membership or contribution is connected with an order of an item, the application will also create an activity from type `webshop_order`.
 
@@ -42,6 +43,91 @@ Returns an array of known products. The following properties are the most releva
  * `label` contains the human-readable product name that should be used in the user interface.
  * `value` is the identifier of the product that should be used as the value for the `order_type` parameter of the `OSF.order` endpoint.
  * `weight` can be used to determine the order in which options are rendered in the user interface (lowest number first).
+
+---
+
+### Get Contact `(OSF.getcontact)`
+
+#### Description
+Receive contact-related information given a contact hash.
+
+#### Parameters
+
+| Field (required) | Type    | Default    | Description                         |
+| ---------------  | ------- | ---------- | ----------------------------------- |
+| `hash`*          | String  |            | Contact hash                        |
+<small>**\* mandatory field**</small>
+
+#### Return Value
+
+| Field (required) | Type    | Description                         |
+| ---------------  | ------- | ----------------------------------- |
+| `contact_id`*    | Integer | CiviCRM contact type |
+| `first_name`     | String  | |
+| `last_name`      | String  | |
+| `prefix`         | String  | AT: One of `Herr`, `Frau`, `Familie` |
+| `gender`         | String  | One of `Male`, `Female`, `Other`
+| `birth_date`     | Date    | Format: `YYYY-MM-DD` |
+| `bpk`            | String  | Austrian tax office identifier for `contact_type` = `Individual` |
+| `email`          | String  | |
+| `phone`          | String  | |
+| `street_address` | String  | Street name and house number separated by one space |
+| `postal_code`    | String  | |
+| `city`           | String  | |
+| `country`        | String  | Country code according to ISO 3166-1 alpha-2 |
+<small>**\* mandatory field**</small>
+
+#### Error codes
+
+| Error Code        | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| `unknown_hash`    | The provided contact hash does not exist or was deleted. |
+
+---
+
+### Get Contract `(OSF.getcontract)`
+
+#### Description
+Receive membership and payment-related information given a contact hash and contract ID.
+
+#### Parameters
+
+| Field (required) | Type    | Default    | Description                         |
+| ---------------  | ------- | ---------- | ----------------------------------- |
+| `hash`*          | String  |            | Contact hash                        |
+| `contract_id`*   | Integer |            | Contract/Membership ID              |
+<small>**\* mandatory field**</small>
+
+#### Return Value
+
+| Field (required)            | Type    | Description                         |
+| --------------------------  | ------- | ----------------------------------- |
+| `frequency`*                | Integer | Number of debits per year, e.g. 12 for monthly |
+| `amount`*                   | Float   | Amount for each individual debit (i.e. monthly amount for monthly contracts). Format: `1000.00` |
+| `annual_amount`*            | Float   | Annual debit amount (frequency * amount) |
+| `cycle_day`*                | Integer | Day of month on which debits are performed |
+| `currency`*                 | String  | ISO 4217 currency code |
+| `membership_type`*          | String  | AT: One of `Förderer`, `Könige der Wälder`, `Flottenpatenschaft`, `Landwirtschaft`, `Baumpatenschaft`, `arctic defender`, `Guardian of the Ocean`, `Walpatenschaft`, `Atom-Eingreiftrupp`, `Greenpeace for me` |
+| `status`*                   | String  | One of `Current`, `Paused`, `Cancelled` |
+| `payment_instrument`*       | String  | One of: `RCUR`, `Credit Card`, `Sofortüberweisung`, `EPS`. **Note:** RCUR is SEPA |
+| `payment_service_provider`* | String  | One of: `civicrm`, `adyen`. `civicrm` is used for SEPA/RCUR |
+| `payment_label`             | String  | Human-readable label for the used payment instrument which can be displayed to the user and is intended to help them recognize it. For SEPA this is the masked IBAN, e.g.: `AT71 **** **** **** 8032`. **Note:** Only SEPA/RCUR is supported currently.
+| `payment_details`*          | Array   | Elements depend on `payment_instrument` and `payment_service_provider` |
+| *for payment_instrument=\*, payment_service_provider=adyen:* |
+| ↳ `shopper_reference`*      | String  | Adyen Shopper Reference |
+| ↳ `merchant_account`*       | String  | Adyen Merchant Account, e.g. `GreenpeaceAT` |
+| *for payment_instrument=RCUR, payment_service_provider=civicrm:* |
+| ↳ `iban`*                   | String  | IBAN |
+<small>**\* mandatory field**</small>
+
+#### Error codes
+
+| Error Code                       | Description                                              |
+| -------------------------------- | -------------------------------------------------------- |
+| `unknown_hash`                   | The provided contact hash does not exist or was deleted. |
+| `unknown_contract`               | The contract does not exist or does not belong to this contact. |
+| `payment_instrument_unsupported` | The contract has a payment instrument that is not supported by this API. |
+| `payment_method_invalid`         | The contract has an invalid payment method. |
 
 ---
 
@@ -191,5 +277,52 @@ the Membership-ID in the Field `id`.
 
 Returns the Membership-ID in the field `id`
 
+### Update Contract `(OSF.updatecontract)`
 
+#### Description
 
+Update membership and payment-related information.
+
+**Important:** This endpoint is not yet functional. Minor changes to the request or response structure may still be necessary.
+
+#### Parameters
+
+| Field (required)            | Type    | Default    | Description                         |
+| --------------------------- | ------- | ---------- | ----------------------------------- |
+| `hash`*                     | String  |            | Contact hash                        |
+| `contract_id`*              | Integer |            | Contract/Membership ID              |
+| `frequency`*                | Integer |            | Number of debits per year, e.g. 12 for monthly |
+| `amount`*                   | Float   |            | Amount for each individual debit (i.e. monthly amount for monthly contracts). Format: `1000.00` |
+| `payment_instrument`*       | String  |            | One of: `RCUR`, `Credit Card`, `Sofortüberweisung`, `EPS`. **Note:** RCUR is SEPA |
+| `payment_service_provider`* | String  |            | One of: `civicrm`, `adyen`. `civicrm` is used for SEPA/RCUR |
+| `payment_details`*          | Array   |            | Elements depend on `payment_instrument` and `payment_service_provider` |
+| *for payment_instrument=\*, payment_service_provider=adyen:* |
+| ↳ `shopper_reference`*      | String  |            | Adyen Shopper Reference |
+| ↳ `merchant_account`*       | String  |            | Adyen Merchant Account, e.g. `GreenpeaceAT` |
+| *for payment_instrument=RCUR, payment_service_provider=civicrm:* |
+| ↳ `iban`*                   | String  |            | IBAN |
+| `start_date`                 | Date    | Now       | Date on which the update becomes effective. Defaults to now. Values in the past will automatically be set to the current date. Note: This is not the actual first debit date, which would depend on a combination of the current date, cycle_day, payment instrument and payment service provider and the transaction_details parameter. Format: `YYYY-MM-DD` |
+| `cycle_day`                  | Integer | Earliest possible day | Day of month on which debits are performed. |
+| `currency`                   | String  | CiviCRM default | ISO 4217 currency code. |
+| `membership_type`            | String  | Current membership type | AT: One of `Förderer`, `Könige der Wälder`, `Flottenpatenschaft`, `Landwirtschaft`, `Baumpatenschaft`, `arctic defender`, `Guardian of the Ocean`, `Walpatenschaft`, `Atom-Eingreiftrupp`, `Greenpeace for me` |
+| `campaign_id`                | Integer |           | CiviCRM campaign ID for the update (not the overall membership) |
+| `external_identifier`        | String  |           | Unique identifier of the donation in an external system. Make sure submitted values are either globally unique or use a prefix to partition identifiers, e.g. `ODF-1`. Requests with duplicate values will be rejected. |
+| `transaction_details`        | Array   |           | Used for payment providers where the first transaction is performed outside of CiviCRM and the transaction needs to be entered in CiviCRM. Required for some combinations of `payment_instrument` and `payment_service_provider` **if** a transaction was performed (e.g. after entering new payment details) |
+| *for payment_instrument=\*, payment_service_provider=adyen:* |
+| ↳ `date`*                    | String  |           | Date on which the transaction was performed. Format: `YYYYMMDDHHIISS` (PHP Format: `YmdHis`) |
+| ↳ `trxn_id`*                 | String  |           | Adyen merchant reference. Must be unique. |
+| ↳ `authorise_response`       | Array   |           | Array of raw Adyen response for the `/authorise` request |
+<small>**\* mandatory field**</small>
+
+#### Return Value
+
+Returns the activity ID of the update in the field `id`.
+
+#### Error codes
+
+| Error Code                             | Description                                              |
+| -------------------------------------- | -------------------------------------------------------- |
+| `unknown_hash`                         | The provided contact hash does not exist or was deleted. |
+| `unknown_contract`                     | The contract does not exist or does not belong to this contact. |
+| `payment_instrument_unsupported`       | The requested payment instrument is not supported by this API. |
+| `payment_service_provider_unsupported` | The requested payment service provider is not supported by this API. |

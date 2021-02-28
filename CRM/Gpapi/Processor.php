@@ -12,6 +12,11 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
+use Civi\Api4\Address;
+use Civi\Api4\Contact;
+use Civi\Api4\Country;
+use Civi\Api4\Email;
+use Civi\Api4\Phone;
 use libphonenumber\PhoneNumberUtil;
 use libphonenumber\PhoneNumberFormat;
 
@@ -19,6 +24,8 @@ use libphonenumber\PhoneNumberFormat;
  * Common functions for GP API
  */
 class CRM_Gpapi_Processor {
+
+  const CONTEXT_ODF = 1;
 
   // static list of address attributes
   protected static $address_attributes = array('street_address', 'postal_code', 'city', 'state_province_id', 'country', 'country_id', 'supplemental_address_1', 'supplemental_address_2', 'supplemental_address_3');
@@ -456,6 +463,115 @@ class CRM_Gpapi_Processor {
     }
 
     return TRUE;
+  }
+
+  /**
+   * Get the latest contact ID associated with a contact hash
+   *
+   * @param $hash
+   */
+  public static function resolveContactHash($hash) {
+    // fetch contact by hash and include deleted contacts initially to account
+    // for merge-deleted contacts
+    $contact = Contact::get()
+      ->addSelect('id')
+      ->addWhere('hash', '=', $hash)
+      ->addWhere('is_deleted', 'IN', [TRUE, FALSE])
+      ->setCheckPermissions(FALSE)
+      ->execute()
+      ->first();
+    if (is_null($contact)) {
+      return NULL;
+    }
+    // resolve to merge-survivor if necessary
+    self::identifyContactID($contact['id']);
+    // at this point $contact['id'] could refer to a not-merge-related deleted
+    // contact. Ensure the final contact is not deleted
+    $isActive = Contact::get()
+      ->selectRowCount()
+      ->addWhere('id', '=', $contact['id'])
+      ->addWhere('is_deleted', '=', FALSE)
+      ->setCheckPermissions(FALSE)
+      ->execute()
+      ->count();
+    if (!$isActive) {
+      return NULL;
+    }
+    return $contact['id'];
+  }
+
+  public static function getContactData($contactId, $context = self::CONTEXT_ODF) {
+    $contact = Contact::get()
+      ->addSelect('id', 'first_name', 'last_name', 'prefix_id', 'gender_id', 'birth_date')
+      ->addWhere('id', '=', $contactId)
+      ->addChain('email',
+        Email::get()
+          ->addSelect('email')
+          ->addWhere('contact_id', '=', '$id')
+          ->addWhere('is_primary', '=', '1')
+      )
+      ->addChain('address',
+        Address::get()
+          ->addSelect('street_address', 'postal_code', 'city', 'country_id')
+          ->addWhere('contact_id', '=', '$id')
+          ->addWhere('is_primary', '=', '1')
+      )
+      ->addChain('phone',
+        Phone::get()
+          ->addSelect('phone')
+          ->addWhere('contact_id', '=', '$id')
+          ->addWhere('is_primary', '=', '1')
+      );
+    $bpkInstalled = civicrm_api3('Extension', 'getcount', [
+      'full_name' => 'de.systopia.bpk',
+      'status'    => 'installed',
+    ]) == 1;
+    if ($bpkInstalled) {
+      $contact->addSelect('bpk.bpk_extern');
+    }
+    $contact = $contact->setCheckPermissions(FALSE)
+      ->execute()
+      ->first();
+    if (is_null($contact)) {
+      return NULL;
+    }
+    return self::assembleContactData($contact, $context);
+  }
+
+  public static function assembleContactData($data, $context) {
+    $country = NULL;
+    if (!empty($data['address'][0]['country_id'])) {
+      $country = Country::get()
+        ->addSelect('iso_code')
+        ->addWhere('id', '=', $data['address'][0]['country_id'])
+        ->setCheckPermissions(FALSE)
+        ->execute()
+        ->first()['iso_code'];
+    }
+    $contact = [
+      'contact_id' => $data['id'],
+      'first_name' => $data['first_name'],
+      'last_name' => $data['last_name'],
+      'prefix' => CRM_Core_PseudoConstant::getLabel(
+        'CRM_Contact_BAO_Contact',
+        'prefix_id',
+        $data['prefix_id']
+      ),
+      'gender' => CRM_Core_PseudoConstant::getLabel(
+        'CRM_Contact_BAO_Contact',
+        'gender_id',
+        $data['gender_id']
+      ),
+      'birth_date' => $data['birth_date'],
+      'email' => $data['email'][0]['email'] ?? NULL,
+      'phone' => $data['phone'][0]['phone'] ?? NULL,
+      'street_address' => $data['address'][0]['street_address'] ?? NULL,
+      'postal_code' => $data['address'][0]['postal_code'] ?? NULL,
+      'city' => $data['address'][0]['city'] ?? NULL,
+      'country' => $country,
+      'bpk' => $data['bpk.bpk_extern'] ?? NULL,
+    ];
+    return $contact;
   }
 
   /**
