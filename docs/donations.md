@@ -122,12 +122,13 @@ Receive membership and payment-related information given a contact hash and cont
 
 #### Error codes
 
-| Error Code                       | Description                                              |
-| -------------------------------- | -------------------------------------------------------- |
-| `unknown_hash`                   | The provided contact hash does not exist or was deleted. |
-| `unknown_contract`               | The contract does not exist or does not belong to this contact. |
-| `payment_instrument_unsupported` | The contract has a payment instrument that is not supported by this API. |
-| `payment_method_invalid`         | The contract has an invalid payment method. |
+| Error Code                             | Description                                              |
+| -------------------------------------- | -------------------------------------------------------- |
+| `unknown_hash`                         | The provided contact hash does not exist or was deleted. |
+| `unknown_contract`                     | The contract does not exist or does not belong to this contact. |
+| `payment_instrument_unsupported`       | The contract has a payment instrument that is not supported by this API. |
+| `payment_service_provider_unsupported` | The contract has a payment service provider that is not supported by this API. |
+| `payment_method_invalid`               | The contract has an invalid payment method. |
 
 ---
 
@@ -283,8 +284,6 @@ Returns the Membership-ID in the field `id`
 
 Update membership and payment-related information.
 
-**Important:** This endpoint is not yet functional. Minor changes to the request or response structure may still be necessary.
-
 #### Parameters
 
 | Field (required)            | Type    | Default    | Description                         |
@@ -302,7 +301,6 @@ Update membership and payment-related information.
 | *for payment_instrument=RCUR, payment_service_provider=civicrm:* |
 | ↳ `iban`*                   | String  |            | IBAN |
 | `start_date`                 | Date    | Now       | Date on which the update becomes effective. Defaults to now. Values in the past will automatically be set to the current date. Note: This is not the actual first debit date, which would depend on a combination of the current date, cycle_day, payment instrument and payment service provider and the transaction_details parameter. Format: `YYYY-MM-DD` |
-| `cycle_day`                  | Integer | Earliest possible day | Day of month on which debits are performed. |
 | `currency`                   | String  | CiviCRM default | ISO 4217 currency code. |
 | `membership_type`            | String  | Current membership type | AT: One of `Förderer`, `Könige der Wälder`, `Flottenpatenschaft`, `Landwirtschaft`, `Baumpatenschaft`, `arctic defender`, `Guardian of the Ocean`, `Walpatenschaft`, `Atom-Eingreiftrupp`, `Greenpeace for me` |
 | `campaign_id`                | Integer |           | CiviCRM campaign ID for the update (not the overall membership) |

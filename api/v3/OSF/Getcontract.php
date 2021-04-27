@@ -53,7 +53,7 @@ function civicrm_api3_o_s_f_getcontract($params) {
   }
 
   try {
-    $contractHelper = \Civi\Gpapi\ContractHelper\Factory::create($params['contract_id']);
+    $contractHelper = \Civi\Gpapi\ContractHelper\Factory::createWithMembershipId($params['contract_id']);
   } catch (Civi\Gpapi\ContractHelper\Exception $e) {
     switch ($e->getCode()) {
       case Civi\Gpapi\ContractHelper\Exception::PAYMENT_INSTRUMENT_UNSUPPORTED:
@@ -61,6 +61,9 @@ function civicrm_api3_o_s_f_getcontract($params) {
 
       case Civi\Gpapi\ContractHelper\Exception::PAYMENT_METHOD_INVALID:
         throw new API_Exception('Contract has invalid payment method', 'payment_method_invalid');
+
+      case Civi\Gpapi\ContractHelper\Exception::PAYMENT_METHOD_INVALID:
+        throw new API_Exception('Contract has unsupported payment service provider', 'payment_service_provider_unsupported');
 
       default:
         throw $e;
