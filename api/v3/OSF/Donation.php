@@ -62,26 +62,30 @@ function _civicrm_api3_o_s_f_donation_process($params) {
     // format amount
     $params['total_amount'] = number_format($params['total_amount'], 2, '.', '');
 
+    if (_civicrm_api3_is_donation_failed($params)) {
+      $params['cancel_date'] = date('YmdHis');
+    }
+
     switch (strtolower($params['payment_instrument'])) {
       case 'credit card':
         // CREATE CREDIT CARD CONTRIBUTION
-        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 1);
+        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, _civicrm_api3_get_payment_instrument_id('Credit Card'));
         break;
 
       case 'paypal':
         // CREATE PAYPAL CONTRIBUTION
-        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 9);
+        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, _civicrm_api3_get_payment_instrument_id('PayPal'));
         break;
 
       case 'sofortüberweisung':
       case 'sofortueberweisung':
         // CREATE SOFORTÜBERWEISUNG CONTRIBUTION
-        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 15);
+        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, _civicrm_api3_get_payment_instrument_id('Sofortüberweisung'));
         break;
 
       case 'eps':
         // CREATE EPS CONTRIBUTION
-        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, 16);
+        $contribution = _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, _civicrm_api3_get_payment_instrument_id('EPS'));
         break;
 
       case 'ooff':
@@ -263,15 +267,32 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'title' => 'UTM Content',
     'api.required' => 0,
   ];
-}
 
+  // Accept failed donation attempts GP-13219
+  $params['failed'] = [
+    'name' => 'failed',
+    'title' => 'Failed Donation',
+    'api.required' => 0,
+    'api.default'  => false,
+    'type'         => CRM_Utils_TYPE::T_BOOLEAN,
+  ];
+  $params['cancel_reason'] = [
+    'name' => 'cancel_reason',
+    'title' => 'Cancel Reason',
+    'api.required' => 0
+  ];
+}
 
 /**
  * Helper function to generate NON-SEPA payments
  */
 function _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, $payment_instrument_id) {
   $params['payment_instrument_id']  = $payment_instrument_id;
-  $params['contribution_status_id'] = 1; // Completed
+  // Accept failed donation attempts GP-13219
+  $contribution_status = _civicrm_api3_is_donation_failed($params) ? 'Failed' : 'Completed';
+  $params['contribution_status_id'] = CRM_Core_PseudoConstant::getKey(
+    'CRM_Contribute_BAO_Contribution','contribution_status_id', $contribution_status
+  );
   unset($params['payment_instrument']);
   if (empty($params['receive_date'])) {
     $params['receive_date'] = date('YmdHis');
@@ -289,4 +310,25 @@ function _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, $paym
   }
 
   return civicrm_api3('Contribution', 'create', $params);
+}
+
+/**
+ * Get payment instrument id by value
+ *
+ * @param $value
+ * @return bool|int|string|null
+ */
+function _civicrm_api3_get_payment_instrument_id($value) {
+  return CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution','payment_instrument_id',$value);
+}
+
+/**
+ * Is donation failed?
+ *
+ * @param $params
+ * @return bool
+ */
+function _civicrm_api3_is_donation_failed($params): bool
+{
+  return !empty($params['failed']);
 }
