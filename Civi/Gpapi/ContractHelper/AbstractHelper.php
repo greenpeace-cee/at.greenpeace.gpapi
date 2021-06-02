@@ -52,8 +52,12 @@ abstract class AbstractHelper {
   abstract public function update(array $params);
 
   public function getContractDetails() {
+    if (!in_array($this->recurringContribution['frequency_unit'], ['month', 'year'])) {
+      throw new Exception('Invalid recurring contribution frequency unit');
+    }
+    $frequencyDividend = $this->recurringContribution['frequency_unit'] == 'month' ? 12 : 1;
     $this->contractDetails = [
-      'frequency' => $this->recurringContribution['frequency_interval'],
+      'frequency' => $frequencyDividend / $this->recurringContribution['frequency_interval'],
       'amount' => $this->recurringContribution['amount'],
       'annual_amount' => $this->calculateAnnualAmount(
         $this->recurringContribution['amount'],

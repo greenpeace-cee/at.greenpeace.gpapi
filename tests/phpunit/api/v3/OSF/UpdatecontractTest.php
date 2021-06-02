@@ -47,7 +47,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
       'contract_id' => $membership['id'],
     ])['values']);
     $this->assertEquals(50.00, $contract['amount']);
-    $this->assertEquals(1, $contract['frequency']);
+    $this->assertEquals(12, $contract['frequency']);
     $this->assertEquals('EUR', $contract['currency']);
     $this->assertEquals('Current', $contract['status']);
     $this->assertEquals('RCUR', $contract['payment_instrument']);
@@ -86,7 +86,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
       'contract_id' => $membership['id'],
     ])['values']);
     $this->assertEquals(50.00, $contract['amount']);
-    $this->assertEquals(1, $contract['frequency']);
+    $this->assertEquals(12, $contract['frequency']);
     $this->assertEquals('EUR', $contract['currency']);
     $this->assertEquals('Current', $contract['status']);
     $this->assertEquals('Credit Card', $contract['payment_instrument']);

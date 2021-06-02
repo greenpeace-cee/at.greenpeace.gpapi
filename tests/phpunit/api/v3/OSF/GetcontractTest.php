@@ -57,7 +57,7 @@ class api_v3_OSF_GetcontractTest extends api_v3_OSF_ContractTestBase {
       'contract_id'       => $membership['id'],
     ])['values']);
 
-    $this->assertEquals(1, $contract['frequency']);
+    $this->assertEquals(12, $contract['frequency']);
     $this->assertEquals(12.60, $contract['amount']);
     $this->assertEquals(151.20, $contract['annual_amount']);
     $this->assertEquals(1, $contract['cycle_day']);
@@ -91,7 +91,7 @@ class api_v3_OSF_GetcontractTest extends api_v3_OSF_ContractTestBase {
       'contract_id'       => $membership['id'],
     ])['values']);
 
-    $this->assertEquals(1, $contract['frequency']);
+    $this->assertEquals(12, $contract['frequency']);
     $this->assertEquals(12.60, $contract['amount']);
     $this->assertEquals(151.20, $contract['annual_amount']);
     $this->assertEquals(1, $contract['cycle_day']);
