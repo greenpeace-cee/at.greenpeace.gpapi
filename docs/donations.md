@@ -201,6 +201,8 @@ the Contribution-ID in the Field `id`.
 | `utm_medium`        | String  | | UTM Medium. Identifies what type of link was used |
 | `utm_campaign`      | String  | | UTM Campaign. Identifies a specific promotion or strategic campaign |
 | `utm_content`       | String  | | UTM Content. Identifies what specifically was clicked to bring the user to the site |
+| `failed`            | Boolean | false | Mark donation as failed in order to accept failed donation attempts |
+| `cancel_reason`     | String  | | Cancel reason of failed donation |
 <small>**\* mandatory field**</small>
 
 #### Return Value
