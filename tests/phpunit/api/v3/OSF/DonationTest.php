@@ -90,7 +90,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
 
     $this->assertEquals($campaign['id'], $contribution['campaign_id']);
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
-    $this->assertEquals("44.44", $contribution['total_amount']);
+    $this->assertEquals(44.44, $contribution['total_amount']);
   }
 
   public function testDonationWithUtmParams()
@@ -107,7 +107,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
 
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
-    $this->assertEquals("52.99", $contribution['total_amount']);
+    $this->assertEquals(52.99, $contribution['total_amount']);
 
     // utm params create an activity
     // simple test if utm values exist
@@ -132,7 +132,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
 
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
-    $this->assertEquals("8.10", $contribution['total_amount']);
+    $this->assertEquals(8.10, $contribution['total_amount']);
     $this->assertEquals("EUR", $contribution['currency']);
     $this->assertEquals($financial_type_id, $contribution['financial_type_id']);
   }
@@ -145,7 +145,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
 
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
-    $this->assertEquals("60.00", $contribution['total_amount']);
+    $this->assertEquals(60.00, $contribution['total_amount']);
     $this->assertEquals("RON", $contribution['currency']);
 
     $this->assertEquals($this->getPaymentInstrumentId('Credit Card'), $contribution['payment_instrument_id']);
@@ -167,7 +167,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
 
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
-    $this->assertEquals("20.00", $contribution['total_amount']);
+    $this->assertEquals(20.00, $contribution['total_amount']);
     $this->assertEquals("USD", $contribution['currency']);
 
     $this->assertEquals($this->getPaymentInstrumentId('PayPal'), $contribution['payment_instrument_id']);
@@ -189,7 +189,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
 
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
-    $this->assertEquals("100.00", $contribution['total_amount']);
+    $this->assertEquals(100.00, $contribution['total_amount']);
     $this->assertEquals("CHF", $contribution['currency']);
 
     $this->assertEquals($this->getPaymentInstrumentId('Sofortüberweisung'), $contribution['payment_instrument_id']);
@@ -211,7 +211,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
 
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
-    $this->assertEquals("62.50", $contribution['total_amount']);
+    $this->assertEquals(62.50, $contribution['total_amount']);
     $this->assertEquals("CZK", $contribution['currency']);
 
     $this->assertEquals($this->getPaymentInstrumentId('EPS'), $contribution['payment_instrument_id']);
@@ -227,7 +227,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
 
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
-    $this->assertEquals("35.00", $contribution['total_amount']);
+    $this->assertEquals(35.00, $contribution['total_amount']);
     $this->assertEquals("EUR", $contribution['currency']);
 
     $this->assertEquals($this->getPaymentInstrumentId('OOFF'), $contribution['payment_instrument_id']);
@@ -243,7 +243,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
 
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
-    $this->assertEquals("25.50", $contribution['total_amount']);
+    $this->assertEquals(25.50, $contribution['total_amount']);
     $this->assertEquals("GBP", $contribution['currency']);
 
     // assert cancellation (5 seconds tolerance)
