@@ -147,7 +147,8 @@ a new contact or the matching existing contact.
 | `contact_type`   | String  | `Individual` | CiviCRM contact type |
 | `first_name`[^1] | String  | | |
 | `last_name`[^1]  | String  | | |
-| `prefix`         | String  | | Values available: `Herr` or `Frau`, @TODO: Gender/prefix gap? |
+| `prefix`         | String  | | Values available: `Herr`, `Frau`, `Familie`. <br /> **Note:** These values may be language- and instance-specific. It is preferred to set `gender_id` and leave this field empty whenever possible. |
+| `gender_id`      | String  | | Values available: `Male`, `Female`, `Other`. <br />**Note:** These values are case-sensitive. |
 | `birth_date`[^1] | Date    | | Format: `YYYY-MM-DD` |
 | `bpk`[^1]        | String  | | Austrian tax office identifier for `contact_type` = `Individual` |
 | `email`[^1]      | String  | | Need to be valid format `%@%.%` otherwise it is garbaged by API |
