@@ -74,15 +74,25 @@ class api_v3_OSF_GetcontractTest extends api_v3_OSF_ContractTestBase {
       'iban'                  => 'ADYEN-123',
       'bic'                   => 'MERCH-123',
       'creditor_id'           => $this->pspCreditorId,
-      'payment_instrument_id' => CRM_Core_PseudoConstant::getKey(
+      // 'payment_instrument_id' => CRM_Core_PseudoConstant::getKey(
+      //   'CRM_Contribute_BAO_Contribution',
+      //   'payment_instrument_id',
+      //   'Credit Card'
+      // ),
+    ]);
+
+    $mandate = $this->callAPISuccess('SepaMandate', 'createfull', $mandate_data);
+    $mandate = $this->callAPISuccess('SepaMandate', 'getsingle', ['id' => $mandate['id']]);
+
+    civicrm_api3('ContributionRecur', 'create', [
+      'id' => $mandate['entity_id'],
+      'payment_instrument_id' => \CRM_Core_Pseudoconstant::getKey(
         'CRM_Contribute_BAO_Contribution',
         'payment_instrument_id',
         'Credit Card'
       ),
     ]);
 
-    $mandate = $this->callAPISuccess('SepaMandate', 'createfull', $mandate_data);
-    $mandate = $this->callAPISuccess('SepaMandate', 'getsingle', ['id' => $mandate['id']]);
     $contract_data['membership_payment.membership_recurring_contribution'] = $mandate['entity_id'];
     $membership = $this->callAPISuccess('Contract', 'create', $contract_data);
     $contract = reset($this->callAPISuccess('OSF', 'getcontract', [
