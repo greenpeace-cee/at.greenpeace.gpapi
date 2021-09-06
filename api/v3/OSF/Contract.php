@@ -188,46 +188,52 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
 
     // first: create a mandate
     try {
-      $mandate = civicrm_api3('SepaMandate', 'createfull', [
-        'check_permissions' => 0,
-        'type' => 'RCUR',
-        'iban' => $params['iban'],
-        'bic' => $params['bic'],
-        'amount' => $params['amount'],
-        'contact_id' => $params['contact_id'],
-        'creditor_id' => $creditor['id'],
-        'currency' => $currency,
-        'frequency_unit' => 'month',
-        'cycle_day' => $cycle_day,
-        'frequency_interval' => (int) (12.0 / $params['frequency']),
-        'start_date' => $params['start_date'],
-        'campaign_id' => $params['campaign_id'],
-        'financial_type_id' => 2, // Membership Dues
-        'payment_instrument_id' => $payment_instrument,
+      $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']);
+
+      $create_contract_params = [
+        'campaign_id'                          => $params['campaign_id'],
+        'check_permissions'                    => 0,
+        'contact_id'                           => $params['contact_id'],
+        'join_date'                            => $params['member_since'],
+        'membership_payment.from_ba'           => $bank_account,
+        // 'membership_payment.to_ba'             => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []),
+        'membership_type_id'                   => $params['membership_type_id'],
+        'payment_method.amount'                => $params['amount'],
+        'payment_method.campaign_id'           => $params['campaign_id'],
+        'payment_method.contact_id'            => $params['contact_id'],
+        'payment_method.creditor_id'           => $creditor['id'],
+        'payment_method.currency'              => $currency,
+        'payment_method.cycle_day'             => $cycle_day,
+        'payment_method.financial_type_id'     => "2", // Membership dues
+        'payment_method.frequency_interval'    => (int) (12.0 / $params['frequency']),
+        'payment_method.frequency_unit'        => 'month',
+        'payment_method.payment_instrument_id' => $payment_instrument,
+        'payment_method.type'                  => 'RCUR',
+        'sequential'                           => empty($params['sequential']) ? 0 : 1,
+        'source'                               => 'OSF',
+        'start_date'                           => $params['start_date'],
+      ];
+
+      if ($creditor['creditor_type'] === 'PSP') {
+        $create_contract_params['payment_method.adapter'] = 'psp_sepa';
+        $create_contract_params['payment_method.account_reference'] = $params['iban'];
+        $create_contract_params['payment_method.account_name'] = $params['bic'];
+      } else {
+        $create_contract_params['payment_method.adapter'] = 'sepa_mandate';
+        $create_contract_params['payment_method.iban'] = $params['iban'];
+        $create_contract_params['payment_method.bic'] = $params['bic'];
+      }
+
+      $result = civicrm_api3('Contract', 'create', $create_contract_params);
+
+      $recurring_contribution_id = civicrm_api3('ContractPaymentLink', 'getvalue', [
+        'contract_id' => $result['id'],
+        'return'      => "contribution_recur_id",
       ]);
-      // reload mandate
+
       $mandate = civicrm_api3('SepaMandate', 'getsingle', [
         'check_permissions' => 0,
-        'id' => $mandate['id']
-      ]);
-      $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']);
-      // create the contract
-      $result = civicrm_api3('Contract', 'create', [
-        'check_permissions' => 0,
-        'sequential' => empty($params['sequential']) ? 0 : 1,
-        'contact_id' => $params['contact_id'],
-        'membership_type_id' => $params['membership_type_id'],
-        'join_date' => $params['member_since'],
-        'start_date' => $params['start_date'],
-        'source' => 'OSF',
-        'campaign_id' => $params['campaign_id'],
-        'membership_payment.membership_annual' => number_format($params['amount'] * $params['frequency'], 2, '.', ''),
-        'membership_payment.membership_frequency' => $params['frequency'],
-        'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
-        'membership_payment.payment_instrument' => $payment_instrument,
-        'membership_payment.to_ba' => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []),
-        'membership_payment.from_ba' => $bank_account,
-        'membership_payment.cycle_day' => $cycle_day,
+        'entity_id'         => $recurring_contribution_id,
       ]);
     } catch (Exception $ex) {
       throw $ex;
