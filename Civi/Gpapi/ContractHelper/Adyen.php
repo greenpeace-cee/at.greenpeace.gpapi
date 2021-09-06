@@ -94,15 +94,25 @@ class Adyen extends AbstractHelper {
       'start_date' => $mandateStartDate->format('Y-m-d'),
       'cycle_day' => $this->getCycleDay($cycle_days, $params),
       'creditor_id' => $creditor['id'],
-      'payment_instrument_id' => \CRM_Core_Pseudoconstant::getKey(
-        'CRM_Contribute_BAO_Contribution',
-        'payment_instrument_id',
-        $params['payment_instrument']
-      ),
+      // 'payment_instrument_id' => \CRM_Core_Pseudoconstant::getKey(
+      //   'CRM_Contribute_BAO_Contribution',
+      //   'payment_instrument_id',
+      //   $params['payment_instrument']
+      // ),
       'campaign_id' => $params['campaign_id'] ?? NULL,
       'check_permissions' => 0,
     ]);
     $mandate = reset($mandate['values']);
+
+    civicrm_api3('ContributionRecur', 'create', [
+      'id' => $mandate['entity_id'],
+      'payment_instrument_id' => \CRM_Core_Pseudoconstant::getKey(
+        'CRM_Contribute_BAO_Contribution',
+        'payment_instrument_id',
+        $params['payment_instrument']
+      )
+    ]);
+
     $contract_modification = array(
       'action'                                  => $this->isCurrentMember ? 'update' : 'revive',
       'date'                                    => $params['start_date']->format('Y-m-d'),
