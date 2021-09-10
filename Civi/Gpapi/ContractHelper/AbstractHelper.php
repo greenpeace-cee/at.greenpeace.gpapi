@@ -43,6 +43,8 @@ abstract class AbstractHelper {
 
   abstract protected function loadPaymentDetails();
 
+  abstract public function create(array $params);
+
   abstract public function getPaymentLabel();
 
   abstract public function getPaymentDetails();
@@ -209,6 +211,230 @@ abstract class AbstractHelper {
     }
 
     return NULL;
+  }
+
+  public static function getReferrerContactID(array $params) {
+    if (empty($params['referrer_contact_id'])) return NULL;
+
+    try {
+      return civicrm_api3('Contact', 'identify', [
+        'identifier_type' => 'internal',
+        'identifier'      => (int) $params['referrer_contact_id'],
+      ])['id'];
+    } catch (CiviCRM_API3_Exception $e) {
+      civicrm_api3('Activity', 'create', [
+        'activity_type_id'  => 'manual_update_required',
+        'target_id'         => $params['contact_id'],
+        'subject'           => 'Invalid Referrer Submitted',
+        'details'           => 'Membership was submitted with a referrer, but no contact was found for value "' . $params['referrer_contact_id'] . '"',
+        'status_id'         => 'Scheduled',
+        'check_permissions' => 0,
+      ]);
+
+      CRM_Core_Error::debug_log_message("OSF.contract: Unable to find referrer {$params['referrer_contact_id']}: " . $e->getMessage());
+    }
+
+    return NULL;
+  }
+
+  public static function calculateNextDebitDate(array $params, array $creditor) {
+    // If the first payment was completed within the ODF,
+    // the next debit date should be at least one month from now
+    $next_debit_date = strtotime('+1 month');
+
+    if (empty($params['payment_received'])) {
+      $buffer_days = (int) \CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days");
+      $frst_notice_days = (int) \CRM_Sepa_Logic_Settings::getSetting("batching.FRST.notice", $creditor['id']);
+      $next_debit_date = strtotime("+ $frst_notice_days days + $buffer_days days");
+    }
+
+    if (empty($params['cycle_day'])) {
+      $possible_cycle_days = \CRM_Sepa_Logic_Settings::getListSetting(
+        "cycledays",
+        range(1, 28),
+        $creditor['id']
+      );
+
+      $cycle_day = date('d', $next_debit_date);
+
+      while (!in_array($cycle_day, $possible_cycle_days)) {
+        $next_debit_date = strtotime("+ 1 day", $next_debit_date);
+        $cycle_day = date('d', $next_debit_date);
+      }
+    } else {
+      $cycle_day = (int) $params['cycle_day'];
+
+      while ((int) date('d', $next_debit_date) !== $cycle_day) {
+        $next_debit_date = strtotime("+ 1 day", $next_debit_date);
+      }
+    }
+
+    return $next_debit_date;
+  }
+
+  public static function createInitialContribution (array $params) {
+    civicrm_api3('EntityTag', 'create', [
+      'tag_id'       => _civicrm_api3_o_s_f_contract_getPSPTagId(),
+      'entity_table' => 'civicrm_activity',
+      'entity_id'    => $params['activity_id'],
+    ]);
+
+    $contribution_status_id = (int) CRM_Core_PseudoConstant::getKey(
+      'CRM_Contribute_BAO_Contribution',
+      'contribution_status_id',
+      'Completed'
+    );
+
+    $contribution_data = [
+      'total_amount'           => $params['rcur_amount'],
+      'currency'               => $params['rcur_currency'],
+      'receive_date'           => $params['member_since'],
+      'contact_id'             => $params['contact_id'],
+      'contribution_recur_id'  => $params['rcur_id'],
+      'financial_type_id'      => $params['financial_type_id'],
+      'campaign_id'            => $params['campaign_id'],
+      'is_test'                => $params['is_test'],
+      'payment_instrument_id'  => $params['payment_instrument_id'],
+      'contribution_status_id' => $contribution_status_id,
+      'trxn_id'                => $params['trxn_id'],
+      'source'                 => 'OSF',
+    ];
+
+    $to_ba_field_id = civicrm_api3('CustomField', 'getvalue', [
+      'name'            => 'to_ba',
+      'custom_group_id' => 'contribution_information',
+      'return'          => 'id'
+    ]);
+
+    $contribution_data["custom_$to_ba_field_id"] = self::getBankAccount([
+      'contact_id' => \GPAPI_GP_ORG_CONTACT_ID,
+      'iban'       => $params['creditor_iban'],
+    ]);
+
+    $contribution_result = civicrm_api3('Contribution', 'create', $contribution_data);
+
+    CRM_Utils_SepaCustomisationHooks::installment_created(
+      $params['sepa_mandate_id'],
+      $params['rcur_id'],
+      $contribution_result['id']
+    );
+
+    return $contribution_result;
+  }
+
+  public static function getBankAccount (array $params) {
+    try {
+      $ba_reference_type_id = civicrm_api3('OptionValue', 'getvalue', [
+        'is_active'       => 1,
+        'option_group_id' => 'civicrm_banking.reference_types',
+        'value'           => 'IBAN',
+        'return'          => 'id',
+      ]);
+
+      $ba_references = civicrm_api3('BankingAccountReference', 'get', [
+        'reference'         => $params['iban'],
+        'reference_type_id' => $ba_reference_type_id,
+        'option.limit'      => 0,
+        'return'            => ['id'],
+      ])['values'];
+
+      $ba_ids = array_map(function ($ref) { return $ref['id']; }, $ba_references);
+
+      if (empty($ba_ids)) return NULL;
+
+      $contact_bank_accounts = civicrm_api3('BankingAccount', 'get', [
+        'id'           => [ 'IN' => $ba_ids ],
+        'contact_id'   => $params['contact_id'],
+        'option.limit' => 1,
+      ]);
+
+      if ((int) $contact_bank_accounts['count'] === 0) return NULL;
+
+      return $contact_bank_accounts['values'][0]['id'];
+    } catch (\Exception $ex) {
+      CRM_Core_Error::debug_log_message(
+        "OSF.contract: Unable to find bank account for {$params['iban']}: " . $ex->getMessage()
+      );
+    }
+
+    return NULL;
+  }
+
+  public static function createBankAccount (array $params) {
+    $bank_account_data = [
+      'country' => substr($params['iban'], 0, 2),
+      'BIC'     => $params['bic'],
+    ];
+
+    $bank_account = civicrm_api3('BankingAccount', 'create', [
+      'contact_id'  => $params['contact_id'],
+      'description' => "Bulk Importer",
+      'data_parsed' => json_encode($bank_account_data),
+    ]);
+
+    $ba_reference_type_id = civicrm_api3('OptionValue', 'getvalue', [
+      'is_active'       => 1,
+      'option_group_id' => 'civicrm_banking.reference_types',
+      'value'           => $params['reference_type'],
+      'return'          => 'id',
+    ]);
+
+    $bank_account_reference = civicrm_api3('BankingAccountReference', 'create', [
+      'ba_id'             => $bank_account['id'],
+      'reference'         => $params['iban'],
+      'reference_type_id' => $ba_reference_type_id,
+    ]);
+
+    return $bank_account;
+  }
+
+  public static function createReferrerOfRelationship (array $params) {
+    $referrer_rel_type_id = civicrm_api3('RelationshipType', 'getvalue', [
+      'return'   => 'id',
+      'name_a_b' => 'Referrer of',
+    ]);
+
+    // it is necessary to wrap Relationship.create in a nested transaction to
+    // prevent a rollback from bubbling up to the main API transaction when a
+    // "Duplicate Relationship" exception occurs. This would otherwise cause
+    // us to return a success response even though a rollback is performed.
+    \CRM_Core_Transaction::create(TRUE)->run(function($subTx) use ($params, $referrer_rel_type_id) {
+      try {
+        civicrm_api3('Relationship', 'create', [
+          'contact_id_a'         => $params['referrer_id'],
+          'contact_id_b'         => $params['contact_id'],
+          'relationship_type_id' => $referrer_rel_type_id,
+          'start_date'           => date('Ymd'),
+        ]);
+      } catch (\CiviCRM_API3_Exception $e) {
+        if ($e->getMessage() === 'Duplicate Relationship') {
+          civicrm_api3('Activity', 'create', [
+            'activity_type_id'  => 'manual_update_required',
+            'target_id'         => [$params['contact_id'], $params['referrer_id']],
+            'subject'           => 'Potential Referrer Fraud',
+            'details'           => 'Contact already referred a membership to the referee.',
+            'status_id'         => 'Scheduled',
+            'check_permissions' => 0,
+          ]);
+
+          \CRM_Core_Error::debug_log_message(
+            "OSF.contract: Potential Referrer Fraud with contacts {$params['contact_id']} and {$params['referrer_id']}"
+          );
+        } else {
+          throw $e;
+        }
+      }
+    });
+
+    $membership_data = [
+      'id'                  => $params['membership_id'],
+      'membership_referrer' => $params['referrer_id'],
+      'skip_handler'        => TRUE, // CE should ignore this change
+    ];
+
+    \CRM_Gpapi_Processor::resolveCustomFields($membership_data, ['membership_referral']);
+
+    return civicrm_api3('Membership', 'create', $membership_data);
   }
 
 }

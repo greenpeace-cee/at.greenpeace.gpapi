@@ -88,4 +88,27 @@ class Factory {
     }
   }
 
+  /**
+   * @param array $params
+   *
+   * @return \Civi\Gpapi\ContractHelper\Adyen|\Civi\Gpapi\ContractHelper\Sepa
+   */
+  public static function createWithoutExistingMembership($params) {
+    if (empty($params['payment_service_provider'])) return new Sepa();
+
+    switch ($params['payment_service_provider']) {
+      case 'adyen':
+        return new Adyen();
+
+      case 'civicrm':
+        return new Sepa();
+
+      default:
+        throw new Exception(
+          'Unsupported payment service provider "' . $params['payment_service_provider'] . '"',
+          Exception::PAYMENT_SERVICE_PROVIDER_UNSUPPORTED
+        );
+    }
+  }
+
 }
