@@ -81,7 +81,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
 
     try {
       $contract_helper = \Civi\Gpapi\ContractHelper\Factory::createWithoutExistingMembership($params);
-      $contract_id = $contract_helper->create($params);
+      $contract = $contract_helper->create($params);
     } catch (Exception $ex) {
       throw $ex;
     } finally {
@@ -91,7 +91,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
     $null = NULL;
 
     return civicrm_api3_create_success(
-      [['id' => $contract_id]],
+      [['id' => $contract['id']]],
       $params,
       'OSF',
       'contract',
