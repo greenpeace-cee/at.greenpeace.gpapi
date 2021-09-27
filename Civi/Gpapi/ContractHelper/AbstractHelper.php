@@ -221,7 +221,7 @@ abstract class AbstractHelper {
         'identifier_type' => 'internal',
         'identifier'      => (int) $params['referrer_contact_id'],
       ])['id'];
-    } catch (CiviCRM_API3_Exception $e) {
+    } catch (\CiviCRM_API3_Exception $e) {
       civicrm_api3('Activity', 'create', [
         'activity_type_id'  => 'manual_update_required',
         'target_id'         => $params['contact_id'],
@@ -231,7 +231,7 @@ abstract class AbstractHelper {
         'check_permissions' => 0,
       ]);
 
-      CRM_Core_Error::debug_log_message("OSF.contract: Unable to find referrer {$params['referrer_contact_id']}: " . $e->getMessage());
+      \CRM_Core_Error::debug_log_message("OSF.contract: Unable to find referrer {$params['referrer_contact_id']}: " . $e->getMessage());
     }
 
     return NULL;
@@ -279,7 +279,7 @@ abstract class AbstractHelper {
       'entity_id'    => $params['activity_id'],
     ]);
 
-    $contribution_status_id = (int) CRM_Core_PseudoConstant::getKey(
+    $contribution_status_id = (int) \CRM_Core_PseudoConstant::getKey(
       'CRM_Contribute_BAO_Contribution',
       'contribution_status_id',
       'Completed'
@@ -313,7 +313,7 @@ abstract class AbstractHelper {
 
     $contribution_result = civicrm_api3('Contribution', 'create', $contribution_data);
 
-    CRM_Utils_SepaCustomisationHooks::installment_created(
+    \CRM_Utils_SepaCustomisationHooks::installment_created(
       $params['sepa_mandate_id'],
       $params['rcur_id'],
       $contribution_result['id']
@@ -352,7 +352,7 @@ abstract class AbstractHelper {
 
       return $contact_bank_accounts['values'][0]['id'];
     } catch (\Exception $ex) {
-      CRM_Core_Error::debug_log_message(
+      \CRM_Core_Error::debug_log_message(
         "OSF.contract: Unable to find bank account for {$params['iban']}: " . $ex->getMessage()
       );
     }
