@@ -91,65 +91,65 @@ function _civicrm_api3_o_s_f_order_process($params) {
  */
 function _civicrm_api3_o_s_f_order_spec(&$params) {
   // CONTACT BASE
-  $params['contact_id'] = array(
+  $params['contact_id'] = [
     'name'         => 'contact_id',
     'api.required' => 1,
     'title'        => 'CiviCRM Contact ID',
-    );
-  $params['campaign'] = array(
+  ];
+  $params['campaign'] = [
     'name'         => 'campaign',
     'api.required' => 0,
     'title'        => 'CiviCRM Campaign (external identifier)',
-    );
-  $params['campaign_id'] = array(
+  ];
+  $params['campaign_id'] = [
     'name'         => 'campaign_id',
     'api.required' => 0,
     'title'        => 'CiviCRM Campaign ID',
     'description'  => 'Overwrites "campaign"',
-    );
-  $params['subject'] = array(
+  ];
+  $params['subject'] = [
     'name'         => 'subject',
     'api.default'  => "Webshop Order",
     'title'        => 'Webshop Order Subject Line. DEPRECATED',
-    );
-  $params['order_type'] = array(
+  ];
+  $params['order_type'] = [
     'name'         => 'order_type',
     'api.required' => 1,
     'title'        => 'Webshop Order Type',
-    );
-  $params['shirt_type'] = array(
+  ];
+  $params['shirt_type'] = [
     'name'         => 'shirt_type',
     'api.required' => 0,
     'title'        => 'T-Shirt Type: M/W',
-    );
-  $params['shirt_size'] = array(
+  ];
+  $params['shirt_size'] = [
     'name'         => 'shirt_size',
     'api.required' => 0,
     'title'        => 'T-Shirt Size: S/M/L/XL',
-    );
-  $params['order_count'] = array(
+  ];
+  $params['order_count'] = [
     'name'         => 'order_count',
     'api.required' => 1,
     'title'        => 'Webshop Order Count',
-    );
-  $params['linked_contribution'] = array(
+  ];
+  $params['linked_contribution'] = [
     'name'         => 'linked_contribution',
     'api.required' => 0,
     'title'        => 'Linked Contribution ID',
-    );
-  $params['linked_membership'] = array(
+  ];
+  $params['linked_membership'] = [
     'name'         => 'linked_membership',
     'api.required' => 0,
     'title'        => 'Linked Membership ID',
-    );
-  $params['payment_received'] = array(
+  ];
+  $params['payment_received'] = [
     'name'         => 'payment_received',
     'api.required' => 1,
     'title'        => 'Webshop Order Payment Received',
-    );
-  $params['multi_purpose'] = array(
+  ];
+  $params['multi_purpose'] = [
     'name'         => 'multi_purpose',
     'api.required' => 0,
     'title'        => 'Webshop Order CustomData',
-    );
+  ];
 }
