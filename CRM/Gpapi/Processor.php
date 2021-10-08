@@ -650,4 +650,71 @@ class CRM_Gpapi_Processor {
     return (int) $country['id'];
   }
 
+  /**
+   * @param $contactId
+   * @return bool
+   */
+  public static function isContactExist($contactId) {
+    if (empty($contactId)) {
+      return false;
+    }
+
+    try {
+      $contact = civicrm_api3('Contact', 'getsingle', [
+        'check_permissions' => 0,
+        'return' => ["id"],
+        'id' => $contactId,
+      ]);
+    } catch (Exception $e) {
+      return false;
+    }
+
+    return isset($contact['id']) && !empty($contact['id']);
+  }
+
+  /**
+   * @param $contactId
+   * @return array
+   */
+  public static function retrieveContactSourceData($contactId) {
+    $contactSourceData = [];
+
+    if (empty($contactId)) {
+      return $contactSourceData;
+    }
+
+    $contactSourceDataFields = [
+      "email",
+      "first_name",
+      "last_name",
+      "gender_id",
+      "phone",
+      "street_address",
+      "postal_code",
+      "city",
+      "country_id",
+    ];
+
+    $apiReturnFields = $contactSourceDataFields;
+    $apiReturnFields[] = 'country';// add 'country' field to get 'country_id' field
+
+    try {
+      $contact = civicrm_api3('Contact', 'getsingle', [
+        'check_permissions' => 0,
+        'id' => $contactId,
+        'return' => $apiReturnFields,
+      ]);
+    } catch (Exception $e) {
+      return $contactSourceData;
+    }
+
+    foreach ($contactSourceDataFields as $field) {
+      if (isset($contact[$field])) {
+        $contactSourceData[$field] = $contact[$field];
+      }
+    }
+
+    return $contactSourceData;
+  }
+
 }

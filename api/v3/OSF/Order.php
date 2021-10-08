@@ -72,7 +72,32 @@ function _civicrm_api3_o_s_f_order_process($params) {
     $params['status_id']         = 'Scheduled';
     $params['check_permissions'] = 0;
 
-    if (isset($params['country_iso_code']) && !empty($params['country_iso_code'])) {
+    $contactSourceFields = [
+      'first_name',
+      'last_name',
+      'gender_id',
+      'email',
+      'phone',
+      'street_address',
+      'postal_code',
+      'city',
+      'country_iso_code',
+    ];
+
+    if (!empty($params['civi_referrer_contact_id'])) {
+      foreach ($contactSourceFields as $field) {
+        if (isset($params[$field])) {
+          unset($params[$field]);
+        }
+      }
+
+      if (CRM_Gpapi_Processor::isContactExist($params['civi_referrer_contact_id'])) {
+        $contactSourceData = CRM_Gpapi_Processor::retrieveContactSourceData($params['civi_referrer_contact_id']);
+        $params = array_merge($params, $contactSourceData);
+      }
+    }
+
+    if (empty($params['civi_referrer_contact_id']) && isset($params['country_iso_code']) && !empty($params['country_iso_code'])) {
       $countryId = CRM_Gpapi_Processor::getCountryIdByIsoCode($params['country_iso_code']);
       if (!empty($countryId)) {
         $params['country_id'] = $countryId;
@@ -159,6 +184,15 @@ function _civicrm_api3_o_s_f_order_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Webshop Order CustomData',
   ];
+  $params['civi_referrer_contact_id'] = [
+    'name'         => 'civi_referrer_contact_id',
+    'api.required' => 0,
+    'title'        => 'Source contact id',
+    'description'  => 'If this field exist code ignore all other "Source contact" field. Source contact data gets by this contact id.',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+
+  // Source contact fields:
   $params['first_name'] = [
     'name'         => 'first_name',
     'api.required' => 0,
