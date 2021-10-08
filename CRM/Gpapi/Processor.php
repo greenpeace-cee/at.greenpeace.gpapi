@@ -625,4 +625,29 @@ class CRM_Gpapi_Processor {
     $contact_data['id'] = min($contacts['values'])['id'];
   }
 
+  /**
+   * @param $countryIsoCode
+   * @return false|int
+   */
+  public static function getCountryIdByIsoCode($countryIsoCode) {
+    if (empty($countryIsoCode)) {
+      return false;
+    }
+
+    try {
+      $country = civicrm_api3('Country', 'getsingle', [
+        'check_permissions' => 0,
+        'iso_code' => $countryIsoCode,
+      ]);
+    } catch (Exception $e) {
+      return false;
+    }
+
+    if (!isset($country['id']) || empty($country['id'])) {
+      return false;
+    }
+
+    return (int) $country['id'];
+  }
+
 }

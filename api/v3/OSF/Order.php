@@ -72,8 +72,15 @@ function _civicrm_api3_o_s_f_order_process($params) {
     $params['status_id']         = 'Scheduled';
     $params['check_permissions'] = 0;
 
+    if (isset($params['country_iso_code']) && !empty($params['country_iso_code'])) {
+      $countryId = CRM_Gpapi_Processor::getCountryIdByIsoCode($params['country_iso_code']);
+      if (!empty($countryId)) {
+        $params['country_id'] = $countryId;
+      }
+    }
+
     // resolve custom fields
-    CRM_Gpapi_Processor::resolveCustomFields($params, array('webshop_information'));
+    CRM_Gpapi_Processor::resolveCustomFields($params, ['webshop_information', 'source_contact_data']);
 
     // create Webshop Order activity
     return civicrm_api3('Activity', 'create', $params);
@@ -151,5 +158,68 @@ function _civicrm_api3_o_s_f_order_spec(&$params) {
     'name'         => 'multi_purpose',
     'api.required' => 0,
     'title'        => 'Webshop Order CustomData',
+  ];
+  $params['first_name'] = [
+    'name'         => 'first_name',
+    'api.required' => 0,
+    'title'        => 'First name',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['last_name'] = [
+    'name'         => 'last_name',
+    'api.required' => 0,
+    'title'        => 'Last name',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['gender_id'] = [
+    'name'         => 'gender_id',
+    'api.required' => 0,
+    'title'        => 'Gender',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['email'] = [
+    'name'         => 'email',
+    'api.required' => 0,
+    'title'        => 'Email',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['phone'] = [
+    'name'         => 'phone',
+    'api.required' => 0,
+    'title'        => 'Phone',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['street_address'] = [
+    'name'         => 'street_address',
+    'api.required' => 0,
+    'title'        => 'Street address',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['postal_code'] = [
+    'name'         => 'postal_code',
+    'api.required' => 0,
+    'title'        => 'Postal code',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['city'] = [
+    'name'         => 'city',
+    'api.required' => 0,
+    'title'        => 'City',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['country_iso_code'] = [
+    'name'         => 'country_iso_code',
+    'api.required' => 0,
+    'title'        => 'Country iso code',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
   ];
 }
