@@ -81,7 +81,7 @@ function _civicrm_api3_o_s_f_order_process($params) {
       'street_address',
       'postal_code',
       'city',
-      'country_iso_code',
+      'country',
     ];
 
     if (!empty($params['civi_referrer_contact_id'])) {
@@ -97,8 +97,8 @@ function _civicrm_api3_o_s_f_order_process($params) {
       }
     }
 
-    if (empty($params['civi_referrer_contact_id']) && isset($params['country_iso_code']) && !empty($params['country_iso_code'])) {
-      $countryId = CRM_Gpapi_Processor::getCountryIdByIsoCode($params['country_iso_code']);
+    if (empty($params['civi_referrer_contact_id']) && isset($params['country']) && !empty($params['country'])) {
+      $countryId = CRM_Gpapi_Processor::getCountryIdByIsoCode($params['country']);
       if (!empty($countryId)) {
         $params['country_id'] = $countryId;
       }
@@ -249,8 +249,8 @@ function _civicrm_api3_o_s_f_order_spec(&$params) {
     'description'  => '(Source contact)',
     'type'         => CRM_Utils_TYPE::T_STRING,
   ];
-  $params['country_iso_code'] = [
-    'name'         => 'country_iso_code',
+  $params['country'] = [
+    'name'         => 'country',
     'api.required' => 0,
     'title'        => 'Country iso code',
     'description'  => '(Source contact)',
