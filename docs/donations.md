@@ -216,25 +216,38 @@ Returns the Contribution-ID in the field `id`
 
 #### Description
 The `OSF.order` endpoint allows clients to transfer order data from ordered  webshop-items into CiviCRM. CiviCRM matches the submitted data
-to existing contacts based on the `contact_id` and returns
-the Activity-ID in the Field `id`.
+to existing contacts based on the `contact_id` and returns the Activity-ID in the Field `id`.
+
+Additional contact and address parameters associated with the order can be
+set and may be used to provide a shipping address differing from the primary
+contact address.
 
 #### Parameters
 
 | Field (required) | Type    | Default    | Description                         |
 | ---------------  | ------- | ---------- | ----------------------------------- |
-| `contact_id`*         | Integer | | CiviCRM Contact ID |
-| `campaign`            | String  | | External ID for donation-relevant campaign |
-| `campaign_id`         | Integer | | Overwrites `campaign` |
-| `order_type`*         | Integer | | Use `osf.getproducts` to get the right product value (use the `value` NOT the `id`) |
-| `order_count`*        | Integer | | Amount of ordered items |
-| `linked_contribution` | Integer | | CiviCRM ID of the contribution which paid the order (has to be empty if `linked_membership` is set!) |
-| `linked_membership`   | Integer | | CiviCRM ID of the membership which pays the order (has to be empty if `linked_contribution` is set!) |
-| `shirt_size`          | String  | | If order type = `11` then choose: `S`, `M`, `L`, `XL` |
-| `shirt_type`          | String  | | If order type = `11` then choose: `M`, `W` |
-| `payment_received`    | Boolean | | Set `true`, if the order is already payed |
-| `multi_purpose`       | String  | | Field for additional information, where there is no parameter yet in the API implemented |
-| <s>`subject`</s>             | <s>String</s>  | <s>`Webshop Order`</s> | <s>Title of the created activity</s> |
+| `contact_id`*                | Integer       | | CiviCRM Contact ID |
+| `campaign`                   | String        | | External ID for donation-relevant campaign |
+| `campaign_id`                | Integer       | | Overwrites `campaign` |
+| `order_type`*                | Integer       | | Use `osf.getproducts` to get the right product value (use the `value` NOT the `id`) |
+| `order_count`*               | Integer       | | Amount of ordered items |
+| `linked_contribution`        | Integer       | | CiviCRM ID of the contribution which paid the order (has to be empty if `linked_membership` is set!) |
+| `linked_membership`          | Integer       | | CiviCRM ID of the membership which pays the order (has to be empty if `linked_contribution` is set!) |
+| `shirt_size`                 | String        | | If order type = `11` then choose: `S`, `M`, `L`, `XL` |
+| `shirt_type`                 | String        | | If order type = `11` then choose: `M`, `W` |
+| `payment_received`           | Boolean       | | Set `true`, if the order is already payed |
+| `multi_purpose`              | String        | | Field for additional information, where there is no parameter yet in the API implemented |
+| <s>`subject`</s>             | <s>String</s> | <s>`Webshop Order`</s> | <s>Title of the created activity</s> |
+| `civi_referrer_contact_id`   | Integer       | | CiviCRM Contact ID of the referrer. If provided, it will be used to fetch contact details like `first_name`. This overwrites any values provided in the contact detail fields. |
+| `first_name`                 | String        | | |
+| `last_name`                  | String        | | |
+| `gender_id`                  | String        | | Values available: `Male`, `Female`, `Other`. <br />**Note:** These values are case-sensitive. |
+| `email`                      | String        | | Need to be valid format `%@%.%` otherwise it is garbaged by API |
+| `phone`                      | String        | | Is normalized by normalize extension |
+| `street_address`             | String        | | Street name and house number separated by one space |
+| `city`                       | String        | | |
+| `postal_code`                | String        | | |
+| `country`                    | String        | | Country code according to ISO 3166-1 alpha-2 |
 <small>**\* mandatory field**</small>
 
 #### Return Value

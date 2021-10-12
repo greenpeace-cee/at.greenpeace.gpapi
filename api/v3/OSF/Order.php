@@ -72,8 +72,40 @@ function _civicrm_api3_o_s_f_order_process($params) {
     $params['status_id']         = 'Scheduled';
     $params['check_permissions'] = 0;
 
+    $contactSourceFields = [
+      'first_name',
+      'last_name',
+      'gender_id',
+      'email',
+      'phone',
+      'street_address',
+      'postal_code',
+      'city',
+      'country',
+    ];
+
+    if (!empty($params['civi_referrer_contact_id'])) {
+      foreach ($contactSourceFields as $field) {
+        if (isset($params[$field])) {
+          unset($params[$field]);
+        }
+      }
+
+      if (CRM_Gpapi_Processor::isContactExist($params['civi_referrer_contact_id'])) {
+        $contactSourceData = CRM_Gpapi_Processor::retrieveContactSourceData($params['civi_referrer_contact_id']);
+        $params = array_merge($params, $contactSourceData);
+      }
+    }
+
+    if (empty($params['civi_referrer_contact_id']) && isset($params['country']) && !empty($params['country'])) {
+      $countryId = CRM_Gpapi_Processor::getCountryIdByIsoCode($params['country']);
+      if (!empty($countryId)) {
+        $params['country_id'] = $countryId;
+      }
+    }
+
     // resolve custom fields
-    CRM_Gpapi_Processor::resolveCustomFields($params, array('webshop_information'));
+    CRM_Gpapi_Processor::resolveCustomFields($params, ['webshop_information', 'source_contact_data']);
 
     // create Webshop Order activity
     return civicrm_api3('Activity', 'create', $params);
@@ -91,65 +123,137 @@ function _civicrm_api3_o_s_f_order_process($params) {
  */
 function _civicrm_api3_o_s_f_order_spec(&$params) {
   // CONTACT BASE
-  $params['contact_id'] = array(
+  $params['contact_id'] = [
     'name'         => 'contact_id',
     'api.required' => 1,
     'title'        => 'CiviCRM Contact ID',
-    );
-  $params['campaign'] = array(
+  ];
+  $params['campaign'] = [
     'name'         => 'campaign',
     'api.required' => 0,
     'title'        => 'CiviCRM Campaign (external identifier)',
-    );
-  $params['campaign_id'] = array(
+  ];
+  $params['campaign_id'] = [
     'name'         => 'campaign_id',
     'api.required' => 0,
     'title'        => 'CiviCRM Campaign ID',
     'description'  => 'Overwrites "campaign"',
-    );
-  $params['subject'] = array(
+  ];
+  $params['subject'] = [
     'name'         => 'subject',
     'api.default'  => "Webshop Order",
     'title'        => 'Webshop Order Subject Line. DEPRECATED',
-    );
-  $params['order_type'] = array(
+  ];
+  $params['order_type'] = [
     'name'         => 'order_type',
     'api.required' => 1,
     'title'        => 'Webshop Order Type',
-    );
-  $params['shirt_type'] = array(
+  ];
+  $params['shirt_type'] = [
     'name'         => 'shirt_type',
     'api.required' => 0,
     'title'        => 'T-Shirt Type: M/W',
-    );
-  $params['shirt_size'] = array(
+  ];
+  $params['shirt_size'] = [
     'name'         => 'shirt_size',
     'api.required' => 0,
     'title'        => 'T-Shirt Size: S/M/L/XL',
-    );
-  $params['order_count'] = array(
+  ];
+  $params['order_count'] = [
     'name'         => 'order_count',
     'api.required' => 1,
     'title'        => 'Webshop Order Count',
-    );
-  $params['linked_contribution'] = array(
+  ];
+  $params['linked_contribution'] = [
     'name'         => 'linked_contribution',
     'api.required' => 0,
     'title'        => 'Linked Contribution ID',
-    );
-  $params['linked_membership'] = array(
+  ];
+  $params['linked_membership'] = [
     'name'         => 'linked_membership',
     'api.required' => 0,
     'title'        => 'Linked Membership ID',
-    );
-  $params['payment_received'] = array(
+  ];
+  $params['payment_received'] = [
     'name'         => 'payment_received',
     'api.required' => 1,
     'title'        => 'Webshop Order Payment Received',
-    );
-  $params['multi_purpose'] = array(
+  ];
+  $params['multi_purpose'] = [
     'name'         => 'multi_purpose',
     'api.required' => 0,
     'title'        => 'Webshop Order CustomData',
-    );
+  ];
+  $params['civi_referrer_contact_id'] = [
+    'name'         => 'civi_referrer_contact_id',
+    'api.required' => 0,
+    'title'        => 'Source contact id',
+    'description'  => 'If this field exist code ignore all other "Source contact" field. Source contact data gets by this contact id.',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+
+  // Source contact fields:
+  $params['first_name'] = [
+    'name'         => 'first_name',
+    'api.required' => 0,
+    'title'        => 'First name',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['last_name'] = [
+    'name'         => 'last_name',
+    'api.required' => 0,
+    'title'        => 'Last name',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['gender_id'] = [
+    'name'         => 'gender_id',
+    'api.required' => 0,
+    'title'        => 'Gender',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['email'] = [
+    'name'         => 'email',
+    'api.required' => 0,
+    'title'        => 'Email',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['phone'] = [
+    'name'         => 'phone',
+    'api.required' => 0,
+    'title'        => 'Phone',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['street_address'] = [
+    'name'         => 'street_address',
+    'api.required' => 0,
+    'title'        => 'Street address',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['postal_code'] = [
+    'name'         => 'postal_code',
+    'api.required' => 0,
+    'title'        => 'Postal code',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['city'] = [
+    'name'         => 'city',
+    'api.required' => 0,
+    'title'        => 'City',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
+  $params['country'] = [
+    'name'         => 'country',
+    'api.required' => 0,
+    'title'        => 'Country iso code',
+    'description'  => '(Source contact)',
+    'type'         => CRM_Utils_TYPE::T_STRING,
+  ];
 }
