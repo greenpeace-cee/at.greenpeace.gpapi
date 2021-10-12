@@ -216,8 +216,11 @@ Returns the Contribution-ID in the field `id`
 
 #### Description
 The `OSF.order` endpoint allows clients to transfer order data from ordered  webshop-items into CiviCRM. CiviCRM matches the submitted data
-to existing contacts based on the `contact_id` and returns
-the Activity-ID in the Field `id`.
+to existing contacts based on the `contact_id` and returns the Activity-ID in the Field `id`.
+
+Additional contact and address parameters associated with the order can be
+set and may be used to provide a shipping address differing from the primary
+contact address.
 
 #### Parameters
 
@@ -235,16 +238,15 @@ the Activity-ID in the Field `id`.
 | `payment_received`           | Boolean       | | Set `true`, if the order is already payed |
 | `multi_purpose`              | String        | | Field for additional information, where there is no parameter yet in the API implemented |
 | <s>`subject`</s>             | <s>String</s> | <s>`Webshop Order`</s> | <s>Title of the created activity</s> |
-| `civi_referrer_contact_id`*  | Integer       | | CiviCRM Contact ID. 'If this field exist code ignore all other "Source contact" field. Source contact data gets by this contact id.' |
-| `first_name`[^1]             | String        | | |
-| `last_name`[^1]              | String        | | |
+| `civi_referrer_contact_id`   | Integer       | | CiviCRM Contact ID of the referrer. If provided, it will be used to fetch contact details like `first_name`. This overwrites any values provided in the contact detail fields. |
+| `first_name`                 | String        | | |
+| `last_name`                  | String        | | |
 | `gender_id`                  | String        | | Values available: `Male`, `Female`, `Other`. <br />**Note:** These values are case-sensitive. |
-| `email`[^1]                  | String        | | Need to be valid format `%@%.%` otherwise it is garbaged by API |
+| `email`                      | String        | | Need to be valid format `%@%.%` otherwise it is garbaged by API |
 | `phone`                      | String        | | Is normalized by normalize extension |
-| `street_address`[^1]         | String        | | Street name and house number separated by one space |
+| `street_address`             | String        | | Street name and house number separated by one space |
 | `city`                       | String        | | |
-| `postal_code`[^1]            | String        | | |
-| `street_address`[^1]         | String        | | Street name and house number separated by one space |
+| `postal_code`                | String        | | |
 | `country`                    | String        | | Country code according to ISO 3166-1 alpha-2 |
 <small>**\* mandatory field**</small>
 
