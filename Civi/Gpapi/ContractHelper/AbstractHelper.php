@@ -103,9 +103,10 @@ abstract class AbstractHelper {
       $lastContributionDate = $this->getLatestSuccessfulMembershipPaymentDate();
     }
     $safety_counter = 32;
+    $buffer_days = (int) \CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days");
     $start_date = strtotime("+{$buffer_days} day", strtotime("now"));
 
-    while (!in_array(date("d", $start_date), $cycle_days)) {
+    while (!in_array(date("d", $start_date), $cycleDays)) {
       $start_date = strtotime("+ 1 day", $start_date);
       $safety_counter -= 1;
 
@@ -113,7 +114,6 @@ abstract class AbstractHelper {
         throw new Exception("There's something wrong with the nextCycleDay method.");
       }
     }
-    // TODO: handle revive
   }
 
   protected function getStartDate(array $params) {
