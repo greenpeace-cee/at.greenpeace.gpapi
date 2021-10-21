@@ -96,7 +96,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       'OSF',
       'contract',
       $null,
-      [ 'id' => $contract_id ]
+      [ 'id' => $contract['id'] ]
     );
   } catch (Exception $e) {
     $tx->rollback();
