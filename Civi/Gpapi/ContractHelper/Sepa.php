@@ -81,6 +81,7 @@ class Sepa extends AbstractHelper {
         'web'
       ),
       'campaign_id'                             => $params['campaign_id'] ?? NULL,
+      'membership_payment.defer_payment_start'  => 1,
       'membership_payment.from_ba'              => \CRM_Contract_BankingLogic::getOrCreateBankAccount(
         $this->contract['contact_id'],
         $params['payment_details']['iban']

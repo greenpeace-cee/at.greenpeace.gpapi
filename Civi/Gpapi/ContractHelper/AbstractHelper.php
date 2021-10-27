@@ -88,7 +88,7 @@ abstract class AbstractHelper {
     return $amount * $unitMap[$unit] / $interval;
   }
 
-  protected function getCycleDay(array $cycleDays, array $params, \DateTime $lastContributionDate = NULL) {
+  protected function getCycleDay(array $cycleDays, array $params) {
     if (count($cycleDays) == 0) {
       throw new Exception('Must provide at least one cycle day');
     }
@@ -96,16 +96,44 @@ abstract class AbstractHelper {
     if ($this->isCurrentMember && in_array($this->recurringContribution['cycle_day'], $cycleDays)) {
       return $this->recurringContribution['cycle_day'];
     }
+
+    $buffer_days = (int) \CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days");
+    $start_date = strtotime("+{$buffer_days} day", strtotime("now"));
+
+    // consider an example membership with the following data:
+    // - last successful contribution: 2020-01-03
+    // - frequency: monthly
+    // - status: Cancelled
+    // - possible cycle days: 3, 10, 17, 25
+    // - current date: 2020-01-20
+    // given this example, the desired cycle day would be 3. to achieve this,
+    // we need to adjust the start date used to find cycle days based on the
+    // last successful contribution plus one frequency interval, otherwise we
+    // would get cycle day 25 based on the current date.
+    $lastContributionDate = NULL;
     if (!empty($params['transaction_details']['date'])) {
+      // a donation was made in ODF
       $lastContributionDate = new \DateTime($params['transaction_details']['date']);
     }
     if (is_null($lastContributionDate) && !empty($this->membershipId)) {
+      // no donation made in ODF, use the last successful contribution date
       $lastContributionDate = $this->getLatestSuccessfulMembershipPaymentDate();
     }
-    $safety_counter = 32;
-    $start_date = strtotime("+{$buffer_days} day", strtotime("now"));
 
-    while (!in_array(date("d", $start_date), $cycle_days)) {
+    if (!is_null($lastContributionDate)) {
+      $earliestPossibleDebitDate = clone $lastContributionDate;
+      $monthsToAdd = 12 / $params['frequency'];
+      // we consider the period between $lastContributionDate and one frequency
+      // interval after that date (e.g. one month for a monthly membership) to
+      // be already paid, so adjust the date.
+      $earliestPossibleDebitDate->add(new \DateInterval("P{$monthsToAdd}M"));
+      if ($earliestPossibleDebitDate > new \DateTime("today + {$buffer_days} day")) {
+        $start_date = $earliestPossibleDebitDate->getTimestamp();
+      }
+    }
+
+    $safety_counter = 32;
+    while (!in_array(date("d", $start_date), $cycleDays)) {
       $start_date = strtotime("+ 1 day", $start_date);
       $safety_counter -= 1;
 
@@ -113,7 +141,7 @@ abstract class AbstractHelper {
         throw new Exception("There's something wrong with the nextCycleDay method.");
       }
     }
-    // TODO: handle revive
+    return date("d", $start_date);
   }
 
   protected function getStartDate(array $params) {

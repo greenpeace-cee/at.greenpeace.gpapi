@@ -63,6 +63,9 @@ class Adyen extends AbstractHelper {
     $creditor = $this->getCreditor($params);
     $cycle_days = \CRM_Sepa_Logic_Settings::getListSetting('cycledays', range(1, 28), $creditor['id']);
 
+    // TODO: refactor this to use CE's native PSPSEPA payment adapter rather than
+    //       manually creating the mandate. this would allow us to get rid of
+    //       this special case and instead rely on membership_payment.defer_payment_start=1
     $params['start_date'] = $this->getStartDate($params);
     $mandateStartDate = $params['start_date'];
     if (!empty($params['transaction_details']['date'])) {
