@@ -25,7 +25,7 @@
   <compatibility>
     <ver>4.7</ver>
   </compatibility>
-  <comments></comments>
+  <comments/>
   <civix>
     <namespace>CRM/Gpapi</namespace>
   </civix>
