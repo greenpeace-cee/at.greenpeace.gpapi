@@ -377,7 +377,7 @@ function _civicrm_api3_o_s_f_contract_getPSPTagId() {
     return reset($tag['values'])['id'];
   }
   $tag = civicrm_api3('Tag', 'create', [
-    'used_for' => 'Contacts',
+    'used_for' => 'Activities',
     'name' => $name,
     'is_reserved' => 1,
     'is_selectable' => 0,
