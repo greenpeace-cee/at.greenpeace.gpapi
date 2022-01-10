@@ -24,6 +24,9 @@ include_once __DIR__ . '/Contract.php';
  * @throws \Exception
  */
 function civicrm_api3_o_s_f_donation($params) {
+  // Use default error handler. See GP-23825
+  $tempErrorScope = CRM_Core_TemporaryErrorScope::useException();
+
   try {
     return _civicrm_api3_o_s_f_donation_process($params);
   } catch (Exception $e) {

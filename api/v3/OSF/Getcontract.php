@@ -37,6 +37,9 @@ function _civicrm_api3_o_s_f_getcontract_spec(&$spec) {
  * @throws API_Exception
  */
 function civicrm_api3_o_s_f_getcontract($params) {
+  // Use default error handler. See GP-23825
+  $tempErrorScope = CRM_Core_TemporaryErrorScope::useException();
+
   CRM_Gpapi_Processor::preprocessCall($params, 'OSF.getcontract');
   $contact_id = CRM_Gpapi_Processor::resolveContactHash($params['hash']);
   if (is_null($contact_id)) {
