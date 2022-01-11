@@ -14,8 +14,8 @@
     <url desc="Support">https://github.com/systopia/at.greenpeace.uimods/issues</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
-  <releaseDate>2021-10-27</releaseDate>
-  <version>1.8.3</version>
+  <releaseDate>2022-01-11</releaseDate>
+  <version>1.8.4</version>
   <develStage>stable</develStage>
   <requires>
     <ext>de.systopia.xcm</ext>
@@ -23,7 +23,7 @@
     <ext>de.systopia.contract</ext>
   </requires>
   <compatibility>
-    <ver>4.7</ver>
+    <ver>5.39</ver>
   </compatibility>
   <comments></comments>
   <civix>
