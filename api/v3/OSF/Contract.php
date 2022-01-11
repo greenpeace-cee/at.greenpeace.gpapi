@@ -24,6 +24,9 @@ define('GPAPI_GP_ORG_CONTACT_ID', 1);
  * @access public
  */
 function civicrm_api3_o_s_f_contract($params) {
+  // Use default error handler. See GP-23825
+  $tempErrorScope = CRM_Core_TemporaryErrorScope::useException();
+
   try {
     return _civicrm_api3_o_s_f_contract_process($params);
   } catch (Exception $e) {

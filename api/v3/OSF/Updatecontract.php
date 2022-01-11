@@ -94,6 +94,8 @@ function _civicrm_api3_o_s_f_updatecontract_spec(&$spec) {
  * @throws API_Exception
  */
 function civicrm_api3_o_s_f_updatecontract($params) {
+  // Use default error handler. See GP-23825
+  $tempErrorScope = CRM_Core_TemporaryErrorScope::useException();
 
   try {
     return _civicrm_api3_o_s_f_updatecontract_process($params);

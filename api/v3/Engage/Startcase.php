@@ -25,6 +25,9 @@ define('GPAPI_DEFAULT_TIMELINE', 'web_default');
  * @throws \Exception
  */
 function civicrm_api3_engage_startcase($params) {
+  // Use default error handler. See GP-23825
+  $tempErrorScope = CRM_Core_TemporaryErrorScope::useException();
+
   try {
     return _civicrm_api3_engage_startcase_process($params);
   } catch (Exception $e) {
