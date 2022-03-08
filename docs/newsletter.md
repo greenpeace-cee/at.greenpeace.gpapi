@@ -5,14 +5,14 @@ The Newsletter API, located in the "Newsletter" entity, supports the following f
 - Creating or matching contacts
 - Retrieving a list of newsletter groups
 
-A Standard use case would be that the API-using application sends the contact data and `group_ids` to Civi. If the contact already exists in Civi, the newsletter group(s) will be registered at that found contact, otherwise a new contact is created and the newsletter group(s) will be registered with the newly created contact. 
+A Standard use case would be that the API-using application sends the contact data and `group_ids` to Civi. If the contact already exists in Civi, the newsletter group(s) will be registered at that found contact, otherwise a new contact is created and the newsletter group(s) will be registered with the newly created contact.
 
 ## Endpoints
 
 ### Groups `(Newsletter.getgroups)`
 
 #### Description
-The `Newsletter.getgroups` endpoint allows clients to retrieve a list of all available newsletter groups in Civi. 
+The `Newsletter.getgroups` endpoint allows clients to retrieve a list of all available newsletter groups in Civi.
 
 #### Parameters
 From the return values you shall use for input fields:
@@ -46,7 +46,7 @@ The `Newsletter.subscribe` endpoint allows clients to transparently get or creat
 | `postal_code`[^1]    | String  | | |
 | `city`           | String  | | |
 | `country`        | String  | | Country code according to ISO 3166-1 alpha-2 |
-| `group_ids`      | String  | | According to `Newsletter.getgroups` IDs, comma separated (21-Community NL) |
+| `group_ids`      | String  | | According to `Newsletter.getgroups` IDs, comma separated |
 
 [^1]:
     At least *one* of the following (combinations of) fields needs to be present:
