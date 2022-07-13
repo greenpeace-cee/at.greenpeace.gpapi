@@ -61,18 +61,45 @@ function _civicrm_api3_engage_startcase_process($params) {
 function _civicrm_api3_engage_startcase_spec(&$params) {
   $params['case_type_id'] = [
     'name'         => 'case_type_id',
-    'api.required' => 1,
     'title'        => 'Case Type ID',
+    'api.required' => 1,
   ];
   $params['contact_id'] = [
     'name'         => 'contact_id',
-    'api.required' => 1,
     'title'        => 'Contact ID',
+    'description'  => 'Client contact of the case',
+    'api.required' => 1,
+  ];
+  $params['medium_id'] = [
+    'name'         => 'medium_id',
+    'title'        => 'Encounter Medium ID',
+    'api.required' => 0,
   ];
   $params['timeline'] = [
     'name'         => 'timeline',
+    'title'        => 'Timeline',
+    'description'  => 'Case timeline to add to cases in addition to the standard timeline',
     'api.required' => 0,
     'api.default'  => GPAPI_DEFAULT_TIMELINE,
-    'title'        => 'Case timeline to add to cases in addition to the standard timeline',
+  ];
+  $params['utm_campaign'] = [
+    'name'         => 'utm_campaign',
+    'title'        => 'UTM Campaign',
+    'api.required' => 0,
+  ];
+  $params['utm_content'] = [
+    'name'         => 'utm_content',
+    'title'        => 'UTM Content',
+    'api.required' => 0,
+  ];
+  $params['utm_medium'] = [
+    'name'         => 'utm_medium',
+    'title'        => 'UTM Medium',
+    'api.required' => 0,
+  ];
+  $params['utm_source'] = [
+    'name'         => 'utm_source',
+    'title'        => 'UTM Source',
+    'api.required' => 0,
   ];
 }

@@ -42,6 +42,33 @@ class CRM_Gpapi_CaseHandler {
     9 => 5, // Rejecter => Enquirer
   ];
 
+  public static function addUTMDataToActivities(int $caseID, array $params) {
+    $utmActivityTypeIDs = civicrm_api3('CustomGroup', 'getvalue', [
+      'name'   => 'utm',
+      'return' => 'extends_entity_column_value',
+    ]);
+
+    $activityTypeOptVals = civicrm_api3('OptionValue', 'get', [
+      'id'     => [ 'IN' => $utmActivityTypeIDs ],
+      'return' => 'value',
+    ])['values'];
+
+    foreach ($utmActivityTypeIDs as $key => $optionValueID) {
+      $utmActivityTypeIDs[$key] = $activityTypeOptVals[$optionValueID]['value'];
+    }
+
+    $relevantCaseActivities = civicrm_api3('Activity', 'get', [
+      'activity_type_id' => [ 'IN' => $utmActivityTypeIDs ],
+      'case_id'          => $caseID,
+      'sequential'       => 1,
+      'return'           => 'id',
+    ])['values'];
+
+    foreach ($relevantCaseActivities as $activity) {
+      CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity['id']);
+    }
+  }
+
   /**
    * Add the 'fake' cases to the getPetitions call
    */
@@ -165,6 +192,8 @@ class CRM_Gpapi_CaseHandler {
         'timeline' => $timeline,
       ]);
     }
+
+    self::addUTMDataToActivities($case_id, $params);
 
     // create a reply
     if (!empty($params['sequential'])) {
