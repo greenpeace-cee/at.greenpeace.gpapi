@@ -42,6 +42,19 @@ class CRM_Gpapi_CaseHandler {
     9 => 5, // Rejecter => Enquirer
   ];
 
+  public static function addMediumToActivities(int $caseID, int $mediumID) {
+    $caseActivities = civicrm_api3('Activity', 'get', [
+      'case_id' => $caseID,
+    ])['values'];
+
+    foreach ($caseActivities as $activity) {
+      civicrm_api3('Activity', 'create', [
+        'id' => $activity['id'],
+        'medium_id' => $mediumID,
+      ]);
+    }
+  }
+
   public static function addUTMDataToActivities(int $caseID, array $params) {
     $utmActivityTypeIDs = civicrm_api3('CustomGroup', 'getvalue', [
       'name'   => 'utm',
@@ -193,6 +206,7 @@ class CRM_Gpapi_CaseHandler {
       ]);
     }
 
+    self::addMediumToActivities($case_id, $params['medium_id']);
     self::addUTMDataToActivities($case_id, $params);
 
     // create a reply
