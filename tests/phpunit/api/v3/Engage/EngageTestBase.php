@@ -35,8 +35,14 @@ class api_v3_Engage_EngageTestBase
 
     $session = CRM_Core_Session::singleton();
     $session->set('userID', 1);
+
     $config = CRM_Core_Config::singleton();
     $config->userPermissionClass->permissions = ['access Engage API'];
+
+    $enCompSetting = Civi::settings()->get('enable_components');
+    $enCompSetting[] = 'CiviCampaign';
+    $enCompSetting[] = 'CiviCase';
+    Civi::settings()->set('enable_components', $enCompSetting);
 
     self::createRequiredOptionValues();
     self::createRequiredCustomGroups();
@@ -74,10 +80,10 @@ class api_v3_Engage_EngageTestBase
       'table_name' => 'civicrm_value_source_contact_data',
       'extends'    => 'Activity',
       'extends_entity_column_value' => [
-        self::getOptionValueID('activity_type', 'anonymisation_request'),
-        self::getOptionValueID('activity_type', 'Open Case'),
-        self::getOptionValueID('activity_type', 'Petition'),
-        self::getOptionValueID('activity_type', 'Ratgeber verschickt'),
+        self::getOptionValue('activity_type', 'anonymisation_request'),
+        self::getOptionValue('activity_type', 'Open Case'),
+        self::getOptionValue('activity_type', 'Petition'),
+        self::getOptionValue('activity_type', 'Ratgeber verschickt'),
       ],
     ]);
 
@@ -163,6 +169,11 @@ class api_v3_Engage_EngageTestBase
       civicrm_api3('CustomField', 'create', $fieldData);
     }
 
+    civicrm_api3('OptionValue', 'create', [
+        'id'     => self::getOptionValueID('activity_type', 'Contribution'),
+        'filter' => 0,
+    ]);
+
     civicrm_api3('CustomGroup', 'create', [
       'name'       => 'utm',
       'title'      => 'UTM Tracking Information',
@@ -170,12 +181,12 @@ class api_v3_Engage_EngageTestBase
       'table_name' => 'civicrm_value_utm',
       'extends'    => 'Activity',
       'extends_entity_column_value' => [
-        self::getOptionValueID('activity_type', 'Contract_Signed'),
-        self::getOptionValueID('activity_type', 'Contribution'),
-        self::getOptionValueID('activity_type', 'Petition'),
-        self::getOptionValueID('activity_type', 'Open Case'),
-        self::getOptionValueID('activity_type', 'Ratgeber verschickt'),
-        self::getOptionValueID('activity_type', 'UTM Tracking'),
+        self::getOptionValue('activity_type', 'Contract_Signed'),
+        self::getOptionValue('activity_type', 'Contribution'),
+        self::getOptionValue('activity_type', 'Petition'),
+        self::getOptionValue('activity_type', 'Open Case'),
+        self::getOptionValue('activity_type', 'Ratgeber verschickt'),
+        self::getOptionValue('activity_type', 'UTM Tracking'),
       ],
     ]);
 
