@@ -74,9 +74,18 @@ class api_v3_Engage_EngageTestBase
 
   private static function createRequiredCustomGroups() {
     civicrm_api3('CustomGroup', 'create', [
+      'name'       => 'petition_information',
+      'title'      => 'Petition Information',
+      'table_name' => 'civicrm_value_petition_information',
+      'extends'    => 'Activity',
+      'extends_entity_column_value' => [
+        self::getOptionValue('activity_type', 'Petition'),
+      ],
+    ]);
+
+    civicrm_api3('CustomGroup', 'create', [
       'name'       => 'source_contact_data',
       'title'      => 'Source Contact Data',
-      'is_active'  => 1,
       'table_name' => 'civicrm_value_source_contact_data',
       'extends'    => 'Activity',
       'extends_entity_column_value' => [
@@ -163,7 +172,6 @@ class api_v3_Engage_EngageTestBase
     foreach ($sourceContactDataFields as $fieldData) {
       $fieldData['custom_group_id'] = 'source_contact_data';
       $fieldData['column_name'] = $fieldData['name'];
-      $fieldData['is_active'] = 1;
       $fieldData['is_required'] = 0;
 
       civicrm_api3('CustomField', 'create', $fieldData);
@@ -177,7 +185,6 @@ class api_v3_Engage_EngageTestBase
     civicrm_api3('CustomGroup', 'create', [
       'name'       => 'utm',
       'title'      => 'UTM Tracking Information',
-      'is_active'  => 1,
       'table_name' => 'civicrm_value_utm',
       'extends'    => 'Activity',
       'extends_entity_column_value' => [
@@ -200,7 +207,6 @@ class api_v3_Engage_EngageTestBase
         'column_name'     => $name,
         'data_type'       => 'String',
         'text_length'     => 255,
-        'is_active'       => 1,
         'is_required'     => 0,
       ]);
     }

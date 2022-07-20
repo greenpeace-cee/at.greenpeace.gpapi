@@ -96,10 +96,25 @@ class api_v3_Engage_StartcaseTest extends api_v3_Engage_EngageTestBase {
       ->execute()
       ->first();
 
-    $this->assertEquals("utm_campaign_$randomID", $openCaseActivity['utm.utm_campaign']);
-    $this->assertEquals("utm_content_$randomID", $openCaseActivity['utm.utm_content']);
-    $this->assertEquals("utm_medium_$randomID", $openCaseActivity['utm.utm_medium']);
-    $this->assertEquals("utm_source_$randomID", $openCaseActivity['utm.utm_source']);
+    $this->assertEquals(
+      "utm_campaign_$randomID",
+      $openCaseActivity['utm.utm_campaign']
+    );
+
+    $this->assertEquals(
+      "utm_content_$randomID",
+      $openCaseActivity['utm.utm_content']
+    );
+
+    $this->assertEquals(
+      "utm_medium_$randomID",
+      $openCaseActivity['utm.utm_medium']
+    );
+
+    $this->assertEquals(
+      "utm_source_$randomID",
+      $openCaseActivity['utm.utm_source']
+    );
   }
 
 }
