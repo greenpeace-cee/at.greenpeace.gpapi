@@ -12,6 +12,8 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
+use Civi\Core\Event\PostEvent;
+
 /**
  * Adding case inteface to the GP-API by shoe-horning
  *  extra functionality into the Engage.signpetition API
@@ -42,46 +44,6 @@ class CRM_Gpapi_CaseHandler {
     9 => 5, // Rejecter => Enquirer
   ];
 
-  public static function addMediumToActivities(int $caseID, int $mediumID) {
-    $caseActivities = civicrm_api3('Activity', 'get', [
-      'case_id' => $caseID,
-    ])['values'];
-
-    foreach ($caseActivities as $activity) {
-      civicrm_api3('Activity', 'create', [
-        'id' => $activity['id'],
-        'medium_id' => $mediumID,
-      ]);
-    }
-  }
-
-  public static function addUTMDataToActivities(int $caseID, array $params) {
-    $utmActivityTypeIDs = civicrm_api3('CustomGroup', 'getvalue', [
-      'name'   => 'utm',
-      'return' => 'extends_entity_column_value',
-    ]);
-
-    $activityTypeOptVals = civicrm_api3('OptionValue', 'get', [
-      'id'     => [ 'IN' => $utmActivityTypeIDs ],
-      'return' => 'value',
-    ])['values'];
-
-    foreach ($utmActivityTypeIDs as $key => $optionValueID) {
-      $utmActivityTypeIDs[$key] = $activityTypeOptVals[$optionValueID]['value'];
-    }
-
-    $relevantCaseActivities = civicrm_api3('Activity', 'get', [
-      'activity_type_id' => [ 'IN' => $utmActivityTypeIDs ],
-      'case_id'          => $caseID,
-      'sequential'       => 1,
-      'return'           => 'id',
-    ])['values'];
-
-    foreach ($relevantCaseActivities as $activity) {
-      CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity['id']);
-    }
-  }
-
   /**
    * Add the 'fake' cases to the getPetitions call
    */
@@ -105,6 +67,33 @@ class CRM_Gpapi_CaseHandler {
         'title'          => $case_type['title'],
       ];
     }
+  }
+
+  public static function caseActivityCallback(array &$params) {
+    $utmActivityTypes = civicrm_api3('CustomGroup', 'getvalue', [
+      'name'   => 'utm',
+      'return' => 'extends_entity_column_value',
+    ]);
+
+    return function (PostEvent $event) use (&$params, $utmActivityTypes) {
+      if ($event->entity !== 'Activity') return;
+      if ($event->action !== 'create') return;
+
+      $activityParams = [ 'id' => $event->object->id ];
+
+      if (isset($params['medium_id'])) {
+        $activityParams['medium_id'] = $params['medium_id'];
+      }
+
+      $utmData = CRM_Gpapi_Processor::extractUTMData($params);
+
+      if (count($utmData) > 0) {
+        CRM_Gpapi_Processor::resolveCustomFields($utmData, ['utm']);
+        $activityParams = array_merge($activityParams, $utmData);
+      }
+
+      civicrm_api3('Activity', 'create', $activityParams);
+    };
   }
 
   /**
@@ -205,9 +194,6 @@ class CRM_Gpapi_CaseHandler {
         'timeline' => $timeline,
       ]);
     }
-
-    self::addMediumToActivities($case_id, $params['medium_id']);
-    self::addUTMDataToActivities($case_id, $params);
 
     // create a reply
     if (!empty($params['sequential'])) {

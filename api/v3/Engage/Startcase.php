@@ -46,13 +46,24 @@ function civicrm_api3_engage_startcase($params) {
  */
 function _civicrm_api3_engage_startcase_process($params) {
   $tx = new CRM_Core_Transaction();
+  $result = NULL;
+  $error = NULL;
+  $caseActivityCallback = CRM_Gpapi_CaseHandler::caseActivityCallback($params);
+
   try {
     CRM_Gpapi_Processor::preprocessCall($params, 'Engage.startcase');
-    return CRM_Gpapi_CaseHandler::startCase($params);
+    Civi::dispatcher()->addListener('hook_civicrm_post', $caseActivityCallback, 1);
+    $result = CRM_Gpapi_CaseHandler::startCase($params);
   } catch (Exception $e) {
     $tx->rollback();
-    throw $e;
+    $error = $e;
+  } finally {
+    Civi::dispatcher()->removeListener('hook_civicrm_post', $caseActivityCallback);
   }
+
+  if (isset($error)) throw $error;
+
+  return $result;
 }
 
 /**

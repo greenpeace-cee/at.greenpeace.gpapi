@@ -18,11 +18,13 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
   }
 
   public function testSignPetitionBasic() {
+    $petitionID = CRM_Gpapi_CaseHandler::$case_petition_offset + $this->caseType['id'];
+
     $result = $this->callAPISuccess('Engage', 'signpetition', [
       'email'       => $this->contact['email'],
       'first_name'  => $this->contact['first_name'],
       'last_name'   => $this->contact['last_name'],
-      'petition_id' => CRM_Gpapi_CaseHandler::$case_petition_offset + 1,
+      'petition_id' => $petitionID,
     ]);
 
     $this->assertEquals($this->contact['id'], $result['id']);
@@ -40,13 +42,14 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
    */
   public function testPassMediumAndUTMFields() {
     $randomID = bin2hex(random_bytes(8));
+    $petitionID = CRM_Gpapi_CaseHandler::$case_petition_offset + $this->caseType['id'];
 
     $this->callAPISuccess('Engage', 'signpetition', [
       'email'        => $this->contact['email'],
       'first_name'   => $this->contact['first_name'],
       'last_name'    => $this->contact['last_name'],
       'medium_id'    => self::$encounterMediumIDs['phone'],
-      'petition_id'  => CRM_Gpapi_CaseHandler::$case_petition_offset + 1,
+      'petition_id'  => $petitionID,
       'utm_campaign' => "utm_campaign_$randomID",
       'utm_content'  => "utm_content_$randomID",
       'utm_medium'   => "utm_medium_$randomID",
@@ -77,11 +80,30 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
       ->execute()
       ->first();
 
-    $this->assertEquals(self::$encounterMediumIDs['phone'], $ratgeberVerschicktActivity['medium_id']);
-    $this->assertEquals("utm_campaign_$randomID", $ratgeberVerschicktActivity['utm.utm_campaign']);
-    $this->assertEquals("utm_content_$randomID", $ratgeberVerschicktActivity['utm.utm_content']);
-    $this->assertEquals("utm_medium_$randomID", $ratgeberVerschicktActivity['utm.utm_medium']);
-    $this->assertEquals("utm_source_$randomID", $ratgeberVerschicktActivity['utm.utm_source']);
+    $this->assertEquals(
+      self::$encounterMediumIDs['phone'],
+      $ratgeberVerschicktActivity['medium_id']
+    );
+
+    $this->assertEquals(
+      "utm_campaign_$randomID",
+      $ratgeberVerschicktActivity['utm.utm_campaign']
+    );
+
+    $this->assertEquals(
+      "utm_content_$randomID",
+      $ratgeberVerschicktActivity['utm.utm_content']
+    );
+
+    $this->assertEquals(
+      "utm_medium_$randomID",
+      $ratgeberVerschicktActivity['utm.utm_medium']
+    );
+
+    $this->assertEquals(
+      "utm_source_$randomID",
+      $ratgeberVerschicktActivity['utm.utm_source']
+    );
   }
 
 }
