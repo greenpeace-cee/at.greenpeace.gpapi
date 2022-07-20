@@ -180,6 +180,8 @@ function _civicrm_api3_engage_signpetition_process($params) {
         'campaign_id'         => $params['campaign_id'],
         'activity_date_time'  => $activity_date,
       ) + $params); // add other params
+
+      CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity['id']);
     }
 
     if (!empty($activity['id'])) {
