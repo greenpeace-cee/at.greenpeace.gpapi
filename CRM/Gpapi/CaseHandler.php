@@ -87,7 +87,7 @@ class CRM_Gpapi_CaseHandler {
 
       $utmData = CRM_Gpapi_Processor::extractUTMData($params);
 
-      if (count($utmData) > 0) {
+      if (count($utmData) > 0 && in_array($event->object->activity_type_id, $utmActivityTypes)) {
         CRM_Gpapi_Processor::resolveCustomFields($utmData, ['utm']);
         $activityParams = array_merge($activityParams, $utmData);
       }
