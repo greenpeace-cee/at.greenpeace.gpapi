@@ -12,6 +12,8 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
+use Civi\Core\Event\PostEvent;
+
 /**
  * Adding case inteface to the GP-API by shoe-horning
  *  extra functionality into the Engage.signpetition API
@@ -65,6 +67,33 @@ class CRM_Gpapi_CaseHandler {
         'title'          => $case_type['title'],
       ];
     }
+  }
+
+  public static function caseActivityCallback(array &$params) {
+    $utmActivityTypes = civicrm_api3('CustomGroup', 'getvalue', [
+      'name'   => 'utm',
+      'return' => 'extends_entity_column_value',
+    ]);
+
+    return function (PostEvent $event) use (&$params, $utmActivityTypes) {
+      if ($event->entity !== 'Activity') return;
+      if ($event->action !== 'create') return;
+
+      $activityParams = [ 'id' => $event->object->id ];
+
+      if (isset($params['medium_id'])) {
+        $activityParams['medium_id'] = $params['medium_id'];
+      }
+
+      $utmData = CRM_Gpapi_Processor::extractUTMData($params);
+
+      if (count($utmData) > 0 && in_array($event->object->activity_type_id, $utmActivityTypes)) {
+        CRM_Gpapi_Processor::resolveCustomFields($utmData, ['utm']);
+        $activityParams = array_merge($activityParams, $utmData);
+      }
+
+      civicrm_api3('Activity', 'create', $activityParams);
+    };
   }
 
   /**

@@ -180,6 +180,8 @@ function _civicrm_api3_engage_signpetition_process($params) {
         'campaign_id'         => $params['campaign_id'],
         'activity_date_time'  => $activity_date,
       ) + $params); // add other params
+
+      CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity['id']);
     }
 
     if (!empty($activity['id'])) {
@@ -193,8 +195,6 @@ function _civicrm_api3_engage_signpetition_process($params) {
     }
 
     if (!empty($activity_id)) {
-      CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
-
       CRM_Gpapi_Processor::resolveCustomFields($contact_data, ['source_contact_data']);
       civicrm_api3('Activity', 'create', array_merge($contact_data, ['id' => $activity_id, 'check_permissions' => 0]));
     }
