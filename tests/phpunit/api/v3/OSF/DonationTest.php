@@ -255,6 +255,91 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
   }
 
   /**
+   * @test
+   * @dataProvider provideContributionPspResultData
+   */
+  public function testPspResultDataIbanAndBIC($json_data, $expected)
+  {
+    $this->setUpCreditor();
+    $params = $this->addTestingContact($json_data);
+    $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
+
+    $this->assertEquals($this->contact['id'], $contribution['contact_id']);
+
+    $actual = [
+      'iban' => null,
+      'bic' => null
+    ];
+    $bank_accounts_params = [];
+    $bank_accounts_params['contact_id'] = $this->contact['id'];
+    $contact_bank_accounts = reset($this->callApiSuccess('BankingAccount', 'get', $bank_accounts_params)['values']);
+
+    if (isset($contact_bank_accounts['data_parsed'])) {
+      $data_parsed = json_decode($contact_bank_accounts['data_parsed'], true);
+      if (isset($data_parsed['BIC'])) {
+        $actual['bic'] = $data_parsed['BIC'];
+      }
+    }
+
+    if (isset($contact_bank_accounts['id'])) {
+      $bank_account_ref_params = [];
+      $bank_account_ref_params['ba_id'] = $contact_bank_accounts['id'];
+      $bank_account_ref = reset($this->callApiSuccess('BankingAccountReference', 'get', $bank_account_ref_params)['values']);
+
+      if (isset($bank_account_ref['reference'])) {
+        $actual['iban'] = $bank_account_ref['reference'];
+      }
+    }
+
+    // asset iban and bic arrays
+    sort($expected);
+    sort($actual);
+    $this->assertEquals(json_encode($expected), json_encode($actual));
+  }
+
+  public function provideContributionPspResultData()
+  {
+    return [
+      [
+        'psp_result_data_null' => '{"currency":"EUR","payment_instrument":"EPS","financial_type_id":1,"source":"OSF",
+    "sequential":"1","total_amount":"60","trxn_id":"IBAN-BIC-TEST-1","check_permissions":true,"version":3,
+        "psp_result_data":{}}',
+        [
+          'iban' => null,
+          'bic' => null
+        ]
+      ],
+      [
+        'psp_result_data_old' => '{"currency":"EUR","payment_instrument":"EPS","financial_type_id":1,"source":"OSF",
+    "sequential":"1","total_amount":"62.50","trxn_id":"IBAN-BIC-TEST-2","check_permissions":true,"version":3,
+    "psp_result_data":{"iban":"AT483200000012345864","bic":"BKAUATWW"}}',
+        [
+          'iban' => "AT483200000012345864",
+          'bic' => "BKAUATWW"
+        ]
+      ],
+      [
+        'psp_result_data_new' => '{"currency":"EUR","payment_instrument":"EPS","financial_type_id":1,"source":"OSF",
+    "sequential":"1","total_amount":"69.50","trxn_id":"IBAN-BIC-TEST-3","check_permissions":true,"version":3,
+    "psp_result_data":{"additionalData":{"iban":"AT685400067284526194","bic":"BKAUATWW"}}}',
+        [
+          'iban' => "AT685400067284526194",
+          'bic' => "BKAUATWW"
+        ]
+      ],
+      [
+        'psp_result_data_new_iban_only' => '{"currency":"EUR","payment_instrument":"EPS","financial_type_id":1,"source":"OSF",
+    "sequential":"1","total_amount":"69.50","trxn_id":"IBAN-BIC-TEST-4","check_permissions":true,"version":3,
+    "psp_result_data":{"additionalData":{"iban":"AT673200064145798177"}}}',
+        [
+          'iban' => "AT673200064145798177",
+          'bic' => null
+        ]
+      ],
+    ];
+  }
+
+  /**
    * Setup default creditor
    *
    * @throws \CiviCRM_API3_Exception

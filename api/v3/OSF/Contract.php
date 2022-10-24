@@ -352,9 +352,12 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       civicrm_api3('Membership', 'create', $membership_data);
     }
 
-    //creates bank account by 'iban' and 'bic' fields from 'psp_result_data' params
-    if (!empty($params['psp_result_data']['iban']) && !empty($params['psp_result_data']['bic'])) {
-      _civicrm_api3_o_s_f_contract_getBA($params['psp_result_data']['iban'], $params['contact_id'], ['BIC' => $params['psp_result_data']['bic']]);
+    // creates bank account by 'iban' and 'bic' fields included in 'psp_result_data' params
+    $params_iban = _civicrm_api3_get_psp_result_data_iban($params);
+    if (!is_null($params_iban)) {
+      $params_bic  = _civicrm_api3_get_psp_result_data_bic($params);
+      $extras = !is_null($params_bic) ? ['BIC' => $params_bic] : [];
+      _civicrm_api3_o_s_f_contract_getBA($params_iban, $params['contact_id'], $extras);
     }
 
     // and return the good news (otherwise an Exception would have occurred)
@@ -439,6 +442,37 @@ function _civicrm_api3_o_s_f_contract_getBA($iban, $contact_id, $extra_data = []
   return $bank_account['id'];
 }
 
+/**
+ * Get iban from psp result data params
+ *
+ * @param $params
+ * @return mixed|null
+ */
+function _civicrm_api3_get_psp_result_data_iban($params) {
+  $iban = null;
+  if (!empty($params['psp_result_data']['additionalData']['iban'])) {
+    $iban = $params['psp_result_data']['additionalData']['iban'];
+  } elseif (!empty($params['psp_result_data']['iban'])) {
+    $iban = $params['psp_result_data']['iban'];
+  }
+  return $iban;
+}
+
+/**
+ * Get bic from psp result data params
+ *
+ * @param $params
+ * @return mixed|null
+ */
+function _civicrm_api3_get_psp_result_data_bic($params) {
+  $bic = null;
+  if (!empty($params['psp_result_data']['additionalData']['bic'])) {
+    $bic = $params['psp_result_data']['additionalData']['bic'];
+  } elseif (!empty($params['psp_result_data']['bic'])) {
+    $bic = $params['psp_result_data']['bic'];
+  }
+  return $bic;
+}
 
 /**
  * Adjust Metadata for Payment action
