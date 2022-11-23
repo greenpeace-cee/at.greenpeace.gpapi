@@ -103,140 +103,245 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
     }
 
     if (empty($params['payment_service_provider'])) {
+      // SEPA
       $creditor = (array) CRM_Sepa_Logic_Settings::defaultCreditor();
       $referenceType = 'IBAN';
-    }
-    else {
-      $referenceType = 'NBAN_' . strtoupper($params['payment_service_provider']);
-      $fileFormat = civicrm_api3('OptionValue', 'getvalue', [
-        'return' => "value",
-        'option_group_id' => 'sepa_file_format',
-        'name' => $params['payment_service_provider'],
-      ]);
-      $creditorLookup = [
-        'creditor_type' => 'PSP',
-        'sepa_file_format_id' => $fileFormat,
-      ];
-      if (empty($params['currency'])) {
-        $config = CRM_Core_Config::singleton();
-        $creditorLookup['currency'] = $config->defaultCurrency;
+
+      $currency = $creditor['currency'];
+      if (!empty($params['currency'])) {
+        $currency = $params['currency'];
+      }
+
+      // resolve campaign ID
+      CRM_Gpapi_Processor::resolveCampaign($params);
+
+      // prepare parameters
+      $params['member_since'] = date('YmdHis');
+      $params['start_date'] = date('YmdHis');
+      if (empty($params['payment_received'])) {
+        $buffer_days = (int) CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days");
+        $frst_notice_days = (int) CRM_Sepa_Logic_Settings::getSetting("batching.FRST.notice", $creditor['id']);
+        $earliest_rcur_date = strtotime("+ $frst_notice_days days + $buffer_days days");
       }
       else {
-        $creditorLookup['currency'] = $params['currency'];
+        // first payment was completed within the ODF, we should look at possible
+        // cycle days at least one month from now
+        $earliest_rcur_date = strtotime('+1 month');
+        // start_date will be set based on the cycle_day determined below
+        $params['start_date'] = NULL;
       }
-      $creditor = civicrm_api3('SepaCreditor', 'getsingle', $creditorLookup);
-    }
 
-    $currency = $creditor['currency'];
-    if (!empty($params['currency'])) {
-      $currency = $params['currency'];
-    }
+      $params['amount'] = number_format($params['amount'], 2, '.', '');
 
-    // resolve campaign ID
-    CRM_Gpapi_Processor::resolveCampaign($params);
-
-    // prepare parameters
-    $params['member_since'] = date('YmdHis');
-    $params['start_date'] = date('YmdHis');
-    if (empty($params['payment_received'])) {
-      $buffer_days = (int) CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days");
-      $frst_notice_days = (int) CRM_Sepa_Logic_Settings::getSetting("batching.FRST.notice", $creditor['id']);
-      $earliest_rcur_date = strtotime("+ $frst_notice_days days + $buffer_days days");
-    }
-    else {
-      // first payment was completed within the ODF, we should look at possible
-      // cycle days at least one month from now
-      $earliest_rcur_date = strtotime('+1 month');
-      // start_date will be set based on the cycle_day determined below
-      $params['start_date'] = NULL;
-    }
-
-    $params['amount'] = number_format($params['amount'], 2, '.', '');
-
-    if (empty($params['cycle_day'])) {
-      // SEPA stuff (TODO: use new service)
-      $cycle_days = CRM_Sepa_Logic_Settings::getListSetting("cycledays", range(1, 28), $creditor['id']);
-      $cycle_day = $earliest_rcur_date;
-      while (!in_array(date('d', $cycle_day), $cycle_days)) {
-        $cycle_day = strtotime("+ 1 day", $cycle_day);
-      }
-      if (is_null($params['start_date'])) {
-        $params['start_date'] = date('YmdHis', $cycle_day);
-      }
-      $cycle_day = date('d', $cycle_day);
-    }
-    else {
-      $cycle_day = (int) $params['cycle_day'];
-      if (is_null($params['start_date'])) {
-        // take the first date where day=cycle_day and at least 1 month has passed
-        // since the initial contribution
-        $cycle_date = $earliest_rcur_date;
-        while (date('d', $cycle_date) != $cycle_day) {
-          $cycle_date = strtotime("+ 1 day", $cycle_date);
+      if (empty($params['cycle_day'])) {
+        // SEPA stuff (TODO: use new service)
+        $cycle_days = CRM_Sepa_Logic_Settings::getListSetting("cycledays", range(1, 28), $creditor['id']);
+        $cycle_day = $earliest_rcur_date;
+        while (!in_array(date('d', $cycle_day), $cycle_days)) {
+          $cycle_day = strtotime("+ 1 day", $cycle_day);
         }
-        $params['start_date'] = date('YmdHis', $cycle_date);
+        if (is_null($params['start_date'])) {
+          $params['start_date'] = date('YmdHis', $cycle_day);
+        }
+        $cycle_day = date('d', $cycle_day);
       }
-    }
+      else {
+        $cycle_day = (int) $params['cycle_day'];
+        if (is_null($params['start_date'])) {
+          // take the first date where day=cycle_day and at least 1 month has passed
+          // since the initial contribution
+          $cycle_date = $earliest_rcur_date;
+          while (date('d', $cycle_date) != $cycle_day) {
+            $cycle_date = strtotime("+ 1 day", $cycle_date);
+          }
+          $params['start_date'] = date('YmdHis', $cycle_date);
+        }
+      }
 
-    // add a mutex lock (see GP-1731)
-    $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
-    $lock->acquire();
-    if (!$lock->isAcquired()) {
-      return CRM_Gpapi_Error::create(
-        'OSF.contract',
-        "Mandate lock timeout. Try again later.",
-        $params
-      );
-    }
+      // add a mutex lock (see GP-1731)
+      $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
+      $lock->acquire();
+      if (!$lock->isAcquired()) {
+        return CRM_Gpapi_Error::create(
+          'OSF.contract',
+          "Mandate lock timeout. Try again later.",
+          $params
+        );
+      }
 
-    // first: create a mandate
-    try {
-      $mandate = civicrm_api3('SepaMandate', 'createfull', [
-        'check_permissions' => 0,
-        'type' => 'RCUR',
-        'iban' => $params['iban'],
-        'bic' => $params['bic'],
-        'amount' => $params['amount'],
-        'contact_id' => $params['contact_id'],
-        'creditor_id' => $creditor['id'],
-        'currency' => $currency,
-        'frequency_unit' => 'month',
-        'cycle_day' => $cycle_day,
-        'frequency_interval' => (int) (12.0 / $params['frequency']),
-        'start_date' => $params['start_date'],
-        'campaign_id' => $params['campaign_id'],
-        'financial_type_id' => 2, // Membership Dues
-        'payment_instrument_id' => $payment_instrument,
+      // first: create a mandate
+      try {
+        $mandate = civicrm_api3('SepaMandate', 'createfull', [
+          'check_permissions' => 0,
+          'type' => 'RCUR',
+          'iban' => $params['iban'],
+          'bic' => $params['bic'],
+          'amount' => $params['amount'],
+          'contact_id' => $params['contact_id'],
+          'creditor_id' => $creditor['id'],
+          'currency' => $currency,
+          'frequency_unit' => 'month',
+          'cycle_day' => $cycle_day,
+          'frequency_interval' => (int) (12.0 / $params['frequency']),
+          'start_date' => $params['start_date'],
+          'campaign_id' => $params['campaign_id'],
+          'financial_type_id' => 2, // Membership Dues
+          'payment_instrument_id' => $payment_instrument,
+        ]);
+        // reload mandate
+        $mandate = civicrm_api3('SepaMandate', 'getsingle', [
+          'check_permissions' => 0,
+          'id' => $mandate['id']
+        ]);
+        $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']);
+        // create the contract
+        $result = civicrm_api3('Contract', 'create', [
+          'check_permissions' => 0,
+          'sequential' => empty($params['sequential']) ? 0 : 1,
+          'contact_id' => $params['contact_id'],
+          'membership_type_id' => $params['membership_type_id'],
+          'join_date' => $params['member_since'],
+          'start_date' => $params['start_date'],
+          'source' => 'OSF',
+          'campaign_id' => $params['campaign_id'],
+          'membership_payment.currency' => $params['currency'],
+          'membership_payment.membership_annual' => number_format($params['amount'] * $params['frequency'], 2, '.', ''),
+          'membership_payment.membership_frequency' => $params['frequency'],
+          'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
+          'membership_payment.payment_instrument' => $payment_instrument,
+          'membership_payment.to_ba' => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []),
+          'membership_payment.from_ba' => $bank_account,
+          'membership_payment.cycle_day' => $cycle_day,
+        ]);
+      } catch (Exception $ex) {
+        throw $ex;
+      } finally {
+        $lock->release();
+      }
+      // get BA reference type for IBAN to do BankingAccountReference lookup by type
+      $reference_type_iban = civicrm_api3('OptionValue', 'getvalue', [
+        'return' => 'id',
+        'option_group_id' => 'civicrm_banking.reference_types',
+        'value' => 'IBAN',
       ]);
-      // reload mandate
-      $mandate = civicrm_api3('SepaMandate', 'getsingle', [
-        'check_permissions' => 0,
-        'id' => $mandate['id']
+      $bank_account_reference = civicrm_api3('BankingAccountReference', 'getvalue', [
+        'return' => 'id',
+        'ba_id' => $bank_account,
+        'reference_type_id' => $reference_type_iban,
       ]);
-      $bank_account = _civicrm_api3_o_s_f_contract_getBA($params['iban'], $params['contact_id']);
-      // create the contract
+      $reference_type_id = civicrm_api3('OptionValue', 'getvalue', [
+        'return' => 'id',
+        'option_group_id' => 'civicrm_banking.reference_types',
+        'value' => $referenceType,
+      ]);
+      // update the bank account reference type (CE always creates IBAN)
+      civicrm_api3('BankingAccountReference', 'create', [
+        'reference_type_id' => $reference_type_id,
+        'id' => $bank_account_reference,
+      ]);
+    }
+    else {
+      // Payment Processor
+      $pspData = $params['psp_result_data'];
+      $paymentProcessor = \Civi\Api4\PaymentProcessor::get(FALSE)
+        // using REGEXP as a hacky way to avoid case-sensitive lookup failing
+        // (apparently, pseudo-constant search with :name syntax is cs, whereas regular queries would be ci)
+        ->addWhere('payment_processor_type_id:name', 'REGEXP', $params['payment_service_provider'])
+        ->addWhere('name', '=', $pspData['merchantAccountCode'])
+        ->execute()
+        ->first();
+      if (empty($paymentProcessor)) {
+        throw new Exception("Payment processor of type '{$params['payment_service_provider']}' and name '{$pspData['merchantAccountCode']}' not found");
+      }
+
+      if (!empty($pspData['additionalData']['cardSummary'])) {
+        // e.g. Visa: 1234 - this is consistent with how core renders
+        // financial_trxn.card_type_id + financial_trxn.pan_truncation
+        $accountNumber = ucfirst($pspData['additionalData']['paymentMethodVariant']) . ': ' . $pspData['additionalData']['cardSummary'];
+      }
+      else {
+        // store full IBAN
+        $accountNumber = _civicrm_api3_get_psp_result_data_iban($params);
+      }
+      $expiryDate = NULL;
+      if (!empty($pspData['additionalData']['expiryDate'])) {
+        // 03/2025 => 20250301
+        $dateParts = explode('/', $pspData['additionalData']['expiryDate']);
+        $expiryDate = $dateParts[1] . $dateParts[0] . '01';
+      }
+
+      $billingFirstName = NULL;
+      $billingLastName = NULL;
+      if (!empty($pspData['additionalData']['cardHolderName']) && $pspData['additionalData']['cardHolderName'] != 'Checkout Shopper PlaceHolder') {
+        $cardHolder = explode(' ', $pspData['additionalData']['cardHolderName']);
+        $billingFirstName = $cardHolder[0] ?? NULL;
+        $billingLastName = $cardHolder[1] ?? $pspData['additionalData']['cardHolderName'];
+      }
+
       $result = civicrm_api3('Contract', 'create', [
         'check_permissions' => 0,
         'sequential' => empty($params['sequential']) ? 0 : 1,
         'contact_id' => $params['contact_id'],
         'membership_type_id' => $params['membership_type_id'],
-        'join_date' => $params['member_since'],
-        'start_date' => $params['start_date'],
+        'join_date' => date('Ymd', strtotime($pspData['eventDate'])),
+        'start_date' => date('Ymd', strtotime($pspData['eventDate'])),
+        // TODO: uh, idk
+        'cycle_day' => date('d'),
         'source' => 'OSF',
         'campaign_id' => $params['campaign_id'],
-        'membership_payment.membership_annual' => number_format($params['amount'] * $params['frequency'], 2, '.', ''),
-        'membership_payment.membership_frequency' => $params['frequency'],
-        'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
-        'membership_payment.payment_instrument' => $payment_instrument,
-        'membership_payment.to_ba' => _civicrm_api3_o_s_f_contract_getBA($creditor['iban'], GPAPI_GP_ORG_CONTACT_ID, []),
-        'membership_payment.from_ba' => $bank_account,
-        'membership_payment.cycle_day' => $cycle_day,
+        'payment_method.contact_id' => $params['contact_id'],
+        'payment_method.start_date' => $params['start_date'],
+        'payment_method.amount' => $params['amount'],
+        'payment_method.adapter' => $params['payment_service_provider'],
+        'payment_method.frequency_interval' => $params['frequency'],
+        'payment_method.frequency_unit' => 'month',
+        'payment_method.payment_instrument_id' => $payment_instrument,
+        // TODO: idk?
+        // 'membership_payment.to_ba' => ,
+        // TODO: uh, idk
+        'payment_method.cycle_day' => date('d'),
+        // TODO: why isn't this $pspData['additionalData']['recurring.storedPaymentMethodId'] or something?
+        'payment_method.stored_payment_method_id' => $pspData['additionalData']['recurring.recurringDetailReference'],
+        'payment_method.payment_processor_id' => $paymentProcessor['id'],
+        'payment_method.account_number' => $accountNumber,
+        'payment_method.ip_address' => $pspData['additionalData']['shopperIP'] ?? NULL,
+        'payment_method.expiry_date' => $expiryDate,
+        'payment_method.email' => $pspData['additionalData']['shopperEmail'] ?? NULL,
+        'payment_method.billing_first_name' => $billingFirstName,
+        'payment_method.billing_last_name' => $billingLastName,
+        'payment_method.shopper_reference' => $pspData['additionalData']['recurring.shopperReference'],
       ]);
-    } catch (Exception $ex) {
-      throw $ex;
-    } finally {
-      $lock->release();
+
+      if (!empty($params['payment_received'])) {
+        $membership = \Civi\Api4\Membership::get(FALSE)
+          ->addSelect('membership_payment.membership_recurring_contribution')
+          ->addWhere('id', '=', $result['id'])
+          ->execute()
+          ->first();
+        $order = civicrm_api3('Order', 'create', [
+          'contact_id' => $params['contact_id'],
+          'financial_type_id' => 'Member Dues',
+          'total_amount' => $params['amount'],
+          'receive_date' => date('YmdHis', strtotime($pspData['eventDate'])),
+          'contribution_status_id' => 'Pending',
+          'contribution_recur_id' => $membership['membership_payment.membership_recurring_contribution'],
+          'payment_instrument_id' => $payment_instrument,
+          'invoice_id' => $pspData['merchantReference'],
+        ]);
+        civicrm_api3('Payment', 'create', [
+          'contribution_id' => $order['id'],
+          'total_amount' => $params['amount'],
+          'trxn_date' => date('YmdHis', strtotime($pspData['eventDate'])),
+          'payment_processor_id' => $paymentProcessor['id'],
+          'payment_instrument_id' => $payment_instrument,
+          'trxn_id' => $pspData['pspReference'],
+          'card_type_id' => $pspData['additionalData']['paymentMethodVariant'] ?? NULL,
+          // last 4 digits of CC PAN or IBAN
+          'pan_truncation' => substr($accountNumber, -4),
+        ]);
+      }
     }
+
 
     $activity_id = civicrm_api3('Activity', 'getvalue', [
       'return' => 'id',
@@ -246,29 +351,8 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
 
     CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
 
-    // get BA reference type for IBAN to do BankingAccountReference lookup by type
-    $reference_type_iban = civicrm_api3('OptionValue', 'getvalue', [
-      'return' => 'id',
-      'option_group_id' => 'civicrm_banking.reference_types',
-      'value' => 'IBAN',
-    ]);
-    $bank_account_reference = civicrm_api3('BankingAccountReference', 'getvalue', [
-      'return' => 'id',
-      'ba_id' => $bank_account,
-      'reference_type_id' => $reference_type_iban,
-    ]);
-    $reference_type_id = civicrm_api3('OptionValue', 'getvalue', [
-      'return' => 'id',
-      'option_group_id' => 'civicrm_banking.reference_types',
-      'value' => $referenceType,
-    ]);
-    // update the bank account reference type (CE always creates IBAN)
-    civicrm_api3('BankingAccountReference', 'create', [
-      'reference_type_id' => $reference_type_id,
-      'id' => $bank_account_reference,
-    ]);
-
     if (!empty($params['payment_received'])) {
+      /*
       // create the initial contribution
       $rec_contribution = civicrm_api3('ContributionRecur', 'getsingle', [
         'check_permissions' => 0,
@@ -306,6 +390,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       }
       $contribution = civicrm_api3('Contribution', 'create', $contribution_data);
       CRM_Utils_SepaCustomisationHooks::installment_created($mandate['mandate_id'], $mandate['entity_id'], $contribution['id']);
+      */
     }
 
     if (!empty($referrer)) {
