@@ -286,20 +286,20 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         'join_date' => date('Ymd', strtotime($pspData['eventDate'])),
         'start_date' => date('Ymd', strtotime($pspData['eventDate'])),
         // TODO: uh, idk
-        'cycle_day' => date('d'),
+        'cycle_day' => date('d', strtotime($pspData['eventDate'])),
         'source' => 'OSF',
         'campaign_id' => $params['campaign_id'],
         'payment_method.contact_id' => $params['contact_id'],
         'payment_method.start_date' => $params['start_date'],
         'payment_method.amount' => $params['amount'],
         'payment_method.adapter' => $params['payment_service_provider'],
-        'payment_method.frequency_interval' => $params['frequency'],
+        'payment_method.frequency_interval' => (int) (12.0 / $params['frequency']),
         'payment_method.frequency_unit' => 'month',
         'payment_method.payment_instrument_id' => $payment_instrument,
         // TODO: idk?
         // 'membership_payment.to_ba' => ,
         // TODO: uh, idk
-        'payment_method.cycle_day' => date('d'),
+        'payment_method.cycle_day' => date('d', strtotime($pspData['eventDate'])),
         // TODO: why isn't this $pspData['additionalData']['recurring.storedPaymentMethodId'] or something?
         'payment_method.stored_payment_method_id' => $pspData['additionalData']['recurring.recurringDetailReference'],
         'payment_method.payment_processor_id' => $paymentProcessor['id'],
