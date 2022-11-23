@@ -102,7 +102,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       }
     }
 
-    if (empty($params['payment_service_provider'])) {
+    if (empty($params['payment_service_provider']) || $params['payment_service_provider'] == 'civicrm') {
       // SEPA
       $creditor = (array) CRM_Sepa_Logic_Settings::defaultCreditor();
       $referenceType = 'IBAN';
