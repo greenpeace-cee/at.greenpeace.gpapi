@@ -116,15 +116,26 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       $creditorLookup = [
         'creditor_type' => 'PSP',
         'sepa_file_format_id' => $fileFormat,
+        // some creditors are used by multiple merchant accounts, so we just set
+        // identifier to Foo|Bar and use this LIKE hack to search ... yuck.
+        'identifier' => ['LIKE' => "%{$params['bic']}%"],
       ];
-      if (empty($params['currency'])) {
-        $config = CRM_Core_Config::singleton();
-        $creditorLookup['currency'] = $config->defaultCurrency;
+      try {
+        // attempt lookup by merchant account (param bic - which would be stored as the SEPA identifier)
+        $creditor = civicrm_api3('SepaCreditor', 'getsingle', $creditorLookup);
       }
-      else {
-        $creditorLookup['currency'] = $params['currency'];
+      catch (CiviCRM_API3_Exception $e) {
+        // fall back to currency lookup
+        unset($creditorLookup['identifier']);
+        if (empty($params['currency'])) {
+          $config = CRM_Core_Config::singleton();
+          $creditorLookup['currency'] = $config->defaultCurrency;
+        }
+        else {
+          $creditorLookup['currency'] = $params['currency'];
+        }
+        $creditor = civicrm_api3('SepaCreditor', 'getsingle', $creditorLookup);
       }
-      $creditor = civicrm_api3('SepaCreditor', 'getsingle', $creditorLookup);
     }
 
     $currency = $creditor['currency'];
