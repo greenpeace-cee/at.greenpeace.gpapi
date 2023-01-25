@@ -2,7 +2,35 @@
 
 namespace Civi\Gpapi\ContractHelper;
 
+use \CRM_Utils_Array;
+
 class Factory {
+
+  /**
+   * @param array $params
+   * @return \Civi\Gpapi\ContractHelper\AbstractHelper
+   * @throws \Civi\Gpapi\ContractHelper\Exception
+   */
+  public static function create(array $params) {
+    $psp = CRM_Utils_Array::value('payment_service_provider', $params);
+    $membership_id = CRM_Utils_Array::value('contract_id', $params);
+
+    if (empty($psp)) return new Sepa($membership_id);
+
+    switch ($psp) {
+      case 'adyen':
+        return new Adyen($membership_id);
+
+      case 'civicrm':
+        return new Sepa($membership_id);
+
+      default:
+        throw new Exception(
+          "Unsupported payment service provider $psp",
+          Exception::PAYMENT_SERVICE_PROVIDER_UNSUPPORTED
+        );
+    }
+  }
 
   /**
    * @param $membershipId
@@ -72,7 +100,7 @@ class Factory {
    * @return \Civi\Gpapi\ContractHelper\Adyen|\Civi\Gpapi\ContractHelper\Sepa
    * @throws \Civi\Gpapi\ContractHelper\Exception
    */
-  public static function createWithMembershipIdAndPspData($membershipId, $paymentInstrumentName, $paymentServiceProvider) {
+  public static function createWithMembershipIdAndPspData($membershipId, $paymentServiceProvider) {
     switch ($paymentServiceProvider) {
       case 'adyen':
         return new Adyen($membershipId);
