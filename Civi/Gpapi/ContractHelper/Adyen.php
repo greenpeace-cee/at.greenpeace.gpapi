@@ -2,316 +2,253 @@
 
 namespace Civi\Gpapi\ContractHelper;
 
+use \Civi\Api4;
+use \CRM_Utils_Array;
+
 class Adyen extends AbstractHelper {
-  protected $mandate;
-
-  public function __construct($membershipId = NULL) {
-    parent::__construct($membershipId);
-  }
-
-  protected function loadPaymentDetails() {
-    $mandate = reset(civicrm_api3('SepaMandate', 'get', [
-      'entity_table'      => 'civicrm_contribution_recur',
-      'entity_id'         => $this->recurringContribution['id'],
-      'api.SepaCreditor.getsingle' => [
-        'id' => '$value.creditor_id',
-      ],
-      'check_permissions' => 0,
-    ])['values']);
-    // only set mandate if one exists and it's adyen
-    if (!empty($mandate) && $mandate['api.SepaCreditor.getsingle']['creditor_type'] == 'PSP') {
-      $psp_name = civicrm_api3('OptionValue', 'getvalue', [
-        'return'            => 'name',
-        'option_group_id'   => 'sepa_file_format',
-        'value'             => $mandate['api.SepaCreditor.getsingle']['sepa_file_format_id'],
-        'check_permissions' => 0,
-      ]);
-      if ($psp_name == 'adyen') {
-        $this->mandate = $mandate;
-      }
-    }
-  }
-
   public function create (array $params) {
-    // 1. Get the payment instrument ID
 
-    $payment_instrument_id = (int) \CRM_Core_PseudoConstant::getKey(
-      'CRM_Contribute_BAO_Contribution',
-      'payment_instrument_id',
-      $params['payment_instrument']
-    );
+    // --- General membership details --- //
 
-    // 2. Check/resolve the referrer contact ID
+    $campaign_id = (int) CRM_Utils_Array::value('campaign_id', $params);
+    $contact_id = $params['contact_id'];
+    $membership_type_id = CRM_Utils_Array::value('membership_type_id', $params);
 
-    $referrer_id = self::getReferrerContactID($params);
+    // --- Recurring contribution details --- //
 
-    if (!empty($referrer_id) && (int) $referrer_id === (int) $params['contact_id']) {
-      return CRM_Gpapi_Error::create(
-        'OSF.contract',
-        "Parameter 'referrer_contact_id' must not match 'contact_id'",
-        $params
-      );
-    }
-
-    // 3. Derive the PSP creditor
-
-    $creditor = $this->getCreditor($params);
-
-    // 4. Set the currency
-
-    $currency = empty($params['currency']) ? $creditor['currency'] : $params['currency'];
-
-    // 5. Resolve the campaign ID
-
-    \CRM_Gpapi_Processor::resolveCampaign($params);
-
-    // 6. Set the join date
-
-    $member_since = date('YmdHis');
-
-    // 7. Calculate the cycle day
-
-    $next_debit_date = self::calculateNextDebitDate($params, $creditor);
-    $cycle_day = (int) date('d', $next_debit_date);
-
-    // 8. Calculate the start date
-
-    $start_date = date('YmdHis', empty($params['payment_received']) ? time() : $next_debit_date);
-
-    // 9. Format the payment amount
+    $next_debit_date = self::calculateNextDebitDate($params);
 
     $amount = number_format($params['amount'], 2, '.', '');
+    $currency = CRM_Utils_Array::value('currency', $params);
+    $cycle_day = (int) date('d', $next_debit_date);
+    $financial_type_id = self::getFinancialTypeID('Member Dues');
+    $frequency_interval = (int) (12.0 / $params['frequency']);
+    $payment_instrument_id = self::getPaymentInstrumentID($params);
 
-    // 10. Make call to Contract API
+    // --- PSP result data --- //
+
+    $psp_result_data = CRM_Utils_Array::value('psp_result_data', $params, []);
+    $additional_psp_data = CRM_Utils_Array::value('additionalData', $psp_result_data, []);
+    $card_holder_name = self::getCardHolderName($additional_psp_data);
+    $event_date = CRM_Utils_Array::value('eventDate', $psp_result_data, date('Y-m-d'));
+
+    $account_number = self::getAccountNumber($additional_psp_data);
+    $billing_first_name = $card_holder_name[0];
+    $billing_last_name = $card_holder_name[1];
+    $expiry_date = self::getExpiryDate($additional_psp_data);
+    $ip_address = CRM_Utils_Array::value('shopperIP', $additional_psp_data);
+    $join_date = date('Ymd', strtotime($event_date));
+    $payment_processor_id = self::getPaymentProcessorID($psp_result_data);
+    $shopper_email = CRM_Utils_Array::value('shopperEmail', $additional_psp_data);
+
+    $shopper_reference = CRM_Utils_Array::value(
+      'recurring.shopperReference',
+      $additional_psp_data
+    );
+
+    $stored_pm_id = CRM_Utils_Array::value(
+      'recurring.recurringDetailReference',
+      $additional_psp_data
+    );
+
+    $start_date= date('Ymd', strtotime($event_date));
+
+    // --- API options --- //
+
+    $sequential = (int) !empty($params['sequential']);
 
     $create_contract_params = [
-      'campaign_id'                          => $params['campaign_id'],
-      'check_permissions'                    => 0,
-      'contact_id'                           => $params['contact_id'],
-      'join_date'                            => $member_since,
-      'membership_type_id'                   => $params['membership_type_id'],
-      'payment_method.account_name'          => $params['bic'],
-      'payment_method.account_reference'     => $params['iban'],
-      'payment_method.adapter'               => 'psp_sepa',
-      'payment_method.amount'                => $amount,
-      'payment_method.campaign_id'           => $params['campaign_id'],
-      'payment_method.contact_id'            => $params['contact_id'],
-      'payment_method.creditor_id'           => $creditor['id'],
-      'payment_method.currency'              => $currency,
-      'payment_method.cycle_day'             => $cycle_day,
-      'payment_method.financial_type_id'     => "2", // Membership dues
-      'payment_method.frequency_interval'    => (int) (12.0 / $params['frequency']),
-      'payment_method.frequency_unit'        => 'month',
-      'payment_method.payment_instrument_id' => $payment_instrument_id,
-      'payment_method.type'                  => 'RCUR',
-      'sequential'                           => empty($params['sequential']) ? 0 : 1,
-      'source'                               => 'OSF',
-      'start_date'                           => $start_date,
+      'campaign_id'                             => $campaign_id,
+      'contact_id'                              => $contact_id,
+      'join_date'                               => $join_date,
+      'membership_type_id'                      => $membership_type_id,
+      'payment_method.account_number'           => $account_number,
+      'payment_method.adapter'                  => 'adyen',
+      'payment_method.amount'                   => $amount,
+      'payment_method.billing_first_name'       => $billing_first_name,
+      'payment_method.billing_last_name'        => $billing_last_name,
+      'payment_method.campaign_id'              => $campaign_id,
+      'payment_method.contact_id'               => $contact_id,
+      'payment_method.currency'                 => $currency,
+      'payment_method.cycle_day'                => $cycle_day,
+      'payment_method.email'                    => $shopper_email,
+      'payment_method.expiry_date'              => $expiry_date,
+      'payment_method.financial_type_id'        => $financial_type_id,
+      'payment_method.frequency_interval'       => $frequency_interval,
+      'payment_method.frequency_unit'           => 'month',
+      'payment_method.ip_address'               => $ip_address,
+      'payment_method.payment_instrument_id'    => $payment_instrument_id,
+      'payment_method.payment_processor_id'     => $payment_processor_id,
+      'payment_method.shopper_reference'        => $shopper_reference,
+      'payment_method.stored_payment_method_id' => $stored_pm_id,
+      'sequential'                              => $sequential,
+      'source'                                  => 'OSF',
+      'start_date'                              => $start_date,
     ];
 
     $contract_result = civicrm_api3('Contract', 'create', $create_contract_params);
 
-    $recurring_contribution_id = civicrm_api3('ContractPaymentLink', 'getvalue', [
-      'contract_id' => $contract_result['id'],
-      'return'      => 'contribution_recur_id',
-    ]);
-
-    $recurring_contribution = civicrm_api3('ContributionRecur', 'getsingle', [
-      'check_permissions' => 0,
-      'id'                => $recurring_contribution_id
-    ]);
-
-    $sepa_mandate = civicrm_api3('SepaMandate', 'getsingle', [
-      'check_permissions' => 0,
-      'entity_id'         => $recurring_contribution_id,
-    ]);
-
-    // 11. Update activity with UTM
-
-    $activity_id = civicrm_api3('Activity', 'getvalue', [
-      'return' => 'id',
-      'activity_type_id' => 'Contract_Signed',
-      'source_record_id' => $contract_result['id'],
-    ]);
-
-    \CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
-
-    // 12. Create an initial contribution
-
-    if (!empty($params['payment_received'])) {
-      $init_contribution = self::createInitialContribution([
-        'activity_id'           => $activity_id,
-        'campaign_id'           => $recurring_contribution['campaign_id'],
-        'contact_id'            => $sepa_mandate['contact_id'],
-        'creditor_iban'         => $creditor['iban'],
-        'financial_type_id'     => $recurring_contribution['financial_type_id'],
-        'is_test'               => $recurring_contribution['is_test'],
-        'member_since'          => $member_since,
-        'payment_instrument_id' => $payment_instrument_id,
-        'rcur_amount'           => $recurring_contribution['amount'],
-        'rcur_currency'         => $recurring_contribution['currency'],
-        'rcur_id'               => $recurring_contribution_id,
-        'sepa_mandate_id'       => $sepa_mandate['id'],
-        'trxn_id'               => $params['trxn_id'],
-      ]);
-    }
-
-    // 13. Create a "Referrer of" relationship
-
-    if (!empty($referrer_id)) {
-      $updated_membership = self::createReferrerOfRelationship([
-        'contact_id'    => $params['contact_id'],
-        'membership_id' => $contract_result['id'],
-        'referrer_id'   => $referrer_id,
-      ]);
-    }
-
-    // 14. Createa a bank account from 'psp_result_data' params
-
-    if (empty($params['psp_result_data']['bic'])) return $contract_result;
-    if (empty($params['psp_result_data']['iban'])) return $contract_result;
-
-    $bank_account_id = self::getBankAccount([
-      'contact_id' => $params['contact_id'],
-      'iban'       => $params['psp_result_data']['iban'],
-    ]);
-
-    if ($bank_account_id === NULL) {
-      $bank_account = self::createBankAccount([
-        'bic'            => $params['psp_result_data']['bic'],
-        'contact_id'     => $params['contact_id'],
-        'iban'           => $params['psp_result_data']['iban'],
-        'reference_type' => 'NBAN_ADYEN',
-      ]);
-    }
-
-    return $contract_result;
-  }
-
-  public function getPaymentLabel() {
-    if (is_null($this->mandate)) {
-      throw new Exception('No payment details found');
-    }
-    return NULL;
-  }
-
-  public function getPaymentDetails() {
-    if (is_null($this->mandate)) {
-      throw new Exception('No payment details found');
-    }
-    return [
-      'shopper_reference' => $this->mandate['iban'],
-      'merchant_account' => $this->mandate['bic'],
-    ];
-  }
-
-  public function getPspName() {
-    return 'adyen';
+    $this->loadContract($contract_result['id']);
   }
 
   public function update(array $params) {
-    if (empty($params['payment_details']['shopper_reference'])) {
+    $payment_details = CRM_Utils_Array::value('payment_details', $params);
+
+    if (empty($payment_details['shopper_reference'])) {
       throw new Exception('Missing Shopper Reference');
     }
-    if (empty($params['payment_details']['merchant_account'])) {
+
+    if (empty($payment_details['merchant_account'])) {
       throw new Exception('Missing Merchant Account');
     }
-    $creditor = $this->getCreditor($params);
-    $cycle_days = \CRM_Sepa_Logic_Settings::getListSetting('cycledays', range(1, 28), $creditor['id']);
 
-    // TODO: refactor this to use CE's native PSPSEPA payment adapter rather than
-    //       manually creating the mandate. this would allow us to get rid of
-    //       this special case and instead rely on membership_payment.defer_payment_start=1
-    $params['start_date'] = $this->getStartDate($params);
-    $mandateStartDate = $params['start_date'];
-    if (!empty($params['transaction_details']['date'])) {
-      // add already-debitted period to the start date
-      // Example: a monthly contract is added and the first transaction was
-      // processed online. Set the earliest possible start date to the
-      // date of the transaction plus one month.
-      $monthsToAdd = 12 / $params['frequency'];
-      $minimumStartDate = new \DateTime($params['transaction_details']['date']);
-      $minimumStartDate->add(new \Dateinterval("P{$monthsToAdd}M"));
-      if ($minimumStartDate > $mandateStartDate) {
-        $mandateStartDate = $minimumStartDate;
-      }
-      // TODO: backdate from next upcoming cycle day
-    }
-    $mandate = civicrm_api3('SepaMandate', 'createfull', [
-      'contact_id' => $this->contract['contact_id'],
-      'type' => 'RCUR',
-      'iban' => $params['payment_details']['shopper_reference'],
-      'bic' => $params['payment_details']['merchant_account'],
-      'amount' => $params['amount'],
-      'frequency_interval' => (int) (12 / $params['frequency']),
-      'frequency_unit' => 'month',
-      'financial_type_id' => \CRM_Core_Pseudoconstant::getKey(
-        'CRM_Contribute_BAO_Contribution',
-        'financial_type_id',
-        'Member Dues'
-      ),
-      'start_date' => $mandateStartDate->format('Y-m-d'),
-      'cycle_day' => $this->getCycleDay($cycle_days, $params),
-      'creditor_id' => $creditor['id'],
-      // 'payment_instrument_id' => \CRM_Core_Pseudoconstant::getKey(
-      //   'CRM_Contribute_BAO_Contribution',
-      //   'payment_instrument_id',
-      //   $params['payment_instrument']
-      // ),
-      'campaign_id' => $params['campaign_id'] ?? NULL,
-      'check_permissions' => 0,
-    ]);
-    $mandate = reset($mandate['values']);
+    // General membership details
 
-    civicrm_api3('ContributionRecur', 'create', [
-      'id' => $mandate['entity_id'],
-      'payment_instrument_id' => \CRM_Core_Pseudoconstant::getKey(
-        'CRM_Contribute_BAO_Contribution',
-        'payment_instrument_id',
-        $params['payment_instrument']
-      )
-    ]);
+    $campaign_id = (int) CRM_Utils_Array::value('campaign_id', $params);
+    $medium_id = self::getOptionValue('encounter_medium', 'web');
+    $membership_id = $params['contract_id'];
+    $start_date = ($this->getStartDate($params))->format('Y-m-d');
 
-    $contract_modification = array(
-      'action'                                  => $this->isCurrentMember ? 'update' : 'revive',
-      'date'                                    => $params['start_date']->format('Y-m-d'),
-      'id'                                      => $this->membershipId,
-      'medium_id'                               => \CRM_Core_PseudoConstant::getKey(
-        'CRM_Activity_BAO_Activity',
-        'medium_id',
-        'web'
-      ),
-      'campaign_id'                             => $params['campaign_id'] ?? NULL,
-      'membership_payment.defer_payment_start'  => 0,
+    // Recurring contribution details
+
+    $annual_amount = number_format($params['amount'] * $params['frequency'], 2);
+    $cycle_day = CRM_Utils_Array::value('cycle_day', $params);
+    $frequency = $params['frequency'];
+    $payment_instrument_id = self::getPaymentInstrumentID($params);
+
+    // API options
+
+    $action = $this->isActiveContract ? 'update' : 'revive';
+
+    $modify_contract_params = [
+      'action'                                  => $action,
+      'campaign_id'                             => $campaign_id,
       'check_permissions'                       => 0,
-      'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
-    );
-    $response = civicrm_api3('Contract', 'modify', $contract_modification);
+      'date'                                    => $start_date,
+      'id'                                      => $membership_id,
+      'medium_id'                               => $medium_id,
+      'membership_payment.cycle_day'            => $cycle_day,
+      'membership_payment.membership_annual'    => $annual_amount,
+      'membership_payment.membership_frequency' => $frequency,
+      'payment_method.adapter'                  => 'adyen',
+      'payment_method.cycle_day'                => $cycle_day,
+      'payment_method.payment_instrument_id'    => $payment_instrument_id,
+    ];
+
+    $response = civicrm_api3('Contract', 'modify', $modify_contract_params);
+
     civicrm_api3('Contract', 'process_scheduled_modifications', [
-      'id'                => $this->membershipId,
+      'id'                => $membership_id,
       'check_permissions' => 0,
     ]);
-    return reset($response['values'])['change_activity_id'];
   }
 
-  private function getCreditor($params) {
-    $fileFormat = civicrm_api3('OptionValue', 'getvalue', [
-      'return' => 'value',
-      'option_group_id' => 'sepa_file_format',
-      'name' => 'adyen',
-    ]);
-    $creditorLookup = [
-      'creditor_type' => 'PSP',
-      'sepa_file_format_id' => $fileFormat,
+  public function createInitialContribution(array $params) {
+    $campaign_id = CRM_Utils_Array::value('campaign_id', $params);
+    $trxn_id = CRM_Utils_Array::value('trxn_id', $params);
+
+    $create_contrib_params = [
+      'campaign_id'                 => $campaign_id,
+      'contact_id'                  => $params['contact_id'],
+      'contribution_recur_id'       => $this->recurringContribution['id'],
+      'contribution_status_id:name' => 'Completed',
+      'currency'                    => $this->recurringContribution['currency'],
+      'financial_type_id'           => $this->recurringContribution['financial_type_id'],
+      'is_test'                     => $this->recurringContribution['is_test'],
+      'payment_instrument_id'       => $this->recurringContribution['payment_instrument_id'],
+      'receive_date'                => $this->membership['join_date'],
+      'source'                      => 'OSF',
+      'total_amount'                => $this->recurringContribution['amount'],
+      'trxn_id'                     => $trxn_id,
     ];
-    if (empty($params['currency'])) {
-      $config = \CRM_Core_Config::singleton();
-      $creditorLookup['currency'] = $config->defaultCurrency;
+
+    civicrm_api4('Contribution', 'create', [ 'values' => $create_contrib_params ]);
+  }
+
+  protected function loadAdditionalPaymentData(int $membership_id) {
+    // ...
+  }
+
+  private static function calculateNextDebitDate(array $params) {
+    $next_debit_date = strtotime('+1 month');
+    $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, 0);
+
+    if (empty($cycle_day)) {
+      $possible_cycle_days = \CRM_Contract_PaymentAdapter_Adyen::cycleDays();
+      $cycle_day = (int) date('d', $next_debit_date);
+
+      while (!in_array($cycle_day, $possible_cycle_days)) {
+        $next_debit_date = strtotime("+ 1 day", $next_debit_date);
+        $cycle_day = (int) date('d', $next_debit_date);
+      }
+    } else {
+      while ((int) date('d', $next_debit_date) !== $cycle_day) {
+        $next_debit_date = strtotime("+ 1 day", $next_debit_date);
+      }
     }
-    else {
-      $creditorLookup['currency'] = $params['currency'];
+
+    return $next_debit_date;
+  }
+
+  private static function getAccountNumber(array $additional_psp_data) {
+    $card_summary = CRM_Utils_Array::value('cardSummary', $additional_psp_data);
+    $pm_variant = CRM_Utils_Array::value('paymentMethodVariant', $additional_psp_data);
+
+    if (empty($card_summary) || empty($pm_variant)) return NULL;
+
+    return ucfirst($pm_variant) . ": $card_summary";
+  }
+
+  private static function getCardHolderName(array $additional_psp_data) {
+    if (empty($additional_psp_data['cardHolderName'])) return [NULL, NULL];
+
+    $cardHolderName = $additional_psp_data['cardHolderName'];
+
+    if ($cardHolderName === 'Checkout Shopper PlaceHolder') return [NULL, NULL];
+
+    $cardHolderName = explode(' ', $cardHolderName);
+
+    if (count($cardHolderName) < 2) return [$cardHolderName[0], NULL];
+
+    $firstName = reset($cardHolderName);
+    $lastName = end($cardHolderName);
+
+    return [
+      empty($firstName) ? NULL : $firstName,
+      empty($lastName) ? NULL : $lastName,
+    ];
+  }
+
+  private static function getExpiryDate(array $additional_psp_data) {
+    $expiryDate = CRM_Utils_Array::value('expiryDate', $additional_psp_data);
+
+    if (empty($expiryDate)) return NULL;
+
+    list($month, $year) = explode('/', $expiryDate);
+    
+    return "{$year}{$month}01";
+  }
+
+  private static function getPaymentProcessorID(array $psp_result_data) {
+    $processor_type = 'Adyen';
+    $name = CRM_Utils_Array::value('merchantAccountCode', $psp_result_data);
+
+    if (empty($name)) {
+      throw new \Exception("Missing PSP parameter 'merchantAccountCode'");
     }
-    return civicrm_api3('SepaCreditor', 'getsingle', $creditorLookup);
+
+    $payment_processor = Api4\PaymentProcessor::get()
+      ->addWhere('payment_processor_type_id:name', '=', $processor_type)
+      ->addWhere('name', '=', $name)
+      ->addSelect('id')
+      ->execute()
+      ->first();
+
+    if (empty($payment_processor)) {
+      throw new \Exception("Payment processor of type '$processor_type' and name '$name' not found");
+    }
+
+    return $payment_processor['id'];
   }
 
 }
