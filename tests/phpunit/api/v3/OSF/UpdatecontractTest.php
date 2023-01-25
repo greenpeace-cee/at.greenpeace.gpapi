@@ -11,8 +11,6 @@ use Civi\Test\TransactionalInterface;
  */
 class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
-  private $contact;
-
   public function setUp() {
     parent::setUp();
     // create test contact
