@@ -427,19 +427,20 @@ class CRM_Gpapi_Processor {
    *
    * @throws \CiviCRM_API3_Exception
    */
-  public static function identifyContactID(&$contact_id) {
+  public static function identifyContactID($contact_id) {
     if (function_exists('identitytracker_civicrm_install')) {
       // identitytracker is enabled
-      $contacts = civicrm_api3('Contact', 'findbyidentity', array(
+      $contacts = civicrm_api3('Contact', 'findbyidentity', [
         'identifier_type' => 'internal',
-        'identifier'      => $contact_id));
-      if ($contacts['count'] == 1) {
-        $contact_id = $contacts['id'];
-        return;
-      }
-      $contact_id = 0;
-      return;
+        'identifier'      => $contact_id,
+      ]);
+
+      if ($contacts['count'] == 1) return (int) $contacts['id'];
+
+      return NULL;
     }
+
+    return $contact_id;
   }
 
   /**
@@ -484,12 +485,12 @@ class CRM_Gpapi_Processor {
       return NULL;
     }
     // resolve to merge-survivor if necessary
-    self::identifyContactID($contact['id']);
+    $contact_id = self::identifyContactID($contact['id']);
     // at this point $contact['id'] could refer to a not-merge-related deleted
     // contact. Ensure the final contact is not deleted
     $isActive = Contact::get()
       ->selectRowCount()
-      ->addWhere('id', '=', $contact['id'])
+      ->addWhere('id', '=', $contact_id)
       ->addWhere('is_deleted', '=', FALSE)
       ->setCheckPermissions(FALSE)
       ->execute()
@@ -497,7 +498,7 @@ class CRM_Gpapi_Processor {
     if (!$isActive) {
       return NULL;
     }
-    return $contact['id'];
+    return $contact_id;
   }
 
   public static function getContactData($contactId, $context = self::CONTEXT_ODF) {

@@ -12,6 +12,8 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
+use \Civi\Gpapi\ContractHelper;
+
 define('GPAPI_GP_ORG_CONTACT_ID', 1);
 
 /**
@@ -47,166 +49,148 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
   $tx = new CRM_Core_Transaction();
 
   try {
-    CRM_Gpapi_Processor::preprocessCall($params, 'OSF.contract');
+    _civicrm_api3_o_s_f_contract_preprocessCall($params);
 
-    if (empty($params['contact_id'])) {
-      return CRM_Gpapi_Error::create('OSF.contract', "No 'contact_id' provided.", $params);
-    }
+    $contract_helper = ContractHelper\Factory::create($params);
 
-    if (empty($params['iban'])) {
-      return CRM_Gpapi_Error::create('OSF.contract', "No 'iban' provided.", $params);
-    }
-
-    if (empty($params['payment_received']) && !empty($params['trxn_id'])) {
-      return CRM_Gpapi_Error::create(
-        'OSF.contract',
-        "Cannot use parameter 'trxn_id' when 'payment_received' is not set.",
-        $params
-      );
-    }
-
-    CRM_Gpapi_Processor::identifyContactID($params['contact_id']);
-
-    if (empty($params['contact_id'])) {
-      return civicrm_api3_create_error('No contact found.');
-    }
-
-    $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
-    $lock->acquire();
-
-    if (!$lock->isAcquired()) {
-      return CRM_Gpapi_Error::create(
-        'OSF.contract',
-        "Mandate lock timeout. Try again later.",
-        $params
-      );
-    }
+    $lock = _civicrm_api3_o_s_f_contract_acquireLock($params);
 
     try {
-      $contract_helper = \Civi\Gpapi\ContractHelper\Factory::createWithoutExistingMembership($params);
-      $contract = $contract_helper->create($params);
+      $contract_helper->create($params);
+
+      $activity_id = $contract_helper->signActivity['id'];
+      CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity_id);
+
+      if (isset($params['referrer_contact_id'])) {
+        $contract_helper->createReferrerOfRelationship($params);
+      }
+
+      if (isset($params['payment_received'])) {
+        $contract_helper->createInitialContribution($params);
+      }
+
+      $psp_result_data = CRM_Utils_Array::value('psp_result_data', $params, []);
+
+      if (isset($psp_result_data['bic']) && isset($psp_result_data['iban'])) {
+        $contract_helper::createBankAccount($params);
+      }
     } catch (Exception $ex) {
       throw $ex;
     } finally {
       $lock->release();
     }
 
+    $result_id = $contract_helper->membership['id'];
     $null = NULL;
 
     return civicrm_api3_create_success(
-      [['id' => $contract['id']]],
+      [[ 'id' => $result_id ]],
       $params,
       'OSF',
       'contract',
       $null,
-      [ 'id' => $contract['id'] ]
+      [ 'id' => $result_id ]
     );
   } catch (Exception $e) {
     $tx->rollback();
 
-    if ($e instanceof Civi\Gpapi\ContractHelper\Exception) {
-      switch ($e->getCode()) {
-        case Civi\Gpapi\ContractHelper\Exception::PAYMENT_INSTRUMENT_UNSUPPORTED:
-          throw new API_Exception(
-            'Requested payment instrument "' . $params['payment_instrument'] . '"is not supported',
-            'payment_instrument_unsupported'
-          );
+    _civicrm_api3_o_s_f_contract_handleException($e);
 
-        case Civi\Gpapi\ContractHelper\Exception::PAYMENT_METHOD_INVALID:
-          throw new API_Exception(
-            'Contract has invalid payment method',
-            'payment_method_invalid'
-          );
-
-        case Civi\Gpapi\ContractHelper\Exception::PAYMENT_METHOD_INVALID:
-          throw new API_Exception(
-            'Contract has unsupported payment service provider',
-            'payment_service_provider_unsupported'
-          );
-      }
-    }
-
-    if (!empty($referrer)) {
-      $relationshipType = civicrm_api3('RelationshipType', 'getvalue', [
-        'return' => 'id',
-        'name_a_b' => 'Referrer of',
-      ]);
-      // it is necessary to wrap Relationship.create in a nested transaction to
-      // prevent a rollback from bubbling up to the main API transaction when a
-      // "Duplicate Relationship" exception occurs. This would otherwise cause
-      // us to return a success response even though a rollback is performed.
-      CRM_Core_Transaction::create(TRUE)->run(function($subTx) use ($referrer, $params, $relationshipType) {
-        try {
-          civicrm_api3('Relationship', 'create', [
-            'contact_id_a' => $referrer,
-            'contact_id_b' => $params['contact_id'],
-            'relationship_type_id' => $relationshipType,
-            'start_date' => date('Ymd'),
-          ]);
-        }
-        catch (CiviCRM_API3_Exception $e) {
-          if ($e->getMessage() == 'Duplicate Relationship') {
-            civicrm_api3('Activity', 'create', [
-              'activity_type_id' => 'manual_check_required',
-              'target_id' => [$params['contact_id'], $referrer],
-              'subject' => 'Potential Referrer Fraud',
-              'details' => 'Contact already referred a membership to the referee.',
-              'status_id' => 'Scheduled',
-              'check_permissions' => 0,
-            ]);
-            CRM_Core_Error::debug_log_message("OSF.contract: Potential Referrer Fraud with contacts {$params['contact_id']} and {$referrer}");
-          }
-          else {
-            throw $e;
-          }
-        }
-      });
-      $membership_data = [
-        'id' => $result['id'],
-        'membership_referrer' => $referrer,
-        'skip_handler' => TRUE, // CE should ignore this change
-      ];
-      CRM_Gpapi_Processor::resolveCustomFields($membership_data, ['membership_referral']);
-      civicrm_api3('Membership', 'create', $membership_data);
-    }
-
-    // creates bank account by 'iban' and 'bic' fields included in 'psp_result_data' params
-    $params_iban = _civicrm_api3_get_psp_result_data_iban($params);
-    if (!is_null($params_iban)) {
-      $params_bic  = _civicrm_api3_get_psp_result_data_bic($params);
-      $extras = !is_null($params_bic) ? ['BIC' => $params_bic] : [];
-      _civicrm_api3_o_s_f_contract_getBA($params_iban, $params['contact_id'], $extras);
-    }
-
-    // and return the good news (otherwise an Exception would have occurred)
-    return $result;
-  } catch (Exception $e) {
-    $tx->rollback();
     throw $e;
   }
 }
 
-/**
- * Get or create the PSP/Needs Rewrite tag
- *
- * @return int tag_id
- * @throws \CiviCRM_API3_Exception
- */
-function _civicrm_api3_o_s_f_contract_getPSPTagId() {
-  $name = 'PSP/Needs Rewrite';
-  $tag = civicrm_api3('Tag', 'get', [
-    'name' => $name,
-  ]);
-  if ($tag['count'] > 0) {
-    return reset($tag['values'])['id'];
+function _civicrm_api3_o_s_f_contract_acquireLock(array $params) {
+  $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
+  $lock->acquire();
+
+  if (!$lock->isAcquired()) {
+    $error = CRM_Gpapi_Error::create(
+      'OSF.contract',
+      "Mandate lock timeout. Try again later.",
+      $params
+    );
+
+    throw new API_Exception($error['error_message'], 'mandate_lock_timeout');
   }
-  $tag = civicrm_api3('Tag', 'create', [
-    'used_for' => 'Activities',
-    'name' => $name,
-    'is_reserved' => 1,
-    'is_selectable' => 0,
-  ]);
-  return $tag['id'];
+
+  return $lock;
+}
+
+function _civicrm_api3_o_s_f_contract_handleException(Exception $e) {
+  if ($e instanceof ContractHelper\Exception) {
+    switch ($e->getCode()) {
+      case Civi\Gpapi\ContractHelper\Exception::PAYMENT_INSTRUMENT_UNSUPPORTED:
+        throw new API_Exception(
+          'Requested payment instrument "' . $params['payment_instrument'] . '"is not supported',
+          'payment_instrument_unsupported'
+        );
+
+      case Civi\Gpapi\ContractHelper\Exception::PAYMENT_METHOD_INVALID:
+        throw new API_Exception(
+          'Contract has invalid payment method',
+          'payment_method_invalid'
+        );
+
+      case Civi\Gpapi\ContractHelper\Exception::PAYMENT_SERVICE_PROVIDER_UNSUPPORTED:
+        throw new API_Exception(
+          'Contract has unsupported payment service provider',
+          'payment_service_provider_unsupported'
+        );
+    }
+  }
+}
+
+function _civicrm_api3_o_s_f_contract_preprocessCall(array &$params) {
+  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.contract');
+
+  // --- Identify contact --- //
+
+  $contact_id = $params['contact_id'];
+  $contact_id = CRM_Gpapi_Processor::identifyContactID($contact_id);
+
+  if (empty($contact_id)) {
+    throw new API_Exception(
+      "No contact found with ID '{$params['contact_id']}'",
+      'contact_not_found'
+    );
+  }
+
+  $params['contact_id'] = $contact_id;
+
+  // --- Resolve campaign name to ID --- //
+
+  CRM_Gpapi_Processor::resolveCampaign($params);
+
+  // --- Resolve payment instrument name to ID --- //
+
+  ContractHelper\AbstractHelper::resolvePaymentInstrument($params);
+
+  // --- `trxn_id` must not be set when `payment_received` is empty --- //
+
+  if (empty($params['payment_received']) && !empty($params['trxn_id'])) {
+    $error = CRM_Gpapi_Error::create(
+      'OSF.contract',
+      "Cannot use parameter 'trxn_id' when 'payment_received' is not set",
+      $params
+    );
+
+    throw new API_Exception($error['error_message'], 'unexpected_trxn_id');
+  }
+
+  // --- Assert that the referrer is not the target contact --- //
+
+  $referrer_id = ContractHelper\AbstractHelper::getReferrerContactID($params);
+
+  if (!empty($referrer_id) && (int) $referrer_id === (int) $params['contact_id']) {
+    $error = CRM_Gpapi_Error::create(
+      'OSF.contract',
+      "Parameter 'referrer_contact_id' must not match 'contact_id'",
+      $params
+    );
+
+    throw new API_Exception($error['error_message'], 'invalid_referrer_id');
+  }
 }
 
 /**
@@ -326,6 +310,11 @@ function _civicrm_api3_o_s_f_contract_spec(&$params) {
     'api.required' => 1,
     'title'        => 'Frequency (collections per year)',
   );
+  $params['cycle_day'] = array(
+    'name'         => 'cycle_day',
+    'api.required' => 0,
+    'title'        => 'Cycle day',
+  );
   $params['membership_type_id'] = array(
     'name'         => 'membership_type_id',
     'api.required' => 0,
@@ -334,7 +323,7 @@ function _civicrm_api3_o_s_f_contract_spec(&$params) {
   );
   $params['iban'] = array(
     'name'         => 'iban',
-    'api.required' => 1,
+    'api.required' => 0,
     'title'        => 'IBAN',
   );
   $params['bic'] = array(
@@ -365,7 +354,7 @@ function _civicrm_api3_o_s_f_contract_spec(&$params) {
   ];
   $params['payment_instrument'] = [
     'name'         => 'payment_instrument',
-    'api.default'  => 'RCUR',
+    'api.required' => 0,
     'title'        => 'Payment type ("Credit Card" or "RCUR" for SEPA)',
   ];
   $params['referrer_contact_id'] = [
