@@ -4,8 +4,14 @@ namespace Civi\Gpapi\ContractHelper;
 
 use \Civi\Api4;
 use \CRM_Utils_Array;
+use \DateTimeImmutable;
 
 class Adyen extends AbstractHelper {
+  const PSP_NAME = 'adyen';
+
+  private $paymentProcessor;
+  private $paymentToken;
+
   public function create (array $params) {
 
     // --- General membership details --- //
@@ -23,7 +29,7 @@ class Adyen extends AbstractHelper {
     $cycle_day = (int) date('d', $next_debit_date);
     $financial_type_id = self::getFinancialTypeID('Member Dues');
     $frequency_interval = (int) (12.0 / $params['frequency']);
-    $payment_instrument_id = self::getPaymentInstrumentID($params);
+    $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params);
 
     // --- PSP result data --- //
 
@@ -104,9 +110,10 @@ class Adyen extends AbstractHelper {
 
     // General membership details
 
-    $campaign_id = (int) CRM_Utils_Array::value('campaign_id', $params);
+    $campaign_id = CRM_Utils_Array::value('campaign_id', $params);
     $medium_id = self::getOptionValue('encounter_medium', 'web');
     $membership_id = $params['contract_id'];
+    $membership_type_id = CRM_Utils_Array::value('membership_type', $params);
     $start_date = ($this->getStartDate($params))->format('Y-m-d');
 
     // Recurring contribution details
@@ -114,7 +121,7 @@ class Adyen extends AbstractHelper {
     $annual_amount = number_format($params['amount'] * $params['frequency'], 2);
     $cycle_day = CRM_Utils_Array::value('cycle_day', $params);
     $frequency = $params['frequency'];
-    $payment_instrument_id = self::getPaymentInstrumentID($params);
+    $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params);
 
     // API options
 
@@ -130,6 +137,7 @@ class Adyen extends AbstractHelper {
       'membership_payment.cycle_day'            => $cycle_day,
       'membership_payment.membership_annual'    => $annual_amount,
       'membership_payment.membership_frequency' => $frequency,
+      'membership_type_id'                      => $membership_type_id,
       'payment_method.adapter'                  => 'adyen',
       'payment_method.cycle_day'                => $cycle_day,
       'payment_method.payment_instrument_id'    => $payment_instrument_id,
@@ -141,32 +149,80 @@ class Adyen extends AbstractHelper {
       'id'                => $membership_id,
       'check_permissions' => 0,
     ]);
+
+    $this->loadContract($membership_id);
   }
 
   public function createInitialContribution(array $params) {
-    $campaign_id = CRM_Utils_Array::value('campaign_id', $params);
     $trxn_id = CRM_Utils_Array::value('trxn_id', $params);
 
-    $create_contrib_params = [
-      'campaign_id'                 => $campaign_id,
-      'contact_id'                  => $params['contact_id'],
-      'contribution_recur_id'       => $this->recurringContribution['id'],
-      'contribution_status_id:name' => 'Completed',
-      'currency'                    => $this->recurringContribution['currency'],
-      'financial_type_id'           => $this->recurringContribution['financial_type_id'],
-      'is_test'                     => $this->recurringContribution['is_test'],
-      'payment_instrument_id'       => $this->recurringContribution['payment_instrument_id'],
-      'receive_date'                => $this->membership['join_date'],
-      'source'                      => 'OSF',
-      'total_amount'                => $this->recurringContribution['amount'],
-      'trxn_id'                     => $trxn_id,
+    $create_order_params = [
+      'campaign_id'            => $this->recurringContribution['campaign_id'],
+      'contact_id'             => $params['contact_id'],
+      'contribution_recur_id'  => $this->recurringContribution['id'],
+      'contribution_status_id' => 'Pending',
+      'financial_type_id'      => $this->recurringContribution['financial_type_id'],
+      'invoice_id'             => $this->recurringContribution['processor_id'],
+      'payment_instrument_id'  => $this->recurringContribution['payment_instrument_id'],
+      'receive_date'           => $this->membership['join_date'],
+      'sequential'             => TRUE,
+      'source'                 => 'OSF',
+      'total_amount'           => $this->recurringContribution['amount'],
     ];
 
-    civicrm_api4('Contribution', 'create', [ 'values' => $create_contrib_params ]);
+    $order_result = civicrm_api3('Order', 'create', $create_order_params);
+    $contribution_id = $order_result['id'];
+
+    $create_payment_params = [
+      'contribution_id'       => $contribution_id,
+      'fee_amount'            => 0.0,
+      'payment_instrument_id' => $this->recurringContribution['payment_instrument_id'],
+      'payment_processor_id'  => $this->recurringContribution['payment_processor_id'],
+      'sequential'            => TRUE,
+      'total_amount'          => $this->recurringContribution['amount'],
+      'trxn_date'             => $this->membership['join_date'],
+      'trxn_id'               => $trxn_id,
+    ];
+
+    civicrm_api3('Payment', 'create', $create_payment_params);
   }
 
-  protected function loadAdditionalPaymentData(int $membership_id) {
-    // ...
+  protected function getPaymentDetails() {
+    return [
+      'merchant_account'         => $this->paymentProcessor['name'],
+      'shopper_reference'        => $this->recurringContribution['processor_id'],
+      'stored_payment_method_id' => $this->paymentToken['token'],
+    ];
+  }
+
+  protected function getPaymentLabel() {
+    $account_number = $this->paymentToken['masked_account_number'];
+    $masked_digits = preg_replace('/\d/', '*', substr($account_number, 0, -4));
+    $last_digits = substr($account_number, -4);
+    $masked_account_number = $masked_digits . $last_digits;
+
+    $expiry_date = new DateTimeImmutable($this->paymentToken['expiry_date']);
+    $fmt_exp_date = $expiry_date->format('m/Y');
+
+    return "$masked_account_number ($fmt_exp_date)";
+  }
+
+  protected function getPspName() {
+    return self::PSP_NAME;
+  }
+
+  protected function loadAdditionalPaymentData() {
+    $this->paymentProcessor = Api4\PaymentProcessor::get()
+      ->addWhere('id', '=', $this->recurringContribution['payment_processor_id'])
+      ->addSelect('*')
+      ->execute()
+      ->first();
+
+    $this->paymentToken = Api4\PaymentToken::get()
+      ->addWhere('id', '=', $this->recurringContribution['payment_token_id'])
+      ->addSelect('*')
+      ->execute()
+      ->first();
   }
 
   private static function calculateNextDebitDate(array $params) {

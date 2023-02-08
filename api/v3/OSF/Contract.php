@@ -80,21 +80,21 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
       $lock->release();
     }
 
-    $result_id = $contract_helper->membership['id'];
+    $membership_id = $contract_helper->membership['id'];
     $null = NULL;
 
     return civicrm_api3_create_success(
-      [[ 'id' => $result_id ]],
+      [[ 'id' => $membership_id ]],
       $params,
       'OSF',
       'contract',
       $null,
-      [ 'id' => $result_id ]
+      [ 'id' => $membership_id ]
     );
   } catch (Exception $e) {
     $tx->rollback();
 
-    _civicrm_api3_o_s_f_contract_handleException($e);
+    _civicrm_api3_o_s_f_contract_handleException($e, $params);
 
     throw $e;
   }
@@ -117,22 +117,22 @@ function _civicrm_api3_o_s_f_contract_acquireLock(array $params) {
   return $lock;
 }
 
-function _civicrm_api3_o_s_f_contract_handleException(Exception $e) {
+function _civicrm_api3_o_s_f_contract_handleException(Exception $e, array $params) {
   if ($e instanceof ContractHelper\Exception) {
     switch ($e->getCode()) {
-      case Civi\Gpapi\ContractHelper\Exception::PAYMENT_INSTRUMENT_UNSUPPORTED:
+      case ContractHelper\Exception::PAYMENT_INSTRUMENT_UNSUPPORTED:
         throw new API_Exception(
           'Requested payment instrument "' . $params['payment_instrument'] . '"is not supported',
           'payment_instrument_unsupported'
         );
 
-      case Civi\Gpapi\ContractHelper\Exception::PAYMENT_METHOD_INVALID:
+      case ContractHelper\Exception::PAYMENT_METHOD_INVALID:
         throw new API_Exception(
           'Contract has invalid payment method',
           'payment_method_invalid'
         );
 
-      case Civi\Gpapi\ContractHelper\Exception::PAYMENT_SERVICE_PROVIDER_UNSUPPORTED:
+      case ContractHelper\Exception::PAYMENT_SERVICE_PROVIDER_UNSUPPORTED:
         throw new API_Exception(
           'Contract has unsupported payment service provider',
           'payment_service_provider_unsupported'
@@ -191,6 +191,7 @@ function _civicrm_api3_o_s_f_contract_preprocessCall(array &$params) {
 
     throw new API_Exception($error['error_message'], 'invalid_referrer_id');
   }
+
 }
 
 /**

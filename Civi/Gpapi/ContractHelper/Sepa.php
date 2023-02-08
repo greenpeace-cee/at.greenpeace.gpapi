@@ -3,9 +3,12 @@
 namespace Civi\Gpapi\ContractHelper;
 
 use \Civi\Api4;
+use \CRM_Contract_BankingLogic;
 use \CRM_Utils_Array;
 
 class Sepa extends AbstractHelper {
+  const PSP_NAME = 'civicrm';
+
   public $creditor;
   public $mandate;
 
@@ -40,15 +43,16 @@ class Sepa extends AbstractHelper {
 
     $this->creditor = (array) \CRM_Sepa_Logic_Settings::defaultCreditor();
     $next_debit_date = self::calculateNextDebitDate($params, $this->creditor);
+    $rcur_opt_val = self::getOptionValue('payment_instrument', 'RCUR');
     $start_time = empty($params['payment_received']) ? time() : $next_debit_date;
 
     $amount = number_format($params['amount'], 2, '.', '');
-    $creditor_id = $this->creditor['id'];
+    $creditor_id = (int) $this->creditor['id'];
     $currency = CRM_Utils_Array::value('currency', $params, $this->creditor['currency']);
     $cycle_day = (int) date('d', $next_debit_date);
     $financial_type_id = self::getFinancialTypeID('Member Dues');
     $frequency_interval = (int) (12.0 / $params['frequency']);
-    $payment_instrument_id = self::getPaymentInstrumentID($params);
+    $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params, $rcur_opt_val);
     $start_date = date('YmdHis', $start_time);
 
     // SEPA mandate details
@@ -87,46 +91,17 @@ class Sepa extends AbstractHelper {
 
     $contract_result = civicrm_api3('Contract', 'create', $create_contract_params);
 
-    $this->membership = Api4\Membership::get()
-      ->addWhere('id', '=', $contract_result['id'])
-      ->addSelect('*')
-      ->execute()
-      ->first();
-
-    $recur_contrib_id = civicrm_api3('ContractPaymentLink', 'getvalue', [
-      'contract_id' => $contract_result['id'],
-      'return'      => 'contribution_recur_id',
-    ]);
-
-    $this->recurringContribution = Api4\ContributionRecur::get()
-      ->addWhere('id', '=', $recur_contrib_id)
-      ->addSelect('*')
-      ->execute()
-      ->first();
-
-    $this->mandate = Api4\SepaMandate::get()
-      ->addWhere('entity_table', '=', 'civicrm_contribution_recur')
-      ->addWhere('entity_id', '=', $recur_contrib_id)
-      ->addSelect('*')
-      ->execute()
-      ->first();
-
-    $this->signActivity = Api4\Activity::get()
-      ->addWhere('activity_type_id:name', '=', 'Contract_Signed')
-      ->addWhere('source_record_id', '=', $contract_result['id'])
-      ->addSelect('*')
-      ->execute()
-      ->first();
+    $this->loadContract($contract_result['id']);
   }
 
-  public function getPaymentLabel() {
+  protected function getPaymentLabel() {
     if (is_null($this->mandate)) {
       throw new Exception('No payment details found');
     }
     return $this->getObfuscatedIban();
   }
 
-  public function getPaymentDetails() {
+  protected function getPaymentDetails() {
     if (is_null($this->mandate)) {
       throw new Exception('No payment details found');
     }
@@ -135,11 +110,11 @@ class Sepa extends AbstractHelper {
     ];
   }
 
-  public function getPspName() {
-    return 'civicrm';
+  protected function getPspName() {
+    return self::PSP_NAME;
   }
 
-  protected function getObfuscatedIban() {
+  private function getObfuscatedIban() {
     // use first four characters
     $obfuscated = substr($this->mandate['iban'],0,4);
     // one asterisk for each character between the first and last 4
@@ -158,9 +133,10 @@ class Sepa extends AbstractHelper {
 
     // General membership details
 
-    $campaign_id = (int) CRM_Utils_Array::value('campaign_id', $params);
+    $campaign_id = CRM_Utils_Array::value('campaign_id', $params);
     $medium_id = self::getOptionValue('encounter_medium', 'web');
     $membership_id = $params['contract_id'];
+    $membership_type_id = CRM_Utils_Array::value('membership_type', $params);
     $start_date = ($this->getStartDate($params))->format('Y-m-d');
 
     // Recurring contribution details
@@ -184,16 +160,16 @@ class Sepa extends AbstractHelper {
       );
     }
 
+    $bic = CRM_Utils_Array::value('bic', $payment_details);
+    $contact_id = $params['contac_id'];
+    $iban = $payment_details['iban'];
+    $rcur_opt_val = self::getOptionValue('payment_instrument', 'RCUR');
+
     $cycle_day = $this->getCycleDay($cycle_days, $params);
     $frequency = $params['frequency'];
-
-    $from_ba = \CRM_Contract_BankingLogic::getOrCreateBankAccount(
-      $params['contact_id'],
-      $payment_details['iban']
-    );
-
-    $payment_instrument_id = self::getPaymentInstrumentID($params);
-    $to_ba = \CRM_Contract_BankingLogic::getCreditorBankAccount();
+    $from_ba = CRM_Contract_BankingLogic::getOrCreateBankAccount($contact_id, $iban, $bic);
+    $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params, $rcur_opt_val);
+    $to_ba = CRM_Contract_BankingLogic::getCreditorBankAccount();
 
     // API options
 
@@ -212,6 +188,7 @@ class Sepa extends AbstractHelper {
       'membership_payment.membership_annual'    => $annual_amount,
       'membership_payment.membership_frequency' => $frequency,
       'membership_payment.to_ba'                => $to_ba,
+      'membership_type_id'                      => $membership_type_id,
       'payment_method.adapter'                  => 'sepa_mandate',
       'payment_method.cycle_day'                => $cycle_day,
       'payment_method.payment_instrument_id'    => $payment_instrument_id,
@@ -220,50 +197,59 @@ class Sepa extends AbstractHelper {
     $response = civicrm_api3('Contract', 'modify', $modify_contract_params);
 
     civicrm_api3('Contract', 'process_scheduled_modifications', [
-      'id'                => $this->membershipId,
+      'id'                => $membership_id,
       'check_permissions' => 0,
     ]);
 
-    return reset($response['values'])['change_activity_id'];
+    $this->loadContract($membership_id);
   }
 
   public function createInitialContribution (array $params) {
     $trxn_id = CRM_Utils_Array::value('trxn_id', $params);
 
-    $bank_account_id = self::getBankAccount([
-      'contact_id' => \GPAPI_GP_ORG_CONTACT_ID,
-      'iban'       => $this->creditor['iban'],
-    ]);
-
-    $create_contrib_params = [
-      'campaign_id'                    => $params['campaign_id'],
-      'contact_id'                     => $params['contact_id'],
-      'contribution_information.to_ba' => $bank_account_id,
-      'contribution_recur_id'          => $this->recurringContribution['id'],
-      'contribution_status_id:name'    => 'Completed',
-      'currency'                       => $this->recurringContribution['currency'],
-      'financial_type_id'              => $this->recurringContribution['financial_type_id'],
-      'is_test'                        => $this->recurringContribution['is_test'],
-      'payment_instrument_id'          => $this->recurringContribution['payment_instrument_id'],
-      'receive_date'                   => $this->membership['join_date'],
-      'source'                         => 'OSF',
-      'total_amount'                   => $this->recurringContribution['amount'],
-      'trxn_id'                        => $trxn_id,
+    $create_order_params = [
+      'campaign_id'            => $this->recurringContribution['campaign_id'],
+      'contact_id'             => $params['contact_id'],
+      'contribution_recur_id'  => $this->recurringContribution['id'],
+      'contribution_status_id' => 'Pending',
+      'financial_type_id'      => $this->recurringContribution['financial_type_id'],
+      'invoice_id'             => $this->recurringContribution['processor_id'],
+      'payment_instrument_id'  => $this->recurringContribution['payment_instrument_id'],
+      'receive_date'           => $this->membership['join_date'],
+      'sequential'             => TRUE,
+      'source'                 => 'OSF',
+      'total_amount'           => $this->recurringContribution['amount'],
     ];
 
-    $contribution_result = civicrm_api4('Contribution', 'create', [
-      'values' => $create_contrib_params,
-    ]);
+    $order_result = civicrm_api3('Order', 'create', $create_order_params);
+    $contribution_id = $order_result['id'];
+
+    $create_payment_params = [
+      'contribution_id'       => $contribution_id,
+      'fee_amount'            => 0.0,
+      'payment_instrument_id' => $this->recurringContribution['payment_instrument_id'],
+      'payment_processor_id'  => $this->recurringContribution['payment_processor_id'],
+      'sequential'            => TRUE,
+      'total_amount'          => $this->recurringContribution['amount'],
+      'trxn_date'             => $this->membership['join_date'],
+      'trxn_id'               => $trxn_id,
+    ];
+
+    civicrm_api3('Payment', 'create', $create_payment_params);
 
     \CRM_Utils_SepaCustomisationHooks::installment_created(
-      $sepa_mandate['id'],
-      $recur_contrib['id'],
-      $contribution_result['id']
+      $this->mandate['id'],
+      $this->recurringContribution['id'],
+      $contribution_id
     );
   }
 
-  protected function loadAdditionalPaymentData(int $membership_id) {
-    // ...
+  protected function loadAdditionalPaymentData() {
+    $this->mandate = Api4\SepaMandate::get()
+      ->addWhere('entity_id', '=', $this->recurringContribution['id'])
+      ->addSelect('*')
+      ->execute()
+      ->first();
   }
 
   private static function calculateNextDebitDate(array $params, array $creditor) {
