@@ -428,16 +428,19 @@ class CRM_Gpapi_Processor {
    * @throws \CiviCRM_API3_Exception
    */
   public static function identifyContactID($contact_id) {
-    if (function_exists('identitytracker_civicrm_install')) {
-      // identitytracker is enabled
+    if (!function_exists('identitytracker_civicrm_install')) return $contact_id;
+
+    // identitytracker is enabled
+
+    try {
       $contacts = civicrm_api3('Contact', 'findbyidentity', [
         'identifier_type' => 'internal',
         'identifier'      => $contact_id,
       ]);
 
       if ($contacts['count'] == 1) return (int) $contacts['id'];
-
-      return NULL;
+    } catch (Exception $e) {
+      CRM_Core_Error::debug_log_message("Unable to identify contact with ID $contact_id");
     }
 
     return $contact_id;
