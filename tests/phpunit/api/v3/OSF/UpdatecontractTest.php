@@ -1,134 +1,194 @@
 <?php
 
+use Civi\Api4;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
 
 /**
- * OSF.Updatecontract API Test Case
- * This is a generic test class implemented with PHPUnit.
  * @group headless
  */
 class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
-  public function setUp() {
-    parent::setUp();
-    // create test contact
-    $this->contact = reset($this->callAPISuccess('Contact', 'create', [
-      'contact_type' => 'Individual',
-      'email' => 'doe@example.com',
-    ])['values']);
+  public function testUpdateAdyenContract() {
+
+    $campaign = $this->defaultCampaign;
+    $contact = $this->defaultContact;
+    $now = new DateTimeImmutable();
+    $payment_processor = $this->adyenPaymentProcessor;
+
+    // Create a contract via `Contract.create`
+
+    $financial_type_id = self::getFinancialTypeID('Member Dues');
+    $join_date = $now->format('Ymd');
+    $membership_type_id = self::getMembershipTypeID('General');
+    $payment_instrument_id = self::getOptionValue('payment_instrument', 'Credit Card');
+
+    $create_contract_params = [
+      'campaign_id'                             => $campaign['id'],
+      'contact_id'                              => $contact['id'],
+      'join_date'                               => $join_date,
+      'membership_type_id'                      => $membership_type_id,
+      'payment_method.adapter'                  => 'adyen',
+      'payment_method.amount'                   => 10.0,
+      'payment_method.campaign_id'              => $campaign['id'],
+      'payment_method.contact_id'               => $contact['id'],
+      'payment_method.currency'                 => 'EUR',
+      'payment_method.cycle_day'                => 13,
+      'payment_method.financial_type_id'        => $financial_type_id,
+      'payment_method.frequency_interval'       => 1,
+      'payment_method.frequency_unit'           => 'month',
+      'payment_method.payment_instrument_id'    => $payment_instrument_id,
+      'payment_method.payment_processor_id'     => $payment_processor['id'],
+      'payment_method.shopper_reference'        => 'OSF-TOKEN-PRODUCTION-00001-EPS',
+      'payment_method.stored_payment_method_id' => '2916382255634620',
+      'source'                                  => 'OSF',
+      'start_date'                              => $join_date,
+    ];
+
+    $contract_result = civicrm_api3('Contract', 'create', $create_contract_params);
+
+    $membership_id = $contract_result['id'];
+
+    // Update via OSF.updatecontract
+
+    $payment_details = [
+      'merchant_account'  => 'Merch',
+      'shopper_reference' => 'ADYEN-123',
+    ];
+    
+    $transaction_details = [
+      'date'    => date('YmdHis'),
+      'trxn_id' => "ADYEN-TRXN-123",
+    ];
+    
+    $update_result = $this->callAPISuccess('OSF', 'updatecontract', [
+      'amount'                   => 20,
+      'contract_id'              => $membership_id,
+      'debug'                    => FALSE,
+      'frequency'                => 4,
+      'hash'                     => $contact['hash'],
+      'membership_type'          => 'Foerderer',
+      'payment_details'          => $payment_details,
+      'payment_instrument'       => 'Debit Card',
+      'payment_service_provider' => 'adyen',
+      'transaction_details'      => $transaction_details,
+    ]);
+
+    $this->assertNotEmpty($update_result['id']);
+
+    $membership = Api4\Membership::get()
+      ->addWhere('id', '=', $update_result['id'])
+      ->addSelect('*', 'membership_type_id:name')
+      ->execute()
+      ->first();
+
+    $this->assertEquals('Foerderer', $membership['membership_type_id:name']);
+
+    $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
+
+    $recurring_contribution = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $recur_contrib_id)
+      ->addSelect('*', 'payment_instrument_id:name')
+      ->execute()
+      ->first();
+
+    $this->assertEquals(20.0, $recurring_contribution['amount']);
+    $this->assertEquals(3, $recurring_contribution['frequency_interval']);
+    $this->assertEquals('month', $recurring_contribution['frequency_unit']);
+    $this->assertEquals('Debit Card', $recurring_contribution['payment_instrument_id:name']);
+
   }
 
   public function testUpdateSepaContract() {
-    $membership = $this->createMembership();
-    $update = reset($this->callAPISuccess('OSF', 'updatecontract', [
-      'check_permissions' => '1',
-      'hash'              => $this->contact['hash'],
-      'contract_id'       => $membership['id'],
-      'frequency'         => '12',
-      'amount'            => 50,
-      'payment_instrument' => 'RCUR',
+
+    $campaign = $this->defaultCampaign;
+    $contact = $this->defaultContact;
+    $now = new DateTimeImmutable();
+
+    // Create a contract via `Contract.create`
+
+    $financial_type_id = self::getFinancialTypeID('Member Dues');
+    $join_date = $now->format('Ymd');
+    $membership_type_id = self::getMembershipTypeID('General');
+    $payment_instrument_id = self::getOptionValue('payment_instrument', 'RCUR');
+
+    $create_contract_params = [
+      'campaign_id'                          => $campaign['id'],
+      'contact_id'                           => $contact['id'],
+      'debug'                                => FALSE,
+      'join_date'                            => $join_date,
+      'membership_type_id'                   => $membership_type_id,
+      'payment_method.adapter'               => 'sepa_mandate',
+      'payment_method.amount'                => 10.0,
+      'payment_method.bic'                   => 'GENODEM1GLS',
+      'payment_method.campaign_id'           => $campaign['id'],
+      'payment_method.contact_id'            => $contact['id'],
+      'payment_method.currency'              => 'EUR',
+      'payment_method.cycle_day'             => 13,
+      'payment_method.financial_type_id'     => $financial_type_id,
+      'payment_method.frequency_interval'    => 1,
+      'payment_method.frequency_unit'        => 'month',
+      'payment_method.iban'                  => "AT695400056324339424",
+      'payment_method.payment_instrument_id' => $payment_instrument_id,
+      'payment_method.type'                  => 'RCUR',
+      'source'                               => 'OSF',
+      'start_date'                           => $join_date,
+    ];
+
+    $contract_result = civicrm_api3('Contract', 'create', $create_contract_params);
+
+    $membership_id = $contract_result['id'];
+
+    $payment_details = [
+      'bic'  => 'GENODEM2GLS',
+      'iban' => 'IT60X0542811101000000123456',
+    ];
+
+    $update_result = reset($this->callAPISuccess('OSF', 'updatecontract', [
+      'amount'                   => 20.0,
+      'contract_id'              => $membership_id,
+      'currency'                 => 'EUR',
+      'frequency'                => 4,
+      'hash'                     => $contact['hash'],
+      'membership_type'          => 'Foerderer',
+      'payment_details'          => $payment_details,
+      'payment_instrument'       => 'RCUR',
       'payment_service_provider' => 'civicrm',
-      'payment_details' => [
-        'iban' => 'IT60X0542811101000000123456',
-      ],
-      'currency' => 'EUR',
-      'membership_type' => 'Foerderer',
-      'external_identifier' => 'FOO-123',
     ])['values']);
 
-    $this->assertNotEmpty($update['id']);
+    $this->assertNotEmpty($update_result['id']);
 
-    $contract = reset($this->callAPISuccess('OSF', 'getcontract', [
-      'hash'        => $this->contact['hash'],
-      'contract_id' => $membership['id'],
-    ])['values']);
-    $this->assertEquals(50.00, $contract['amount']);
-    $this->assertEquals(12, $contract['frequency']);
-    $this->assertEquals('EUR', $contract['currency']);
-    $this->assertEquals('Current', $contract['status']);
-    $this->assertEquals('RCUR', $contract['payment_instrument']);
-    $this->assertEquals('civicrm', $contract['payment_service_provider']);
-    $this->assertEquals('IT60X0542811101000000123456', $contract['payment_details']['iban']);
+    $membership = Api4\Membership::get()
+      ->addWhere('id', '=', $update_result['id'])
+      ->addSelect('*', 'membership_type_id:name')
+      ->execute()
+      ->first();
 
-  }
+    $this->assertEquals('Foerderer', $membership['membership_type_id:name']);
 
-  public function testUpdateAdyenContract() {
-    $membership = $this->createMembership();
-    //$update = reset(
-    $update = $this->callAPISuccess('OSF', 'updatecontract', [
-      'check_permissions' => '1',
-      'hash'              => $this->contact['hash'],
-      'contract_id'       => $membership['id'],
-      'frequency'         => '12',
-      'amount'            => 50,
-      'payment_instrument' => 'Credit Card',
-      'payment_service_provider' => 'adyen',
-      'payment_details' => [
-        'shopper_reference' => 'ADYEN-123',
-        'merchant_account' => 'Merch',
-      ],
-      'transaction_details' => [
-        'date' => date('YmdHis'),
-        'trxn_id' => "ADYEN-TRXN-123",
-      ],
-      'currency' => 'EUR',
-      'membership_type' => 'Foerderer',
-      'external_identifier' => 'FOO-123',
-    ]);
+    $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
 
-    $this->assertNotEmpty($update['id']);
-    $contract = reset($this->callAPISuccess('OSF', 'getcontract', [
-      'hash'        => $this->contact['hash'],
-      'contract_id' => $membership['id'],
-    ])['values']);
-    $this->assertEquals(50.00, $contract['amount']);
-    $this->assertEquals(12, $contract['frequency']);
-    $this->assertEquals('EUR', $contract['currency']);
-    $this->assertEquals('Current', $contract['status']);
-    $this->assertEquals('Credit Card', $contract['payment_instrument']);
-    $this->assertEquals('adyen', $contract['payment_service_provider']);
-    $this->assertEquals('ADYEN-123', $contract['payment_details']['shopper_reference']);
-    $this->assertEquals('Merch', $contract['payment_details']['merchant_account']);
-  }
+    $recurring_contribution = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $recur_contrib_id)
+      ->addSelect('*', 'payment_instrument_id:name')
+      ->execute()
+      ->first();
 
-  private function createMembership() {
-    $now = new DateTime();
-    $mandate_data = [
-      'iban'               => 'DE75512108001245126199',
-      'frequency_unit'     => 'month',
-      'contact_id'         => $this->contact['id'],
-      'financial_type_id'  => 2, // Membership Dues
-      'currency'           => 'EUR',
-      'type'               => 'RCUR',
-      'frequency_interval' => 1,
-      'amount'             => 12.60,
-      'start_date'         => $now->format('Ymd'),
-      'cycle_day'          => 1,
-    ];
+    $this->assertEquals(20.0, $recurring_contribution['amount']);
+    $this->assertEquals(3, $recurring_contribution['frequency_interval']);
+    $this->assertEquals('month', $recurring_contribution['frequency_unit']);
+    $this->assertEquals('EUR', $recurring_contribution['currency']);
+    $this->assertEquals('RCUR', $recurring_contribution['payment_instrument_id:name']);
 
-    $mandate = $this->callAPISuccess('SepaMandate', 'createfull', $mandate_data);
-    $mandate = $this->callAPISuccess('SepaMandate', 'getsingle', ['id' => $mandate['id']]);
+    $sepa_mandate = Api4\SepaMandate::get()
+      ->addWhere('entity_id', '=', $recur_contrib_id)
+      ->addSelect('*')
+      ->execute()
+      ->first();
 
-    $membershipType = $this->callAPISuccess('MembershipType', 'create', [
-      'member_of_contact_id' => 1,
-      'financial_type_id'    => 'Member Dues',
-      'duration_unit'        => 'lifetime',
-      'duration_interval'    => 1,
-      'period_type'          => 'rolling',
-      'name'                 => 'Foerderer',
-    ])['id'];
-
-    $contract_data = [
-      'contact_id'                                           => $this->contact['id'],
-      'membership_type_id'                                   => $membershipType,
-      'join_date'                                            => $now->format('Ymd'),
-      'start_date'                                           => $now->format('Ymd'),
-      'membership_payment.membership_recurring_contribution' => $mandate['entity_id'],
-    ];
-    $membership = $this->callAPISuccess('Contract', 'create', $contract_data);
-    return $membership;
+    $this->assertEquals('GENODEM2GLS', $sepa_mandate['bic']);
+    $this->assertEquals('IT60X0542811101000000123456', $sepa_mandate['iban']);
   }
 
 }

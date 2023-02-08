@@ -6,74 +6,32 @@ use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
 
 /**
- * OSF.Contract API Test Case
- * This is a generic test class implemented with PHPUnit.
  * @group headless
  */
 class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
-  private $campaign_id;
-  private $credit_card_id;
-  private $membership_type_id;
-  private $payment_processor_id;
-  private $referrer_contact_id;
-  private $sepa_rcur_id;
+  private $referrer;
 
   public function setUp() {
     parent::setUp();
 
-    $this->campaign_id = $this->callAPISuccess('Campaign', 'create', [
-      'external_identifier' => 'Direct Dialog',
-      'is_active'           => '1',
-      'name'                => 'direct_dialog',
-      'title'               => 'DD',
-    ])['id'];
-
-    $this->payment_processor_id = $this->callAPISuccess('PaymentProcessor', 'create', [
-      'financial_account_id'      => 'Payment Processor Account',
-      'name'                      => 'Greenpeace',
-      'payment_processor_type_id' => 'Adyen',
-    ])['id'];
-
-    $this->referrer_contact_id = $this->callAPISuccess('Contact', 'create', [
-      'contact_type' => 'Individual',
-      'first_name'   => 'Referrer',
-      'last_name'    => 'Contact_2',
-      'email'        => 'referrer@example.com',
-    ])['id'];
-
-    $this->credit_card_id = CRM_Core_PseudoConstant::getKey(
-      'CRM_Contribute_BAO_Contribution',
-      'payment_instrument_id',
-      'Credit Card'
-    );
-
-    $this->membership_type_id = $this->callAPISuccess('MembershipType', 'create', [
-      'duration_interval'    => '2',
-      'duration_unit'        => 'year',
-      'financial_type_id'    => 'Member Dues',
-      'member_of_contact_id' => '1',
-      'name'                 => 'General',
-      'period_type'          => 'rolling',
-    ])['id'];
-
-    $this->sepa_rcur_id = CRM_Core_PseudoConstant::getKey(
-      'CRM_Contribute_BAO_Contribution',
-      'payment_instrument_id',
-      'RCUR'
-    );
+    $this->createReferrer();
   }
 
   public function testCreateAdyenContract() {
 
     // Create a contract via `OSF.contract`
 
+    $campaign = $this->defaultCampaign;
+    $contact = $this->defaultContact;
+    $payment_processor = $this->adyenPaymentProcessor;
     $date = new DateTimeImmutable();
     $one_year = DateInterval::createFromDateString('1 year');
 
-    $cardholder_name = "{$this->contact['first_name']} {$this->contact['last_name']}";
+    $cardholder_name = "{$contact['first_name']} {$contact['last_name']}";
     $event_date = $date->format('Y-m-d');
     $expiry_date = $date->add($one_year)->format('m/Y');
+    $membership_type_id = self::getMembershipTypeID('General');
     $trxn_id = random_int(0, 10000);
 
     $psp_result_data = [
@@ -84,7 +42,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
         'paymentMethodVariant'               => 'visa',
         'recurring.recurringDetailReference' => '2916382255634620',
         'recurring.shopperReference'         => 'OSF-TOKEN-PRODUCTION-00001-EPS',
-        'shopperEmail'                       => $this->contact['email'],
+        'shopperEmail'                       => $contact['email'],
         'shopperIP'                          => '127.0.0.1',
       ],
       'eventDate' => $event_date,
@@ -94,16 +52,16 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $osf_contract_params = [
       'amount'                   => 30.0,
       'campaign'                 => 'Direct Dialog',
-      'contact_id'               => $this->contact['id'],
+      'contact_id'               => $contact['id'],
       'currency'                 => 'EUR',
       'cycle_day'                => 13,
       'frequency'                => 4,
-      'membership_type_id'       => $this->membership_type_id,
+      'membership_type_id'       => $membership_type_id,
       'payment_instrument'       => 'Credit Card',
       'payment_received'         => TRUE,
       'payment_service_provider' => 'adyen',
       'psp_result_data'          => $psp_result_data,
-      'referrer_contact_id'      => $this->referrer_contact_id,
+      'referrer_contact_id'      => $this->referrer['id'],
       'sequential'               => TRUE,
       'trxn_id'                  => $trxn_id,
       'utm_campaign'             => 'Direct Dialog',
@@ -116,48 +74,47 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert that the membership was created correctly
 
-    $membership = $this->callAPISuccess('Membership', 'getsingle', [
-      'id' => $result['id'],
-    ]);
+    $membership = Api4\Membership::get()
+      ->addWhere('id', '=', $result['id'])
+      ->addSelect('*', 'membership_type_id:name')
+      ->execute()
+      ->first();
 
-    $this->assertEquals($this->campaign_id, $membership['campaign_id'], "Campaign ID should be {$this->campaign_id}");
-    $this->assertEquals($this->contact['id'], $membership['contact_id'], "Contact ID should be {$this->contact['id']}");
-    $this->assertEquals('General', $membership['membership_name'], 'Membership type should be "General"');
-    $this->assertEquals('OSF', $membership['source'], 'Membership source should be "OSF"');
+    $this->assertEquals($campaign['id'], $membership['campaign_id']);
+    $this->assertEquals($contact['id'], $membership['contact_id']);
+    $this->assertEquals('General', $membership['membership_type_id:name']);
+    $this->assertEquals('OSF', $membership['source']);
 
     // Assert that the recurring contribution was created correctly
 
-    $rcur_id = $this->callAPISuccess('ContractPaymentLink', 'getvalue', [
-      'contract_id' => $membership['id'],
-      'return'      => "contribution_recur_id",
-    ]);
+    $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
 
-    $recurring_contribution = $this->callAPISuccess('ContributionRecur', 'getsingle', [
-      'id' => $rcur_id,
-    ]);
+    $recurring_contribution = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $recur_contrib_id)
+      ->addSelect('*', 'payment_instrument_id:name')
+      ->execute()
+      ->first();
 
-    $expected_amount = number_format((float) $osf_contract_params['amount'], 2, '.', ',');
-    $expected_frequency_interval = number_format(12 / (int) $osf_contract_params['frequency'], 0);
-
-    $this->assertEquals($expected_amount, $recurring_contribution['amount'], "Contribution amount should be {$expected_amount}");
-    $this->assertEquals($this->campaign_id, $recurring_contribution['campaign_id'], "Campaign ID should be {$this->campaign_id}");
-    $this->assertEquals($osf_contract_params['currency'], $recurring_contribution['currency'], "Currency should be {$osf_contract_params['currency']}");
-    $this->assertEquals($osf_contract_params['cycle_day'], $recurring_contribution['cycle_day'], "Cycle day should be {$osf_contract_params['cycle_day']}");
-    $this->assertEquals('month', $recurring_contribution['frequency_unit'], 'Frequency unit should be "month"');
-    $this->assertEquals($expected_frequency_interval, $recurring_contribution['frequency_interval'], "Frequency interval should be {$expected_frequency_interval}");
-    $this->assertEquals($this->credit_card_id, $recurring_contribution['payment_instrument_id'], "Payment instrument should be Credit Card");
+    $this->assertEquals(30.0, $recurring_contribution['amount']);
+    $this->assertEquals($campaign['id'], $recurring_contribution['campaign_id']);
+    $this->assertEquals('EUR', $recurring_contribution['currency']);
+    $this->assertEquals(13, $recurring_contribution['cycle_day']);
+    $this->assertEquals(3, $recurring_contribution['frequency_interval']);
+    $this->assertEquals('month', $recurring_contribution['frequency_unit']);
+    $this->assertEquals('Credit Card', $recurring_contribution['payment_instrument_id:name']);
+    $this->assertEquals('OSF-TOKEN-PRODUCTION-00001-EPS', $recurring_contribution['processor_id']);
 
     // Assert that a payment token has been created
 
-    $payment_token = $this->callAPISuccess('PaymentToken', 'getsingle', [
-      'debug' => 0,
-      'id' => $recurring_contribution['payment_token_id'],
-    ]);
+    $payment_token = Api4\PaymentToken::get()
+      ->addWhere('id', '=', $recurring_contribution['payment_token_id'])
+      ->execute()
+      ->first();
 
-    $this->assertEquals($this->contact['id'], $payment_token['contact_id']);
-    $this->assertEquals($this->contact['first_name'], $payment_token['billing_first_name']);
-    $this->assertEquals($this->contact['last_name'], $payment_token['billing_last_name']);
-    $this->assertEquals($this->contact['email'], $payment_token['email']);
+    $this->assertEquals($contact['id'], $payment_token['contact_id']);
+    $this->assertEquals($contact['first_name'], $payment_token['billing_first_name']);
+    $this->assertEquals($contact['last_name'], $payment_token['billing_last_name']);
+    $this->assertEquals($contact['email'], $payment_token['email']);
 
     $actual_expiry_date = new DateTimeImmutable($payment_token['expiry_date']);
     $this->assertEquals($expiry_date, $actual_expiry_date->format('m/Y'));
@@ -165,23 +122,33 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals('127.0.0.1', $payment_token['ip_address']);
     $this->assertEquals('Visa: 1234 5678', $payment_token['masked_account_number']);
     $this->assertEquals('2916382255634620', $payment_token['token']);
-    $this->assertEquals($this->payment_processor_id, $payment_token['payment_processor_id']);
+    $this->assertEquals($payment_processor['id'], $payment_token['payment_processor_id']);
 
-    // Assert an initial contribution has been created
+    // Assert that an initial contribution has been created
 
     $contribution = Api4\Contribution::get()
-      ->addWhere('contact_id', '=', $this->contact['id'])
-      ->addWhere('contribution_recur_id', '=', $recurring_contribution['id'])
-      ->addSelect('*', 'financial_type_id:name')
+      ->addWhere('contribution_recur_id', '=', $recur_contrib_id)
+      ->addSelect(
+        '*',
+        'contribution_status_id:name',
+        'financial_type_id:name',
+        'payment_instrument_id:name'
+      )
       ->execute()
       ->first();
 
-    $this->assertEquals(30.0, $contribution['total_amount']);
-    $this->assertEquals('EUR', $contribution['currency']);
-    $this->assertEquals($this->credit_card_id, $contribution['payment_instrument_id']);
+    $contrib_receive_date = new DateTime($contribution['receive_date']);
+
+    $this->assertEquals($campaign['id'], $contribution['campaign_id']);
+    $this->assertEquals($contact['id'], $contribution['contact_id']);
+    $this->assertEquals('Completed', $contribution['contribution_status_id:name']);
     $this->assertEquals('Member Dues', $contribution['financial_type_id:name']);
-    $this->assertEquals($trxn_id, $contribution['trxn_id']);
+    $this->assertEquals('Credit Card', $contribution['payment_instrument_id:name']);
+    $this->assertEquals('OSF-TOKEN-PRODUCTION-00001-EPS', $contribution['invoice_id']);
+    $this->assertEquals($event_date, $contrib_receive_date->format('Y-m-d'));
     $this->assertEquals('OSF', $contribution['source']);
+    $this->assertEquals(30.00, $contribution['total_amount']);
+    $this->assertEquals($trxn_id, $contribution['trxn_id']);
 
     // Assert UTM data has been added
 
@@ -202,8 +169,8 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $referrer_count = Api4\Relationship::get()
       ->selectRowCount()
       ->addWhere('relationship_type_id:name', '=', 'Referrer of')
-      ->addWhere('contact_id_a', '=', $this->referrer_contact_id)
-      ->addWhere('contact_id_b', '=', $this->contact['id'])
+      ->addWhere('contact_id_a', '=', $this->referrer['id'])
+      ->addWhere('contact_id_b', '=', $contact['id'])
       ->execute()
       ->rowCount;
 
@@ -214,17 +181,22 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Create a contract via `OSF.contract`
 
+    $campaign = $this->defaultCampaign;
+    $contact = $this->defaultContact;
+    $membership_type_id = self::getMembershipTypeID('General');
+
     $osf_contract_params = [
       'amount'                   => 30.0,
       'bic'                      => 'GENODEM1GLS',
-      'campaign_id'              => $this->campaign_id,
-      'contact_id'               => $this->contact['id'],
+      'campaign_id'              => $campaign['id'],
+      'contact_id'               => $contact['id'],
       'currency'                 => 'EUR',
       'cycle_day'                => 13,
       'frequency'                => 4,
       'iban'                     => "AT695400056324339424",
-      'membership_type_id'       => $this->membership_type_id,
+      'membership_type_id'       => $membership_type_id,
       'payment_instrument'       => 'RCUR',
+      'payment_received'         => TRUE,
       'payment_service_provider' => 'civicrm',
     ];
 
@@ -232,48 +204,80 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert that the membership was created correctly
 
-    $membership = $this->callAPISuccess('Membership', 'getsingle', [
-      'id' => $result['id'],
-    ]);
+    $membership = Api4\Membership::get()
+      ->addWhere('id', '=', $result['id'])
+      ->addSelect('*', 'membership_type_id:name')
+      ->execute()
+      ->first();
 
-    $this->assertEquals($this->contact['id'], $membership['contact_id'], "Contact ID should be {$this->contact_id}");
-    $this->assertEquals('General', $membership['membership_name'], 'Membership type should be "General"');
-    $this->assertEquals('OSF', $membership['source'], 'Membership source should be "OSF"');
+    $this->assertEquals($contact['id'], $membership['contact_id']);
+    $this->assertEquals('General', $membership['membership_type_id:name']);
+    $this->assertEquals('OSF', $membership['source']);
 
     // Assert that the recurring contribution was created correctly
 
-    $rcur_id = $this->callAPISuccess('ContractPaymentLink', 'getvalue', [
-      'contract_id' => $membership['id'],
-      'return'      => "contribution_recur_id",
-    ]);
+    $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
 
-    $recurring_contribution = $this->callAPISuccess('ContributionRecur', 'getsingle', [
-      'id' => $rcur_id,
-    ]);
+    $recurring_contribution = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $recur_contrib_id)
+      ->addSelect('*', 'payment_instrument_id:name')
+      ->execute()
+      ->first();
 
-    $expected_amount = number_format((float) $osf_contract_params['amount'], 2, '.', ',');
-    $expected_frequency_interval = number_format(12 / (int) $osf_contract_params['frequency'], 0);
-
-    $this->assertEquals($expected_amount, $recurring_contribution['amount'], "Contribution amount should be {$expected_amount}");
-    $this->assertEquals($this->campaign_id, $recurring_contribution['campaign_id'], "Campaign ID should be {$this->campaign_id}");
-    $this->assertEquals($osf_contract_params['currency'], $recurring_contribution['currency'], "Currency should be {$osf_contract_params['currency']}");
-    $this->assertEquals($osf_contract_params['cycle_day'], $recurring_contribution['cycle_day'], "Cycle day should be {$osf_contract_params['cycle_day']}");
-    $this->assertEquals('month', $recurring_contribution['frequency_unit'], 'Frequency unit should be "month"');
-    $this->assertEquals($expected_frequency_interval, $recurring_contribution['frequency_interval'], "Frequency interval should be {$expected_frequency_interval}");
-    $this->assertEquals($this->sepa_rcur_id, $recurring_contribution['payment_instrument_id'], "Payment instrument should be SEPA RCUR");
+    $this->assertEquals(30.0, $recurring_contribution['amount']);
+    $this->assertEquals($campaign['id'], $recurring_contribution['campaign_id']);
+    $this->assertEquals('EUR', $recurring_contribution['currency']);
+    $this->assertEquals(13, $recurring_contribution['cycle_day']);
+    $this->assertEquals(3, $recurring_contribution['frequency_interval']);
+    $this->assertEquals('month', $recurring_contribution['frequency_unit']);
+    $this->assertEquals('RCUR', $recurring_contribution['payment_instrument_id:name']);
 
     // Assert that the SEPA mandate was created correctly
 
-    $mandate = $this->callAPISuccess('SepaMandate', 'getsingle', [
-      'entity_id' => $rcur_id,
-    ]);
+    $sepa_mandate = Api4\SepaMandate::get()
+      ->addWhere('entity_id', '=', $recurring_contribution['id'])
+      ->execute()
+      ->first();
 
     $sepa_default_creditor_id = CRM_Sepa_Logic_Settings::getSetting('batching_default_creditor');
 
-    $this->assertEquals($osf_contract_params['bic'], $mandate['bic'], "BIC shoud be {$osf_contract_params['bic']}");
-    $this->assertEquals($sepa_default_creditor_id, $mandate['creditor_id'], "Creditor ID shoud be {$sepa_default_creditor_id}");
-    $this->assertEquals($osf_contract_params['iban'], $mandate['iban'], "IBAN shoud be {$osf_contract_params['iban']}");
+    $this->assertEquals($osf_contract_params['bic'], $sepa_mandate['bic']);
+    $this->assertEquals($sepa_default_creditor_id, $sepa_mandate['creditor_id']);
+    $this->assertEquals($osf_contract_params['iban'], $sepa_mandate['iban']);
 
+    // Assert that an initial contribution has been created
+
+    $contribution = Api4\Contribution::get()
+      ->addWhere('contribution_recur_id', '=', $recur_contrib_id)
+      ->addSelect(
+        '*',
+        'contribution_status_id:name',
+        'financial_type_id:name',
+        'payment_instrument_id:name'
+      )
+      ->execute()
+      ->first();
+
+    $contrib_receive_date = new DateTime($contribution['receive_date']);
+
+    $this->assertEquals($campaign['id'], $contribution['campaign_id']);
+    $this->assertEquals($contact['id'], $contribution['contact_id']);
+    $this->assertEquals('Completed', $contribution['contribution_status_id:name']);
+    $this->assertEquals('Member Dues', $contribution['financial_type_id:name']);
+    $this->assertEquals('RCUR', $contribution['payment_instrument_id:name']);
+    $this->assertEquals($membership['join_date'], $contrib_receive_date->format('Y-m-d'));
+    $this->assertEquals('OSF', $contribution['source']);
+    $this->assertEquals(30.00, $contribution['total_amount']);
+    $this->assertEquals($trxn_id, $contribution['trxn_id']);
+  }
+
+  private function createReferrer() {
+    $this->referrer = Api4\Contact::create()
+      ->addValue('contact_type', 'Individual')
+      ->addValue('first_name'  , 'Referrer')
+      ->addValue('last_name'   , 'Contact')
+      ->execute()
+      ->first();
   }
 
 }
