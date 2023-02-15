@@ -386,7 +386,7 @@ abstract class AbstractHelper {
       );
     }
 
-    $recur_contrib_id = $contract_payment_links['values'][0]['id'];
+    $recur_contrib_id = $contract_payment_links['values'][0]['contribution_recur_id'];
 
     $this->recurringContribution = Api4\ContributionRecur::get()
       ->addWhere('id', '=', $recur_contrib_id)
