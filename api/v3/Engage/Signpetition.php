@@ -163,6 +163,11 @@ function _civicrm_api3_engage_signpetition_process($params) {
         $activity_date = $params['signature_date'];
       }
 
+      $location = null;
+      if (!empty($params['location'])) {
+        $location = $params['location'];
+      }
+
       // create signature activity
       $activity = civicrm_api3('Activity', 'create', array(
         'check_permissions'   => 0,
@@ -179,6 +184,7 @@ function _civicrm_api3_engage_signpetition_process($params) {
         'subject'             => $petition['title'],
         'campaign_id'         => $params['campaign_id'],
         'activity_date_time'  => $activity_date,
+        'location'            => $location,
       ) + $params); // add other params
 
       CRM_Gpapi_Processor::updateActivityWithUTM($params, $activity['id']);
@@ -298,6 +304,12 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
     'api.required' => 0,
     'title'        => 'Petition Signature Date',
     'type'         => CRM_Utils_Type::T_TIMESTAMP
+  ];
+  $params['location'] = [
+    'name'         => 'location',
+    'api.required' => 0,
+    'title'        => 'Location',
+    'description'  => 'Location/Identifier of the petition source, e.g. form URL or ID',
   ];
 
   // NEWSLETTER
