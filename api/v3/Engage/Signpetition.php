@@ -308,7 +308,8 @@ function _civicrm_api3_engage_signpetition_spec(&$params) {
   $params['location'] = [
     'name'         => 'location',
     'api.required' => 0,
-    'title'        => 'It includes "form_id" and "source_url"',
+    'title'        => 'Location',
+    'description'  => 'Location/Identifier of the petition source, e.g. form URL or ID',
   ];
 
   // NEWSLETTER
