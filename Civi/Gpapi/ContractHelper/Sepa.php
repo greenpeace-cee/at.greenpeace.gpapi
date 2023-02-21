@@ -245,7 +245,7 @@ class Sepa extends AbstractHelper {
   }
 
   protected function loadAdditionalPaymentData() {
-    $this->mandate = Api4\SepaMandate::get()
+    $this->mandate = Api4\SepaMandate::get(FALSE)
       ->addWhere('entity_id', '=', $this->recurringContribution['id'])
       ->addSelect('*')
       ->execute()

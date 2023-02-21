@@ -212,13 +212,13 @@ class Adyen extends AbstractHelper {
   }
 
   protected function loadAdditionalPaymentData() {
-    $this->paymentProcessor = Api4\PaymentProcessor::get()
+    $this->paymentProcessor = Api4\PaymentProcessor::get(FALSE)
       ->addWhere('id', '=', $this->recurringContribution['payment_processor_id'])
       ->addSelect('*')
       ->execute()
       ->first();
 
-    $this->paymentToken = Api4\PaymentToken::get()
+    $this->paymentToken = Api4\PaymentToken::get(FALSE)
       ->addWhere('id', '=', $this->recurringContribution['payment_token_id'])
       ->addSelect('*')
       ->execute()
@@ -293,7 +293,7 @@ class Adyen extends AbstractHelper {
       throw new \Exception("Missing PSP parameter 'merchantAccountCode'");
     }
 
-    $payment_processor = Api4\PaymentProcessor::get()
+    $payment_processor = Api4\PaymentProcessor::get(FALSE)
       ->addWhere('payment_processor_type_id:name', '=', $processor_type)
       ->addWhere('name', '=', $name)
       ->addSelect('id')

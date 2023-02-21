@@ -77,7 +77,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $this->assertNotEmpty($update_result['id']);
 
-    $membership = Api4\Membership::get()
+    $membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $update_result['id'])
       ->addSelect('*', 'membership_type_id:name')
       ->execute()
@@ -87,7 +87,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
 
-    $recurring_contribution = Api4\ContributionRecur::get()
+    $recurring_contribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
       ->addSelect('*', 'payment_instrument_id:name')
       ->execute()
@@ -153,7 +153,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
-    $membership = Api4\Membership::get()
+    $membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $membership_id)
       ->addSelect('status_id:name')
       ->execute()
@@ -188,7 +188,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $this->assertNotEmpty($update_result['id']);
 
-    $membership = Api4\Membership::get()
+    $membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $update_result['id'])
       ->addSelect('*', 'membership_type_id:name', 'status_id:name')
       ->execute()
@@ -199,7 +199,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
 
-    $recurring_contribution = Api4\ContributionRecur::get()
+    $recurring_contribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
       ->addSelect('*', 'payment_instrument_id:name')
       ->execute()
@@ -273,7 +273,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $this->assertNotEmpty($update_result['id']);
 
-    $membership = Api4\Membership::get()
+    $membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $update_result['id'])
       ->addSelect('*', 'membership_type_id:name')
       ->execute()
@@ -283,7 +283,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
 
-    $recurring_contribution = Api4\ContributionRecur::get()
+    $recurring_contribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
       ->addSelect('*', 'payment_instrument_id:name')
       ->execute()
@@ -295,7 +295,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals('EUR', $recurring_contribution['currency']);
     $this->assertEquals('RCUR', $recurring_contribution['payment_instrument_id:name']);
 
-    $sepa_mandate = Api4\SepaMandate::get()
+    $sepa_mandate = Api4\SepaMandate::get(FALSE)
       ->addWhere('entity_id', '=', $recur_contrib_id)
       ->addSelect('*')
       ->execute()
@@ -358,7 +358,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
-    $membership = Api4\Membership::get()
+    $membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $membership_id)
       ->addSelect('status_id:name')
       ->execute()
@@ -387,7 +387,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $this->assertNotEmpty($update_result['id']);
 
-    $membership = Api4\Membership::get()
+    $membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $update_result['id'])
       ->addSelect('*', 'membership_type_id:name', 'status_id:name')
       ->execute()
@@ -398,7 +398,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
 
-    $recurring_contribution = Api4\ContributionRecur::get()
+    $recurring_contribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
       ->addSelect('*', 'payment_instrument_id:name')
       ->execute()
@@ -410,7 +410,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals('EUR', $recurring_contribution['currency']);
     $this->assertEquals('RCUR', $recurring_contribution['payment_instrument_id:name']);
 
-    $sepa_mandate = Api4\SepaMandate::get()
+    $sepa_mandate = Api4\SepaMandate::get(FALSE)
       ->addWhere('entity_id', '=', $recur_contrib_id)
       ->addSelect('*')
       ->execute()

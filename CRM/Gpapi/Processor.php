@@ -477,7 +477,7 @@ class CRM_Gpapi_Processor {
   public static function resolveContactHash($hash) {
     // fetch contact by hash and include deleted contacts initially to account
     // for merge-deleted contacts
-    $contact = Contact::get()
+    $contact = Contact::get(FALSE)
       ->addSelect('id')
       ->addWhere('hash', '=', $hash)
       ->addWhere('is_deleted', 'IN', [TRUE, FALSE])
@@ -505,23 +505,23 @@ class CRM_Gpapi_Processor {
   }
 
   public static function getContactData($contactId, $context = self::CONTEXT_ODF) {
-    $contact = Contact::get()
+    $contact = Contact::get(FALSE)
       ->addSelect('id', 'first_name', 'last_name', 'prefix_id', 'gender_id', 'birth_date')
       ->addWhere('id', '=', $contactId)
       ->addChain('email',
-        Email::get()
+        Email::get(FALSE)
           ->addSelect('email')
           ->addWhere('contact_id', '=', '$id')
           ->addWhere('is_primary', '=', '1')
       )
       ->addChain('address',
-        Address::get()
+        Address::get(FALSE)
           ->addSelect('street_address', 'postal_code', 'city', 'country_id')
           ->addWhere('contact_id', '=', '$id')
           ->addWhere('is_primary', '=', '1')
       )
       ->addChain('phone',
-        Phone::get()
+        Phone::get(FALSE)
           ->addSelect('phone')
           ->addWhere('contact_id', '=', '$id')
           ->addWhere('is_primary', '=', '1')
@@ -545,7 +545,7 @@ class CRM_Gpapi_Processor {
   public static function assembleContactData($data, $context) {
     $country = NULL;
     if (!empty($data['address'][0]['country_id'])) {
-      $country = Country::get()
+      $country = Country::get(FALSE)
         ->addSelect('iso_code')
         ->addWhere('id', '=', $data['address'][0]['country_id'])
         ->setCheckPermissions(FALSE)

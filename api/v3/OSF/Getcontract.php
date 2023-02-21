@@ -63,7 +63,7 @@ function _civicrm_api3_o_s_f_getcontract_preprocessCall(array &$params) {
 
   // --- Ensure membershp exists and belongs to contact --- //
 
-  $membership_count = Api4\Membership::get()
+  $membership_count = Api4\Membership::get(FALSE)
     ->selectRowCount()
     ->addWhere('id',         '=', $params['contract_id'])
     ->addWhere('contact_id', '=', $contact_id)

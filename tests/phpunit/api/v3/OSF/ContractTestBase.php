@@ -55,7 +55,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
     $session->set('userID', 1);
 
     $config = CRM_Core_Config::singleton();
-    $config->userPermissionClass->permissions = ['all CiviCRM permissions and ACLs'];
+    $config->userPermissionClass->permissions = ['access OSF API'];
   }
 
   public function tearDown() {
@@ -67,7 +67,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   protected static function getFinancialTypeID(string $name) {
-    return (int) Api4\FinancialType::get()
+    return (int) Api4\FinancialType::get(FALSE)
       ->addWhere('name', '=', $name)
       ->addSelect('id')
       ->execute()
@@ -75,7 +75,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   protected static function getOptionValue(string $optionGroup, string $name) {
-    return (int) Api4\OptionValue::get()
+    return (int) Api4\OptionValue::get(FALSE)
       ->addWhere('option_group_id:name', '=', $optionGroup)
       ->addWhere('name', '=', $name)
       ->addSelect('value')
@@ -85,7 +85,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   protected static function getMembershipTypeID(string $name) {
-    return (int) Api4\MembershipType::get()
+    return (int) Api4\MembershipType::get(FALSE)
       ->addWhere('name', '=', $name)
       ->addSelect('*')
       ->execute()
@@ -101,7 +101,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   private function createAdyenPaymentProcessor() {
-    $this->adyenPaymentProcessor = Api4\PaymentProcessor::create()
+    $this->adyenPaymentProcessor = Api4\PaymentProcessor::create(FALSE)
       ->addValue('financial_account_id.name'     , 'Payment Processor Account')
       ->addValue('name'                          , 'Greenpeace')
       ->addValue('payment_processor_type_id.name', 'Adyen')
@@ -110,18 +110,18 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   private function createDefaultCampaign() {
-    $settings_result = Api4\Setting::get()
+    $settings_result = Api4\Setting::get(FALSE)
       ->addSelect('enable_components')
       ->execute()
       ->first();
 
     $components = array_merge($settings_result['value'], ['CiviCampaign']);
 
-    Api4\Setting::set()
+    Api4\Setting::set(FALSE)
       ->addValue('enable_components', $components)
       ->execute();
 
-    $this->defaultCampaign = Api4\Campaign::create()
+    $this->defaultCampaign = Api4\Campaign::create(FALSE)
       ->addValue('external_identifier', 'Direct Dialog')
       ->addValue('is_active'          , TRUE)
       ->addValue('name'               , 'direct_dialog')
@@ -131,7 +131,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   private function createDefaultContact() {
-    $this->defaultContact = Api4\Contact::create()
+    $this->defaultContact = Api4\Contact::create(FALSE)
       ->addValue('contact_type', 'Individual')
       ->addValue('first_name'  , 'Test')
       ->addValue('last_name'   , 'Contact_1')
@@ -146,7 +146,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
 
     if (isset($default_creditor_id)) return;
     
-    $creditor = Api4\SepaCreditor::create()
+    $creditor = Api4\SepaCreditor::create(FALSE)
       ->addValue('creditor_type' , 'SEPA')
       ->addValue('currency'      , 'EUR')
       ->addValue('iban'          , 'AT483200000012345864')
@@ -165,7 +165,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   private static function createMembershipTypes() {
-    Api4\MembershipType::create()
+    Api4\MembershipType::create(FALSE)
       ->addValue('duration_interval'     , 2)
       ->addValue('duration_unit'         , 'year')
       ->addValue('financial_type_id.name', 'Member Dues')
@@ -174,7 +174,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
       ->addValue('period_type'           , 'rolling')
       ->execute();
 
-    Api4\MembershipType::create()
+    Api4\MembershipType::create(FALSE)
       ->addValue('duration_interval'     , 1)
       ->addValue('duration_unit'         , 'lifetime')
       ->addValue('financial_type_id.name', 'Member Dues')
@@ -185,14 +185,14 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   private static function createReferralInfoCustomFields() {
-    Api4\CustomGroup::create()
+    Api4\CustomGroup::create(FALSE)
       ->addValue('extends'   , 'Membership')
       ->addValue('name'      , 'membership_referral')
       ->addValue('table_name', 'civicrm_value_membership_referral')
       ->addValue('title'     , 'Referral Information')
       ->execute();
 
-    Api4\CustomField::create()
+    Api4\CustomField::create(FALSE)
       ->addValue('column_name'         , 'membership_referrer')
       ->addValue('custom_group_id:name', 'membership_referral')
       ->addValue('data_type'           , 'ContactReference')
@@ -204,7 +204,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   private static function createReferrerOfRelationship() {
-    Api4\RelationshipType::create()
+    Api4\RelationshipType::create(FALSE)
       ->addValue('contact_type_a', 'Individual')
       ->addValue('contact_type_b', 'Individual')
       ->addValue('label_a_b', 'Referrer of')
@@ -215,7 +215,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   private static function createRequiredOptionValues() {
-    Api4\OptionValue::create()
+    Api4\OptionValue::create(FALSE)
       ->addValue('is_active', TRUE)
       ->addValue('label', 'Import Error')
       ->addValue('name', 'streetimport_error')
@@ -224,14 +224,14 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   private static function createUTMCustomFields() {
-    Api4\CustomGroup::create()
+    Api4\CustomGroup::create(FALSE)
       ->addValue('extends'    , 'Activity')
       ->addValue('name'       , 'utm')
       ->addValue('table_name' , 'civicrm_value_utm')
       ->addValue('title'      , 'UTM Tracking Information')
       ->execute();
 
-    Api4\CustomField::create()
+    Api4\CustomField::create(FALSE)
       ->addValue('column_name'         , 'utm_content')
       ->addValue('custom_group_id:name', 'utm')
       ->addValue('data_type'           , 'String')
@@ -241,7 +241,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
       ->addValue('name'                , 'utm_content')
       ->execute();
 
-    Api4\CustomField::create()
+    Api4\CustomField::create(FALSE)
       ->addValue('column_name'         , 'utm_campaign')
       ->addValue('custom_group_id:name', 'utm')
       ->addValue('data_type'           , 'String')
@@ -251,7 +251,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
       ->addValue('name'                , 'utm_campaign')
       ->execute();
 
-    Api4\CustomField::create()
+    Api4\CustomField::create(FALSE)
       ->addValue('column_name'         , 'utm_medium')
       ->addValue('custom_group_id:name', 'utm')
       ->addValue('data_type'           , 'String')
@@ -261,7 +261,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
       ->addValue('name'                , 'utm_medium')
       ->execute();
 
-    Api4\CustomField::create()
+    Api4\CustomField::create(FALSE)
       ->addValue('column_name'         , 'utm_source')
       ->addValue('custom_group_id:name', 'utm')
       ->addValue('data_type'           , 'String')

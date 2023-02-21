@@ -74,7 +74,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert that the membership was created correctly
 
-    $membership = Api4\Membership::get()
+    $membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $result['id'])
       ->addSelect('*', 'membership_type_id:name')
       ->execute()
@@ -89,7 +89,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
 
-    $recurring_contribution = Api4\ContributionRecur::get()
+    $recurring_contribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
       ->addSelect('*', 'payment_instrument_id:name')
       ->execute()
@@ -106,7 +106,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert that a payment token has been created
 
-    $payment_token = Api4\PaymentToken::get()
+    $payment_token = Api4\PaymentToken::get(FALSE)
       ->addWhere('id', '=', $recurring_contribution['payment_token_id'])
       ->execute()
       ->first();
@@ -126,7 +126,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert that an initial contribution has been created
 
-    $contribution = Api4\Contribution::get()
+    $contribution = Api4\Contribution::get(FALSE)
       ->addWhere('contribution_recur_id', '=', $recur_contrib_id)
       ->addSelect(
         '*',
@@ -152,7 +152,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert UTM data has been added
 
-    $sign_activity = Api4\Activity::get()
+    $sign_activity = Api4\Activity::get(FALSE)
       ->addSelect('utm.utm_campaign', 'utm.utm_content', 'utm.utm_medium', 'utm.utm_source')
       ->addWhere('activity_type_id:name', '=', 'Contract_Signed')
       ->addWhere('source_record_id', '=', $membership['id'])
@@ -166,7 +166,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert 'Referrer of' relationship has been created
 
-    $referrer_count = Api4\Relationship::get()
+    $referrer_count = Api4\Relationship::get(FALSE)
       ->selectRowCount()
       ->addWhere('relationship_type_id:name', '=', 'Referrer of')
       ->addWhere('contact_id_a', '=', $this->referrer['id'])
@@ -204,7 +204,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert that the membership was created correctly
 
-    $membership = Api4\Membership::get()
+    $membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $result['id'])
       ->addSelect('*', 'membership_type_id:name')
       ->execute()
@@ -218,7 +218,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
 
-    $recurring_contribution = Api4\ContributionRecur::get()
+    $recurring_contribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
       ->addSelect('*', 'payment_instrument_id:name')
       ->execute()
@@ -234,7 +234,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert that the SEPA mandate was created correctly
 
-    $sepa_mandate = Api4\SepaMandate::get()
+    $sepa_mandate = Api4\SepaMandate::get(FALSE)
       ->addWhere('entity_id', '=', $recurring_contribution['id'])
       ->execute()
       ->first();
@@ -247,7 +247,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     // Assert that an initial contribution has been created
 
-    $contribution = Api4\Contribution::get()
+    $contribution = Api4\Contribution::get(FALSE)
       ->addWhere('contribution_recur_id', '=', $recur_contrib_id)
       ->addSelect(
         '*',
@@ -272,7 +272,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
   }
 
   private function createReferrer() {
-    $this->referrer = Api4\Contact::create()
+    $this->referrer = Api4\Contact::create(FALSE)
       ->addValue('contact_type', 'Individual')
       ->addValue('first_name'  , 'Referrer')
       ->addValue('last_name'   , 'Contact')

@@ -50,7 +50,7 @@ class Factory {
 
       // --- Check whether an associated SEPA mandate exists --- //
 
-      $sepa_mandate = Api4\SepaMandate::get()
+      $sepa_mandate = Api4\SepaMandate::get(FALSE)
         ->selectRowCount()
         ->addWhere('entity_id', '=', $recur_contrib_id)
         ->setLimit(1)
@@ -60,7 +60,7 @@ class Factory {
           
       // --- Check whether the recurring contribution uses an Adyen payment processor --- //
 
-      $recurring_contribution = Api4\ContributionRecur::get()
+      $recurring_contribution = Api4\ContributionRecur::get(FALSE)
         ->selectRowCount()
         ->addJoin(
           'PaymentProcessor AS payment_processor',

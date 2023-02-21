@@ -228,7 +228,7 @@ abstract class AbstractHelper {
       return;
     }
 
-    $membership_type_result = Api4\MembershipType::get()
+    $membership_type_result = Api4\MembershipType::get(FALSE)
       ->addWhere('name', '=', $membership_type)
       ->addSelect('id')
       ->execute()
@@ -274,7 +274,7 @@ abstract class AbstractHelper {
   }
 
   protected static function getFinancialTypeID(string $name) {
-    $result = Api4\FinancialType::get()
+    $result = Api4\FinancialType::get(FALSE)
       ->addWhere('name', '=', $name)
       ->addSelect('id')
       ->setLimit(1)
@@ -353,7 +353,7 @@ abstract class AbstractHelper {
   }
 
   protected static function getOptionValue(string $optionGroup, string $name) {
-    $result = Api4\OptionValue::get()
+    $result = Api4\OptionValue::get(FALSE)
       ->addWhere('option_group_id:name', '=', $optionGroup)
       ->addWhere('name', '=', $name)
       ->addSelect('value')
@@ -366,7 +366,7 @@ abstract class AbstractHelper {
   }
 
   protected function loadContract(int $membership_id) {
-    $this->membership = Api4\Membership::get()
+    $this->membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $membership_id)
       ->addSelect('*', 'membership_type_id:name', 'status_id:name')
       ->execute()
@@ -388,7 +388,7 @@ abstract class AbstractHelper {
 
     $recur_contrib_id = $contract_payment_links['values'][0]['contribution_recur_id'];
 
-    $this->recurringContribution = Api4\ContributionRecur::get()
+    $this->recurringContribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
       ->addSelect('*', 'contribution_status_id:name', 'payment_instrument_id:name')
       ->execute()
@@ -397,7 +397,7 @@ abstract class AbstractHelper {
     $rc_status = $this->recurringContribution['contribution_status_id:name'];
     $this->isActiveContract = !in_array($rc_status, ['Cancelled', 'Completed']);
 
-    $this->signActivity = Api4\Activity::get()
+    $this->signActivity = Api4\Activity::get(FALSE)
       ->addWhere('activity_type_id:name', '=', 'Contract_Signed')
       ->addWhere('source_record_id', '=', $membership_id)
       ->addSelect('*')
