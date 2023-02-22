@@ -174,14 +174,15 @@ class Adyen extends AbstractHelper {
     $contribution_id = $order_result['id'];
 
     $create_payment_params = [
-      'contribution_id'       => $contribution_id,
-      'fee_amount'            => 0.0,
-      'payment_instrument_id' => $this->recurringContribution['payment_instrument_id'],
-      'payment_processor_id'  => $this->recurringContribution['payment_processor_id'],
-      'sequential'            => TRUE,
-      'total_amount'          => $this->recurringContribution['amount'],
-      'trxn_date'             => $this->membership['join_date'],
-      'trxn_id'               => $trxn_id,
+      'contribution_id'                   => $contribution_id,
+      'fee_amount'                        => 0.0,
+      'is_send_contribution_notification' => FALSE,
+      'payment_instrument_id'             => $this->recurringContribution['payment_instrument_id'],
+      'payment_processor_id'              => $this->recurringContribution['payment_processor_id'],
+      'sequential'                        => TRUE,
+      'total_amount'                      => $this->recurringContribution['amount'],
+      'trxn_date'                         => $this->membership['join_date'],
+      'trxn_id'                           => $trxn_id,
     ];
 
     civicrm_api3('Payment', 'create', $create_payment_params);
