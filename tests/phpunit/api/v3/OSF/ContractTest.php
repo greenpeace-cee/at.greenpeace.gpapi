@@ -32,6 +32,8 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $event_date = $date->format('Y-m-d');
     $expiry_date = $date->add($one_year)->format('m/Y');
     $membership_type_id = self::getMembershipTypeID('General');
+    $merchant_reference = bin2hex(random_bytes(8));
+    $psp_reference = bin2hex(random_bytes(8));
     $trxn_id = random_int(0, 10000);
 
     $psp_result_data = [
@@ -45,8 +47,10 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
         'shopperEmail'                       => $contact['email'],
         'shopperIP'                          => '127.0.0.1',
       ],
-      'eventDate' => $event_date,
+      'eventDate'           => $event_date,
       'merchantAccountCode' => 'Greenpeace',
+      'merchantReference'   => $merchant_reference,
+      'pspReference'        => $psp_reference,
     ];
 
     $osf_contract_params = [
@@ -144,11 +148,11 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals('Completed', $contribution['contribution_status_id:name']);
     $this->assertEquals('Member Dues', $contribution['financial_type_id:name']);
     $this->assertEquals('Credit Card', $contribution['payment_instrument_id:name']);
-    $this->assertEquals('OSF-TOKEN-PRODUCTION-00001-EPS', $contribution['invoice_id']);
+    $this->assertEquals($merchant_reference, $contribution['invoice_id']);
     $this->assertEquals($event_date, $contrib_receive_date->format('Y-m-d'));
     $this->assertEquals('OSF', $contribution['source']);
     $this->assertEquals(30.00, $contribution['total_amount']);
-    $this->assertEquals($trxn_id, $contribution['trxn_id']);
+    $this->assertEquals($psp_reference, $contribution['trxn_id']);
 
     // Assert UTM data has been added
 

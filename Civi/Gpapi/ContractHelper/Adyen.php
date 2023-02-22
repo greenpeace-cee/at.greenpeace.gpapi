@@ -154,7 +154,9 @@ class Adyen extends AbstractHelper {
   }
 
   public function createInitialContribution(array $params) {
-    $trxn_id = CRM_Utils_Array::value('trxn_id', $params);
+    $psp_result_data = CRM_Utils_Array::value('psp_result_data', $params, []);
+    $merchant_reference = CRM_Utils_Array::value('merchantReference', $psp_result_data);
+    $psp_reference = CRM_Utils_Array::value('pspReference', $psp_result_data);
 
     $create_order_params = [
       'campaign_id'            => $this->recurringContribution['campaign_id'],
@@ -162,7 +164,7 @@ class Adyen extends AbstractHelper {
       'contribution_recur_id'  => $this->recurringContribution['id'],
       'contribution_status_id' => 'Pending',
       'financial_type_id'      => $this->recurringContribution['financial_type_id'],
-      'invoice_id'             => $this->recurringContribution['processor_id'],
+      'invoice_id'             => $merchant_reference,
       'payment_instrument_id'  => $this->recurringContribution['payment_instrument_id'],
       'receive_date'           => $this->membership['join_date'],
       'sequential'             => TRUE,
@@ -182,7 +184,7 @@ class Adyen extends AbstractHelper {
       'sequential'                        => TRUE,
       'total_amount'                      => $this->recurringContribution['amount'],
       'trxn_date'                         => $this->membership['join_date'],
-      'trxn_id'                           => $trxn_id,
+      'trxn_id'                           => $psp_reference,
     ];
 
     civicrm_api3('Payment', 'create', $create_payment_params);
