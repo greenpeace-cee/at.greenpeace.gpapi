@@ -205,44 +205,9 @@ class Sepa extends AbstractHelper {
   }
 
   public function createInitialContribution (array $params) {
-    $trxn_id = CRM_Utils_Array::value('trxn_id', $params);
-
-    $create_order_params = [
-      'campaign_id'            => $this->recurringContribution['campaign_id'],
-      'contact_id'             => $params['contact_id'],
-      'contribution_recur_id'  => $this->recurringContribution['id'],
-      'contribution_status_id' => 'Pending',
-      'financial_type_id'      => $this->recurringContribution['financial_type_id'],
-      'invoice_id'             => $this->recurringContribution['processor_id'],
-      'payment_instrument_id'  => $this->recurringContribution['payment_instrument_id'],
-      'receive_date'           => $this->membership['join_date'],
-      'sequential'             => TRUE,
-      'source'                 => 'OSF',
-      'total_amount'           => $this->recurringContribution['amount'],
-    ];
-
-    $order_result = civicrm_api3('Order', 'create', $create_order_params);
-    $contribution_id = $order_result['id'];
-
-    $create_payment_params = [
-      'contribution_id'                   => $contribution_id,
-      'fee_amount'                        => 0.0,
-      'is_send_contribution_notification' => FALSE,
-      'payment_instrument_id'             => $this->recurringContribution['payment_instrument_id'],
-      'payment_processor_id'              => $this->recurringContribution['payment_processor_id'],
-      'sequential'                        => TRUE,
-      'total_amount'                      => $this->recurringContribution['amount'],
-      'trxn_date'                         => $this->membership['join_date'],
-      'trxn_id'                           => $trxn_id,
-    ];
-
-    civicrm_api3('Payment', 'create', $create_payment_params);
-
-    \CRM_Utils_SepaCustomisationHooks::installment_created(
-      $this->mandate['id'],
-      $this->recurringContribution['id'],
-      $contribution_id
-    );
+    // This function should never be called since inital contributions for SEPA
+    // contracts are processed by Civi.
+    throw new Exception('Cannot create initial contribution for SEPA contracts');
   }
 
   protected function loadAdditionalPaymentData() {

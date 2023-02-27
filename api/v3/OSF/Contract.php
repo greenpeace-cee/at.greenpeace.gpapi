@@ -65,7 +65,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         $contract_helper->createReferrerOfRelationship($params);
       }
 
-      if (isset($params['payment_received'])) {
+      if ($params['payment_received']) {
         $contract_helper->createInitialContribution($params);
       }
 
@@ -168,7 +168,9 @@ function _civicrm_api3_o_s_f_contract_preprocessCall(array &$params) {
 
   // --- `trxn_id` must not be set when `payment_received` is empty --- //
 
-  if (empty($params['payment_received']) && !empty($params['trxn_id'])) {
+  $params['payment_received'] = (bool) CRM_Utils_Array::value('payment_received', $params, FALSE);
+
+  if (!$params['payment_received'] && !empty($params['trxn_id'])) {
     $error = CRM_Gpapi_Error::create(
       'OSF.contract',
       "Cannot use parameter 'trxn_id' when 'payment_received' is not set",

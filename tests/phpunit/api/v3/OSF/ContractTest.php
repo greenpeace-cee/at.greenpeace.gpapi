@@ -200,7 +200,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
       'iban'                     => "AT695400056324339424",
       'membership_type_id'       => $membership_type_id,
       'payment_instrument'       => 'RCUR',
-      'payment_received'         => TRUE,
+      'payment_received'         => FALSE,
       'payment_service_provider' => 'civicrm',
     ];
 
@@ -248,31 +248,6 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals($osf_contract_params['bic'], $sepa_mandate['bic']);
     $this->assertEquals($sepa_default_creditor_id, $sepa_mandate['creditor_id']);
     $this->assertEquals($osf_contract_params['iban'], $sepa_mandate['iban']);
-
-    // Assert that an initial contribution has been created
-
-    $contribution = Api4\Contribution::get(FALSE)
-      ->addWhere('contribution_recur_id', '=', $recur_contrib_id)
-      ->addSelect(
-        '*',
-        'contribution_status_id:name',
-        'financial_type_id:name',
-        'payment_instrument_id:name'
-      )
-      ->execute()
-      ->first();
-
-    $contrib_receive_date = new DateTime($contribution['receive_date']);
-
-    $this->assertEquals($campaign['id'], $contribution['campaign_id']);
-    $this->assertEquals($contact['id'], $contribution['contact_id']);
-    $this->assertEquals('Completed', $contribution['contribution_status_id:name']);
-    $this->assertEquals('Member Dues', $contribution['financial_type_id:name']);
-    $this->assertEquals('RCUR', $contribution['payment_instrument_id:name']);
-    $this->assertEquals($membership['join_date'], $contrib_receive_date->format('Y-m-d'));
-    $this->assertEquals('OSF', $contribution['source']);
-    $this->assertEquals(30.00, $contribution['total_amount']);
-    $this->assertEquals($trxn_id, $contribution['trxn_id']);
   }
 
   private function createReferrer() {
