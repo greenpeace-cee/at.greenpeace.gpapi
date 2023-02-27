@@ -4,6 +4,8 @@ namespace Civi\Gpapi\ContractHelper;
 
 use \Civi\Api4;
 use \CRM_Utils_Array;
+use \DateInterval;
+use \DateTime;
 use \DateTimeImmutable;
 
 class Adyen extends AbstractHelper {
@@ -284,13 +286,17 @@ class Adyen extends AbstractHelper {
   }
 
   private static function getExpiryDate(array $additional_psp_data) {
-    $expiryDate = CRM_Utils_Array::value('expiryDate', $additional_psp_data);
+    $expiry_date = CRM_Utils_Array::value('expiryDate', $additional_psp_data);
 
-    if (empty($expiryDate)) return NULL;
+    if (empty($expiry_date)) return NULL;
 
-    list($month, $year) = explode('/', $expiryDate);
+    list($month, $year) = explode('/', $expiry_date);
+    $expiry_date = new DateTime("$year-$month-01");
+    $expiry_date->add(new DateInterval('P1M'));
+    $expiry_date = new DateTime($expiry_date->format('Y-m-01'));
+    $expiry_date->sub(new DateInterval('P1D'));
     
-    return "{$year}{$month}01";
+    return $expiry_date->format('Ymd');
   }
 
   private static function getPaymentProcessorID(array $psp_result_data) {
