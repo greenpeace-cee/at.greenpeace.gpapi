@@ -175,6 +175,11 @@ class Adyen extends AbstractHelper {
     $order_result = civicrm_api3('Order', 'create', $create_order_params);
     $contribution_id = $order_result['id'];
 
+    civicrm_api3('MembershipPayment', 'create', [
+      'contribution_id' => $contribution_id,
+      'membership_id'   => $this->membership['id'],
+    ]);
+
     $create_payment_params = [
       'contribution_id'                   => $contribution_id,
       'fee_amount'                        => 0.0,

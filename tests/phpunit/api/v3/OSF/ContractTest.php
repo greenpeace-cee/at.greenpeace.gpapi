@@ -154,6 +154,15 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals(30.00, $contribution['total_amount']);
     $this->assertEquals($psp_reference, $contribution['trxn_id']);
 
+    // Assert that the initial contribution has been linked to the membership
+
+    $membership_payment_count = civicrm_api3('MembershipPayment', 'getcount', [
+      'contribution_id' => $contribution['id'],
+      'membership_id'   => $membership['id'],
+    ]);
+
+    $this->assertEquals(1, $membership_payment_count);
+
     // Assert UTM data has been added
 
     $sign_activity = Api4\Activity::get(FALSE)
