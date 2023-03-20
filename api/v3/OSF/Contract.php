@@ -114,6 +114,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
         'name' => $params['payment_service_provider'],
       ]);
       $creditorLookup = [
+        'check_permissions' => 0,
         'creditor_type' => 'PSP',
         'sepa_file_format_id' => $fileFormat,
         // some creditors are used by multiple merchant accounts, so we just set
