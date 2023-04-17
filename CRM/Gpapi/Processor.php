@@ -427,19 +427,23 @@ class CRM_Gpapi_Processor {
    *
    * @throws \CiviCRM_API3_Exception
    */
-  public static function identifyContactID(&$contact_id) {
-    if (function_exists('identitytracker_civicrm_install')) {
-      // identitytracker is enabled
-      $contacts = civicrm_api3('Contact', 'findbyidentity', array(
+  public static function identifyContactID($contact_id) {
+    if (!function_exists('identitytracker_civicrm_install')) return $contact_id;
+
+    // identitytracker is enabled
+
+    try {
+      $contacts = civicrm_api3('Contact', 'findbyidentity', [
         'identifier_type' => 'internal',
-        'identifier'      => $contact_id));
-      if ($contacts['count'] == 1) {
-        $contact_id = $contacts['id'];
-        return;
-      }
-      $contact_id = 0;
-      return;
+        'identifier'      => $contact_id,
+      ]);
+
+      if ($contacts['count'] == 1) return (int) $contacts['id'];
+    } catch (Exception $e) {
+      CRM_Core_Error::debug_log_message("Unable to identify contact with ID $contact_id");
     }
+
+    return $contact_id;
   }
 
   /**
@@ -473,7 +477,7 @@ class CRM_Gpapi_Processor {
   public static function resolveContactHash($hash) {
     // fetch contact by hash and include deleted contacts initially to account
     // for merge-deleted contacts
-    $contact = Contact::get()
+    $contact = Contact::get(FALSE)
       ->addSelect('id')
       ->addWhere('hash', '=', $hash)
       ->addWhere('is_deleted', 'IN', [TRUE, FALSE])
@@ -484,12 +488,12 @@ class CRM_Gpapi_Processor {
       return NULL;
     }
     // resolve to merge-survivor if necessary
-    self::identifyContactID($contact['id']);
+    $contact_id = self::identifyContactID($contact['id']);
     // at this point $contact['id'] could refer to a not-merge-related deleted
     // contact. Ensure the final contact is not deleted
     $isActive = Contact::get()
       ->selectRowCount()
-      ->addWhere('id', '=', $contact['id'])
+      ->addWhere('id', '=', $contact_id)
       ->addWhere('is_deleted', '=', FALSE)
       ->setCheckPermissions(FALSE)
       ->execute()
@@ -497,27 +501,27 @@ class CRM_Gpapi_Processor {
     if (!$isActive) {
       return NULL;
     }
-    return $contact['id'];
+    return $contact_id;
   }
 
   public static function getContactData($contactId, $context = self::CONTEXT_ODF) {
-    $contact = Contact::get()
+    $contact = Contact::get(FALSE)
       ->addSelect('id', 'first_name', 'last_name', 'prefix_id', 'gender_id', 'birth_date')
       ->addWhere('id', '=', $contactId)
       ->addChain('email',
-        Email::get()
+        Email::get(FALSE)
           ->addSelect('email')
           ->addWhere('contact_id', '=', '$id')
           ->addWhere('is_primary', '=', '1')
       )
       ->addChain('address',
-        Address::get()
+        Address::get(FALSE)
           ->addSelect('street_address', 'postal_code', 'city', 'country_id')
           ->addWhere('contact_id', '=', '$id')
           ->addWhere('is_primary', '=', '1')
       )
       ->addChain('phone',
-        Phone::get()
+        Phone::get(FALSE)
           ->addSelect('phone')
           ->addWhere('contact_id', '=', '$id')
           ->addWhere('is_primary', '=', '1')
@@ -541,7 +545,7 @@ class CRM_Gpapi_Processor {
   public static function assembleContactData($data, $context) {
     $country = NULL;
     if (!empty($data['address'][0]['country_id'])) {
-      $country = Country::get()
+      $country = Country::get(FALSE)
         ->addSelect('iso_code')
         ->addWhere('id', '=', $data['address'][0]['country_id'])
         ->setCheckPermissions(FALSE)

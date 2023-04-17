@@ -4,7 +4,7 @@ commands:
     description: "Setup environment"
     steps:
       - run: |
-          composer self-update --1
+          composer self-update --stable
   install_civicrm:
     description: "Install CiviCRM"
     parameters:
@@ -41,12 +41,12 @@ commands:
           git clone https://github.com/greenpeace-cee/com.cividesk.normalize.git
           git clone https://github.com/Project60/org.project60.sepa.git
           git clone https://github.com/systopia/de.systopia.pspsepa.git
-          git clone https://github.com/Project60/org.project60.banking.git banking-src
-          mv banking-src/extension org.project60.banking
-          rm -rf banking-src
+          git clone https://github.com/Project60/org.project60.banking.git
           git clone https://github.com/greenpeace-cee/de.systopia.contract.git
+          git clone https://lab.civicrm.org/extensions/mjwshared.git
+          git clone https://github.com/greenpeace-cee/adyen.git -b main
           chown buildkit:buildkit * -R
-          su - buildkit -c "cd /buildkit/build/<< parameters.build_name >>/web && cv en de.systopia.xcm com.cividesk.normalize org.project60.sepa de.systopia.pspsepa org.project60.banking de.systopia.contract"
+          su - buildkit -c "cd /buildkit/build/<< parameters.build_name >>/web && cv en de.systopia.xcm com.cividesk.normalize org.project60.sepa de.systopia.pspsepa org.project60.banking de.systopia.contract mjwshared adyen"
   install_extension:
     description: "Install Extension"
     parameters:

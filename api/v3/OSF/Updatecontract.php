@@ -1,5 +1,146 @@
 <?php
-use CRM_Gpapi_ExtensionUtil as E;
+
+use Civi\Api4;
+use Civi\Gpapi\ContractHelper;
+
+/**
+ * OSF.updatecontract API
+ *
+ * @param array $params
+ *
+ * @return array
+ *   API result descriptor
+ *
+ * @see civicrm_api3_create_success
+ *
+ * @throws API_Exception
+ */
+function civicrm_api3_o_s_f_updatecontract($params) {
+  // Use default error handler. See GP-23825
+  $tempErrorScope = CRM_Core_TemporaryErrorScope::useException();
+
+  try {
+    return _civicrm_api3_o_s_f_updatecontract_process($params);
+  } catch (Exception $e) {
+    CRM_Gpapi_Error::create('OSF.updatecontract', $e, $params);
+    throw $e;
+  }
+}
+
+function _civicrm_api3_o_s_f_updatecontract_process(&$params) {
+  $tx = new CRM_Core_Transaction();
+
+  try {
+    _civicrm_api3_o_s_f_updatecontract_preprocessCall($params);
+
+    $contract_helper = ContractHelper\Factory::create($params);
+
+    $lock = _civicrm_api3_o_s_f_updatecontract_acquireLock($params);
+
+    try {
+      $contract_helper->update($params);
+    } catch (Exception $e) {
+      throw $e;
+    } finally {
+      $lock->release();
+    }
+
+    $membership_id = $contract_helper->membership['id'];
+    $null = NULL;
+
+    return civicrm_api3_create_success(
+      [[ 'id' => $membership_id ]],
+      $params,
+      'OSF',
+      'updatecontract',
+      $null,
+      [ 'id' => $membership_id ]
+    );
+  } catch (Exception $e) {
+    $tx->rollback();
+
+    _civicrm_api3_o_s_f_updatecontract_handleException($e, $params);
+
+    throw $e;
+  }
+}
+
+function _civicrm_api3_o_s_f_updatecontract_acquireLock(array $params) {
+  $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
+  $lock->acquire();
+
+  if (!$lock->isAcquired()) {
+    $error = CRM_Gpapi_Error::create(
+      'OSF.contract',
+      "Mandate lock timeout. Try again later.",
+      $params
+    );
+
+    throw new API_Exception($error['error_message'], 'mandate_lock_timeout');
+  }
+
+  return $lock;
+}
+
+function _civicrm_api3_o_s_f_updatecontract_handleException(Exception $e, array $params) {
+  if ($e instanceof ContractHelper\Exception) {
+    switch ($e->getCode()) {
+      case ContractHelper\Exception::PAYMENT_INSTRUMENT_UNSUPPORTED:
+        throw new API_Exception(
+          'Requested payment instrument "' . $params['payment_instrument'] . '"is not supported',
+          'payment_instrument_unsupported'
+        );
+
+      case ContractHelper\Exception::PAYMENT_METHOD_INVALID:
+        throw new API_Exception(
+          'Contract has invalid payment method',
+          'payment_method_invalid'
+        );
+
+      case ContractHelper\Exception::PAYMENT_SERVICE_PROVIDER_UNSUPPORTED:
+        throw new API_Exception(
+          'Contract has unsupported payment service provider',
+          'payment_service_provider_unsupported'
+        );
+    }
+  }
+}
+
+function _civicrm_api3_o_s_f_updatecontract_preprocessCall(&$params) {
+  CRM_Gpapi_Processor::preprocessCall($params, 'OSF.updatecontract');
+
+  // --- Identify contact --- //
+
+  $contact_id = CRM_Gpapi_Processor::resolveContactHash($params['hash']);
+
+  if (empty($contact_id)) {
+    throw new API_Exception('Unknown contact hash', 'unknown_hash');
+  }
+
+  $params['contact_id'] = $contact_id;
+
+  // --- Ensure membershp exists and belongs to contact --- //
+
+  $membership_count = Api4\Membership::get(FALSE)
+    ->selectRowCount()
+    ->addWhere('id',         '=', $params['contract_id'])
+    ->addWhere('contact_id', '=', $contact_id)
+    ->execute()
+    ->rowCount;
+
+  if ($membership_count < 1) {
+    throw new API_Exception('Unknown contract', 'unknown_contract');
+  }
+
+  // --- Resolve membership type name to ID --- //
+
+  ContractHelper\AbstractHelper::resolveMembershipType($params);
+
+  // --- Resolve payment instrument name to ID --- //
+
+  ContractHelper\AbstractHelper::resolvePaymentInstrument($params);
+
+}
 
 /**
  * OSF.updatecontract API specification (optional)
@@ -79,82 +220,4 @@ function _civicrm_api3_o_s_f_updatecontract_spec(&$spec) {
     'name'         => 'transaction_details',
     'title'        => 'Transaction Details',
   ];
-}
-
-/**
- * OSF.updatecontract API
- *
- * @param array $params
- *
- * @return array
- *   API result descriptor
- *
- * @see civicrm_api3_create_success
- *
- * @throws API_Exception
- */
-function civicrm_api3_o_s_f_updatecontract($params) {
-  // Use default error handler. See GP-23825
-  $tempErrorScope = CRM_Core_TemporaryErrorScope::useException();
-
-  try {
-    return _civicrm_api3_o_s_f_updatecontract_process($params);
-  } catch (Exception $e) {
-    CRM_Gpapi_Error::create('OSF.updatecontract', $e, $params);
-    throw $e;
-  }
-}
-
-function _civicrm_api3_o_s_f_updatecontract_process(&$params) {
-  $tx = new CRM_Core_Transaction();
-  try {
-    CRM_Gpapi_Processor::preprocessCall($params, 'OSF.updatecontract');
-    $contact_id = CRM_Gpapi_Processor::resolveContactHash($params['hash']);
-    if (is_null($contact_id)) {
-      throw new API_Exception('Unknown contact hash', 'unknown_hash');
-    }
-    // ensure membership exists and belongs to contact
-    $membership_exists = civicrm_api3('Membership', 'getcount', [
-      'id'               => $params['contract_id'],
-      'contact_id'       => $contact_id,
-      'check_permissions' => 0,
-    ]);
-    if (!$membership_exists) {
-      throw new API_Exception('Unknown contract', 'unknown_contract');
-    }
-    $lock = new CRM_Core_Lock('contribute.OSF.mandate', 90, TRUE);
-    $lock->acquire();
-    if (!$lock->isAcquired()) {
-      throw new API_Exception('Mandate lock timeout. Try again later.', 'lock_timeout');
-    }
-    try {
-      $contractHelper = \Civi\Gpapi\ContractHelper\Factory::createWithMembershipIdAndPspData(
-        $params['contract_id'],
-        $params['payment_instrument'],
-        $params['payment_service_provider']
-      );
-      $id = $contractHelper->update($params);
-      $null = NULL;
-      return civicrm_api3_create_success([['id' => $id]], $params, 'OSF', 'updatecontract', $null, ['id' => $id]);
-    } catch (Exception $e) {
-      throw $e;
-    } finally {
-      $lock->release();
-    }
-  } catch (Exception $e) {
-    $tx->rollback();
-    if ($e instanceof Civi\Gpapi\ContractHelper\Exception) {
-      switch ($e->getCode()) {
-        case Civi\Gpapi\ContractHelper\Exception::PAYMENT_INSTRUMENT_UNSUPPORTED:
-          throw new API_Exception('Requested payment instrument "' . $params['payment_instrument'] . '"is not supported', 'payment_instrument_unsupported');
-
-        case Civi\Gpapi\ContractHelper\Exception::PAYMENT_METHOD_INVALID:
-          throw new API_Exception('Contract has invalid payment method', 'payment_method_invalid');
-
-        case Civi\Gpapi\ContractHelper\Exception::PAYMENT_METHOD_INVALID:
-          throw new API_Exception('Contract has unsupported payment service provider', 'payment_service_provider_unsupported');
-      }
-    }
-    throw $e;
-  }
 }
