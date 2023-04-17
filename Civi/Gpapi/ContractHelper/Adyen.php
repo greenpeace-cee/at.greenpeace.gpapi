@@ -258,11 +258,11 @@ class Adyen extends AbstractHelper {
 
   private static function getAccountNumber(array $additional_psp_data) {
     $card_summary = CRM_Utils_Array::value('cardSummary', $additional_psp_data);
-    $pm_variant = CRM_Utils_Array::value('paymentMethodVariant', $additional_psp_data);
+    $pm = CRM_Utils_Array::value('paymentMethod', $additional_psp_data);
 
-    if (empty($card_summary) || empty($pm_variant)) return NULL;
+    if (empty($card_summary) || empty($pm)) return NULL;
 
-    return ucfirst($pm_variant) . ": $card_summary";
+    return ucfirst($pm) . ": $card_summary";
   }
 
   private static function getCardHolderName(array $additional_psp_data) {
@@ -295,7 +295,7 @@ class Adyen extends AbstractHelper {
     $expiry_date->add(new DateInterval('P1M'));
     $expiry_date = new DateTime($expiry_date->format('Y-m-01'));
     $expiry_date->sub(new DateInterval('P1D'));
-    
+
     return $expiry_date->format('Ymd');
   }
 
