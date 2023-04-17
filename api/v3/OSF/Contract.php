@@ -71,7 +71,7 @@ function _civicrm_api3_o_s_f_contract_process(&$params) {
 
       $psp_result_data = CRM_Utils_Array::value('psp_result_data', $params, []);
 
-      if (isset($psp_result_data['bic']) && isset($psp_result_data['iban'])) {
+      if (!empty($psp_result_data['additionalData']['bic']) && isset($psp_result_data['additionalData']['iban'])) {
         $contract_helper::createBankAccount($params);
       }
     } catch (Exception $ex) {

@@ -37,14 +37,14 @@ abstract class AbstractHelper {
 
     $bank_account_id = self::getBankAccount([
       'contact_id' => $params['contact_id'],
-      'iban'       => $psp_result_data['iban'],
+      'iban'       => $psp_result_data['additionalData']['iban'],
     ]);
 
     if ($bank_account_id !== NULL) return;
 
     $bank_account_data = [
-      'country' => substr($psp_result_data['iban'], 0, 2),
-      'BIC'     => $psp_result_data['bic'],
+      'country' => substr($psp_result_data['additionalData']['iban'], 0, 2),
+      'BIC'     => $psp_result_data['additionalData']['bic'],
     ];
 
     $bank_account = civicrm_api3('BankingAccount', 'create', [
@@ -62,7 +62,7 @@ abstract class AbstractHelper {
 
     $bank_account_reference = civicrm_api3('BankingAccountReference', 'create', [
       'ba_id'             => $bank_account['id'],
-      'reference'         => $psp_result_data['iban'],
+      'reference'         => $psp_result_data['additionalData']['iban'],
       'reference_type_id' => $ba_reference_type_id,
     ]);
 
@@ -281,7 +281,7 @@ abstract class AbstractHelper {
       ->execute();
 
     if ($result->count() < 1) return NULL;
-    
+
     return (int) $result->first()['id'];
   }
 
@@ -361,7 +361,7 @@ abstract class AbstractHelper {
       ->execute();
 
     if ($result->count() < 1) return NULL;
-    
+
     return (int) $result->first()['value'];
   }
 

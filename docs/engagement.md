@@ -41,36 +41,37 @@ The `Engage.signpetition` endpoint allows clients to transparently get or create
 
 #### Parameters
 
-| Field (required) | Type    | Default    | Description                         |
-| ---------------  | ------- | ---------- | ----------------------------------- |
-| `contact_type`   | String  | `Individual` | CiviCRM contact type |
-| `first_name`[^1] | String  | | |
-| `last_name`[^1]  | String  | | |
-| `prefix`         | String  | | Values available: `Herr`, `Frau`, `Familie`. <br /> **Note:** These values may be language- and instance-specific. It is preferred to set `gender_id` and leave this field empty whenever possible. |
-| `gender_id`      | String  | | Values available: `Male`, `Female`, `Other`. <br />**Note:** These values are case-sensitive. |
-| `birth_date`[^1] | Date    | | Format: `YYYY-MM-DD` |
-| `hash`           | String  | | CiviCRM contact hash |
-| `bpk`[^1]        | String  | | Austrian tax office identifier for `contact_type` = `Individual` |
-| `email`[^1]      | String  | | Need to be valid format `%@%.%` otherwise it is garbaged by API |
-| `phone`          | String  | | Is normalized by normalize extension |
-| `street_address`[^1] | String | | Street name and house number separated by one space |
-| `postal_code`[^1] | String | | |
-| `city`           | String  | | |
-| `country`        | String  | | Country code according to ISO 3166-1 alpha-2 |
-| `external_identifier` | String | | Unique identifier of the petition signature in an external system. Make sure submitted values are either globally unique or use a prefix to partition identifiers.[^2] |
-| `medium_id`      | String  | | According `value` field from `Engage.getmedia` |
-| `campaign`       | String  | | External ID for donation-relevant campaign |
-| `campaign_id`    | Integer | | Overwrites `campaign` |
-| `petition_id`    | Integer | | Overwrites `campaign` and `campaign_id` otherwise the DEFAULT-petition for the choosen campaign is used |
-| `petition_dialoger` | Integer | | CiviCRM ID of the Direct Dialog Canvasser |
-| `signature_date` | String  | | Date of the petition_signature, Format: `YYYYMMDDHHIISS` (PHP Format: `YmdHis`) |
-| `newsletter`     | Boolean | `0` | Whether this contact opted-in to the "Community NL" email newsletter |
-| `xcm_profile`    | String | `engagement` | XCM profile to be used for contact matching |
-| `utm_source`     | String  | | UTM Source. Identifies which site sent the traffic |
-| `utm_medium`     | String  | | UTM Medium. Identifies what type of link was used |
-| `utm_campaign`   | String  | | UTM Campaign. Identifies a specific promotion or strategic campaign |
-| `utm_content`    | String  | | UTM Content. Identifies what specifically was clicked to bring the user to the site |
-| `geoip_country_id` | String | | **GeoIP** country code according to ISO 3166-1 alpha-2 |
+| Field (required)       | Type    | Default      | Description                                                                                                                                                                                         |
+|------------------------|---------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `contact_type`         | String  | `Individual` | CiviCRM contact type                                                                                                                                                                                |
+| `first_name`[^1]       | String  |              |                                                                                                                                                                                                     |
+| `last_name`[^1]        | String  |              |                                                                                                                                                                                                     |
+| `prefix`               | String  |              | Values available: `Herr`, `Frau`, `Familie`. <br /> **Note:** These values may be language- and instance-specific. It is preferred to set `gender_id` and leave this field empty whenever possible. |
+| `gender_id`            | String  |              | Values available: `Male`, `Female`, `Other`. <br />**Note:** These values are case-sensitive.                                                                                                       |
+| `birth_date`[^1]       | Date    |              | Format: `YYYY-MM-DD`                                                                                                                                                                                |
+| `hash`                 | String  |              | CiviCRM contact hash                                                                                                                                                                                |
+| `bpk`[^1]              | String  |              | Austrian tax office identifier for `contact_type` = `Individual`                                                                                                                                    |
+| `email`[^1]            | String  |              | Need to be valid format `%@%.%` otherwise it is garbaged by API                                                                                                                                     |
+| `phone`                | String  |              | Is normalized by normalize extension                                                                                                                                                                |
+| `street_address`[^1]   | String  |              | Street name and house number separated by one space                                                                                                                                                 |
+| `postal_code`[^1]      | String  |              |                                                                                                                                                                                                     |
+| `city`                 | String  |              |                                                                                                                                                                                                     |
+| `country`              | String  |              | Country code according to ISO 3166-1 alpha-2                                                                                                                                                        |
+| `external_identifier`  | String  |              | Unique identifier of the petition signature in an external system. Make sure submitted values are either globally unique or use a prefix to partition identifiers.[^2]                              |
+| `medium_id`            | String  |              | According `value` field from `Engage.getmedia`                                                                                                                                                      |
+| `campaign`             | String  |              | External ID for donation-relevant campaign                                                                                                                                                          |
+| `campaign_id`          | Integer |              | Overwrites `campaign`                                                                                                                                                                               |
+| `petition_id`          | Integer |              | Overwrites `campaign` and `campaign_id` otherwise the DEFAULT-petition for the choosen campaign is used                                                                                             |
+| `petition_dialoger`    | Integer |              | CiviCRM ID of the Direct Dialog Canvasser                                                                                                                                                           |
+| `signature_date`       | String  |              | Date of the petition_signature, Format: `YYYYMMDDHHIISS` (PHP Format: `YmdHis`)                                                                                                                     |
+| `newsletter`           | Boolean | `0`          | Whether this contact opted-in to the "Community NL" email newsletter                                                                                                                                |
+| `xcm_profile`          | String  | `engagement` | XCM profile to be used for contact matching                                                                                                                                                         |
+| `utm_source`           | String  |              | UTM Source. Identifies which site sent the traffic                                                                                                                                                  |
+| `utm_medium`           | String  |              | UTM Medium. Identifies what type of link was used                                                                                                                                                   |
+| `utm_campaign`         | String  |              | UTM Campaign. Identifies a specific promotion or strategic campaign                                                                                                                                 |
+| `utm_content`          | String  |              | UTM Content. Identifies what specifically was clicked to bring the user to the site                                                                                                                 |
+| `geoip_country_id`     | String  |              | **GeoIP** country code according to ISO 3166-1 alpha-2                                                                                                                                              |
+| `location`             | String  |              | Location/Identifier of the petition source, e.g. form URL or ID                                                                                                                                     |
 
 [^1]:
     At least *one* of the following (combinations of) fields needs to be present:
