@@ -40,7 +40,7 @@ class Adyen extends AbstractHelper {
     $card_holder_name = self::getCardHolderName($additional_psp_data);
     $event_date = CRM_Utils_Array::value('eventDate', $psp_result_data, date('Y-m-d'));
 
-    $account_number = self::getAccountNumber($additional_psp_data);
+    $account_number = self::getAccountNumber($psp_result_data);
     $billing_first_name = $card_holder_name[0];
     $billing_last_name = $card_holder_name[1];
     $expiry_date = self::getExpiryDate($additional_psp_data);
@@ -256,9 +256,9 @@ class Adyen extends AbstractHelper {
     return $next_debit_date;
   }
 
-  private static function getAccountNumber(array $additional_psp_data) {
-    $card_summary = CRM_Utils_Array::value('cardSummary', $additional_psp_data);
-    $pm = CRM_Utils_Array::value('paymentMethod', $additional_psp_data);
+  private static function getAccountNumber(array $psp_data) {
+    $card_summary = $psp_data['additionalData']['cardSummary'] ?? NULL;
+    $pm = $psp_data['paymentMethod'];
 
     if (empty($card_summary) || empty($pm)) return NULL;
 
