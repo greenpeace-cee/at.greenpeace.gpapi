@@ -24,11 +24,9 @@ class Adyen extends AbstractHelper {
 
     // --- Recurring contribution details --- //
 
-    $next_debit_date = self::calculateNextDebitDate($params);
-
     $amount = number_format($params['amount'], 2, '.', '');
     $currency = CRM_Utils_Array::value('currency', $params);
-    $cycle_day = (int) date('d', $next_debit_date);
+    $cycle_day = CRM_Utils_Array::value('cycle_day', $params);
     $financial_type_id = self::getFinancialTypeID('Member Dues');
     $frequency_interval = (int) (12.0 / $params['frequency']);
     $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params);
@@ -116,7 +114,7 @@ class Adyen extends AbstractHelper {
     $medium_id = self::getOptionValue('encounter_medium', 'web');
     $membership_id = $params['contract_id'];
     $membership_type_id = CRM_Utils_Array::value('membership_type', $params);
-    $start_date = ($this->getStartDate($params))->format('Y-m-d');
+    $modify_date = $params['start_date'] ?? date('Y-m-d');
 
     // Recurring contribution details
 
@@ -133,7 +131,7 @@ class Adyen extends AbstractHelper {
       'action'                                  => $action,
       'campaign_id'                             => $campaign_id,
       'check_permissions'                       => 0,
-      'date'                                    => $start_date,
+      'date'                                    => $modify_date,
       'id'                                      => $membership_id,
       'medium_id'                               => $medium_id,
       'membership_payment.cycle_day'            => $cycle_day,
@@ -233,27 +231,6 @@ class Adyen extends AbstractHelper {
       ->addSelect('*')
       ->execute()
       ->first();
-  }
-
-  private static function calculateNextDebitDate(array $params) {
-    $next_debit_date = strtotime('+1 month');
-    $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, 0);
-
-    if (empty($cycle_day)) {
-      $possible_cycle_days = \CRM_Contract_PaymentAdapter_Adyen::cycleDays();
-      $cycle_day = (int) date('d', $next_debit_date);
-
-      while (!in_array($cycle_day, $possible_cycle_days)) {
-        $next_debit_date = strtotime("+ 1 day", $next_debit_date);
-        $cycle_day = (int) date('d', $next_debit_date);
-      }
-    } else {
-      while ((int) date('d', $next_debit_date) !== $cycle_day) {
-        $next_debit_date = strtotime("+ 1 day", $next_debit_date);
-      }
-    }
-
-    return $next_debit_date;
   }
 
   private static function getAccountNumber(array $psp_data) {

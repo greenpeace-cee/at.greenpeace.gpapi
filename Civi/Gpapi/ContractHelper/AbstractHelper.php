@@ -328,30 +328,6 @@ abstract class AbstractHelper {
     return NULL;
   }
 
-  protected function getStartDate(array $params) {
-    // start with current date
-    $startDate = new \DateTime('today');
-    if (!empty($params['start_date'])) {
-      // a specific start date was requested, try using it
-      $startDate = new \DateTime($params['start_date']);
-    }
-    if ($startDate < new \DateTime()) {
-      // requested start date is in the past, falling back to current date
-      $startDate = new \DateTime('today');
-    }
-    if (!empty(\Civi::settings()->get("contract_minimum_change_date"))) {
-      // CE's minimum change date is set
-      $minimumChangeDate = new \DateTime(\Civi::settings()->get("contract_minimum_change_date"));
-      // add one day so we don't re-debit on an already executed debit date
-      $minimumChangeDate->add(new \DateInterval('P1D'));
-      if ($startDate < $minimumChangeDate) {
-        // minimum change date is after start date, falling back to it
-        $startDate = $minimumChangeDate;
-      }
-    }
-    return $startDate;
-  }
-
   protected static function getOptionValue(string $optionGroup, string $name) {
     $result = Api4\OptionValue::get(FALSE)
       ->addWhere('option_group_id:name', '=', $optionGroup)

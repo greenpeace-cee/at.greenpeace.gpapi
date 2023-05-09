@@ -61,10 +61,11 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
       'date'    => date('YmdHis'),
       'trxn_id' => "ADYEN-TRXN-123",
     ];
-    
+
     $update_result = $this->callAPISuccess('OSF', 'updatecontract', [
       'amount'                   => 20,
       'contract_id'              => $membership_id,
+      'cycle_day'                => 17,
       'debug'                    => FALSE,
       'frequency'                => 4,
       'hash'                     => $contact['hash'],
@@ -93,10 +94,14 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
       ->execute()
       ->first();
 
+    $rc_start_date = new DateTimeImmutable($recurring_contribution['start_date']);
+
     $this->assertEquals(20.0, $recurring_contribution['amount']);
+    $this->assertEquals(17, $recurring_contribution['cycle_day']);
     $this->assertEquals(3, $recurring_contribution['frequency_interval']);
     $this->assertEquals('month', $recurring_contribution['frequency_unit']);
     $this->assertEquals('Debit Card', $recurring_contribution['payment_instrument_id:name']);
+    $this->assertEquals('17', $rc_start_date->format('d'));
 
   }
 
@@ -263,6 +268,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
       'amount'                   => 20.0,
       'contract_id'              => $membership_id,
       'currency'                 => 'EUR',
+      'cycle_day'                => 17,
       'frequency'                => 4,
       'hash'                     => $contact['hash'],
       'membership_type'          => 'Foerderer',
@@ -289,11 +295,15 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
       ->execute()
       ->first();
 
+    $rc_start_date = new DateTimeImmutable($recurring_contribution['start_date']);
+
     $this->assertEquals(20.0, $recurring_contribution['amount']);
+    $this->assertEquals(17, $recurring_contribution['cycle_day']);
     $this->assertEquals(3, $recurring_contribution['frequency_interval']);
     $this->assertEquals('month', $recurring_contribution['frequency_unit']);
     $this->assertEquals('EUR', $recurring_contribution['currency']);
     $this->assertEquals('RCUR', $recurring_contribution['payment_instrument_id:name']);
+    $this->assertEquals('17', $rc_start_date->format('d'));
 
     $sepa_mandate = Api4\SepaMandate::get(FALSE)
       ->addWhere('entity_id', '=', $recur_contrib_id)

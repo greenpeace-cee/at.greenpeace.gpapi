@@ -42,18 +42,16 @@ class Sepa extends AbstractHelper {
     // Recurring contribution details
 
     $this->creditor = (array) \CRM_Sepa_Logic_Settings::defaultCreditor();
-    $next_debit_date = self::calculateNextDebitDate($params, $this->creditor);
     $rcur_opt_val = self::getOptionValue('payment_instrument', 'RCUR');
-    $start_time = empty($params['payment_received']) ? time() : $next_debit_date;
 
     $amount = number_format($params['amount'], 2, '.', '');
     $creditor_id = (int) $this->creditor['id'];
     $currency = CRM_Utils_Array::value('currency', $params, $this->creditor['currency']);
-    $cycle_day = (int) date('d', $next_debit_date);
+    $cycle_day = CRM_Utils_Array::value('cycle_day', $params);
     $financial_type_id = self::getFinancialTypeID('Member Dues');
     $frequency_interval = (int) (12.0 / $params['frequency']);
     $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params, $rcur_opt_val);
-    $start_date = date('YmdHis', $start_time);
+    $start_date = date('YmdHis');
 
     // SEPA mandate details
 
@@ -137,18 +135,12 @@ class Sepa extends AbstractHelper {
     $medium_id = self::getOptionValue('encounter_medium', 'web');
     $membership_id = $params['contract_id'];
     $membership_type_id = CRM_Utils_Array::value('membership_type', $params);
-    $start_date = ($this->getStartDate($params))->format('Y-m-d');
+    $modify_date = $params['start_date'] ?? date('Y-m-d');
 
     // Recurring contribution details
 
     // TODO: support multiple creditors
     $this->creditor = (array) \CRM_Sepa_Logic_Settings::defaultCreditor();
-
-    $cycle_days = \CRM_Sepa_Logic_Settings::getListSetting(
-      'cycledays',
-      range(1, 28),
-      $this->creditor['id']
-    );
 
     $annual_amount = number_format($params['amount'] * $params['frequency'], 2);
     $currency = CRM_Utils_Array::value('currency', $params, $this->creditor['currency']);
@@ -161,11 +153,11 @@ class Sepa extends AbstractHelper {
     }
 
     $bic = CRM_Utils_Array::value('bic', $payment_details);
-    $contact_id = $params['contac_id'];
+    $contact_id = $params['contact_id'];
     $iban = $payment_details['iban'];
     $rcur_opt_val = self::getOptionValue('payment_instrument', 'RCUR');
 
-    $cycle_day = $this->getCycleDay($cycle_days, $params);
+    $cycle_day = CRM_Utils_Array::value('cycle_day', $params);
     $frequency = $params['frequency'];
     $from_ba = CRM_Contract_BankingLogic::getOrCreateBankAccount($contact_id, $iban, $bic);
     $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params, $rcur_opt_val);
@@ -179,7 +171,7 @@ class Sepa extends AbstractHelper {
       'action'                                  => $action,
       'campaign_id'                             => $campaign_id,
       'check_permissions'                       => 0,
-      'date'                                    => $start_date,
+      'date'                                    => $modify_date,
       'id'                                      => $membership_id,
       'medium_id'                               => $medium_id,
       'membership_payment.cycle_day'            => $cycle_day,
@@ -216,97 +208,6 @@ class Sepa extends AbstractHelper {
       ->addSelect('*')
       ->execute()
       ->first();
-  }
-
-  private static function calculateNextDebitDate(array $params, array $creditor) {
-    // If the first payment was completed within the ODF,
-    // the next debit date should be at least one month from now
-    $next_debit_date = strtotime('+1 month');
-
-    if (empty($params['payment_received'])) {
-      $buffer_days = (int) \CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days");
-      $frst_notice_days = (int) \CRM_Sepa_Logic_Settings::getSetting("batching.FRST.notice", $creditor['id']);
-      $next_debit_date = strtotime("+ $frst_notice_days days + $buffer_days days");
-    }
-
-    if (empty($params['cycle_day'])) {
-      $possible_cycle_days = \CRM_Sepa_Logic_Settings::getListSetting(
-        "cycledays",
-        range(1, 28),
-        $creditor['id']
-      );
-
-      $cycle_day = date('d', $next_debit_date);
-
-      while (!in_array($cycle_day, $possible_cycle_days)) {
-        $next_debit_date = strtotime("+ 1 day", $next_debit_date);
-        $cycle_day = date('d', $next_debit_date);
-      }
-    } else {
-      $cycle_day = (int) $params['cycle_day'];
-
-      while ((int) date('d', $next_debit_date) !== $cycle_day) {
-        $next_debit_date = strtotime("+ 1 day", $next_debit_date);
-      }
-    }
-
-    return $next_debit_date;
-  }
-
-  private function getCycleDay(array $cycleDays, array $params) {
-    if (count($cycleDays) == 0) {
-      throw new Exception('Must provide at least one cycle day');
-    }
-    // if the membership is active and current cycle_day is valid, use it
-    if ($this->isActiveContract && in_array($this->recurringContribution['cycle_day'], $cycleDays)) {
-      return $this->recurringContribution['cycle_day'];
-    }
-
-    $buffer_days = (int) \CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days");
-    $start_date = strtotime("+{$buffer_days} day", strtotime("now"));
-
-    // consider an example membership with the following data:
-    // - last successful contribution: 2020-01-03
-    // - frequency: monthly
-    // - status: Cancelled
-    // - possible cycle days: 3, 10, 17, 25
-    // - current date: 2020-01-20
-    // given this example, the desired cycle day would be 3. to achieve this,
-    // we need to adjust the start date used to find cycle days based on the
-    // last successful contribution plus one frequency interval, otherwise we
-    // would get cycle day 25 based on the current date.
-    $lastContributionDate = NULL;
-    if (!empty($params['transaction_details']['date'])) {
-      // a donation was made in ODF
-      $lastContributionDate = new \DateTime($params['transaction_details']['date']);
-    }
-    if (is_null($lastContributionDate) && !empty($this->membershipId)) {
-      // no donation made in ODF, use the last successful contribution date
-      $lastContributionDate = $this->getLatestSuccessfulMembershipPaymentDate();
-    }
-
-    if (!is_null($lastContributionDate)) {
-      $earliestPossibleDebitDate = clone $lastContributionDate;
-      $monthsToAdd = 12 / $params['frequency'];
-      // we consider the period between $lastContributionDate and one frequency
-      // interval after that date (e.g. one month for a monthly membership) to
-      // be already paid, so adjust the date.
-      $earliestPossibleDebitDate->add(new \DateInterval("P{$monthsToAdd}M"));
-      if ($earliestPossibleDebitDate > new \DateTime("today + {$buffer_days} day")) {
-        $start_date = $earliestPossibleDebitDate->getTimestamp();
-      }
-    }
-
-    $safety_counter = 32;
-    while (!in_array(date("d", $start_date), $cycleDays)) {
-      $start_date = strtotime("+ 1 day", $start_date);
-      $safety_counter -= 1;
-
-      if ($safety_counter == 0) {
-        throw new Exception("There's something wrong with the nextCycleDay method.");
-      }
-    }
-    return date("d", $start_date);
   }
 
 }

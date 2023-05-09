@@ -19,18 +19,17 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
   }
 
   public function testCreateAdyenContract() {
+    $today = new DateTimeImmutable();
 
     // Create a contract via `OSF.contract`
 
     $campaign = $this->defaultCampaign;
     $contact = $this->defaultContact;
     $payment_processor = $this->adyenPaymentProcessor;
-    $date = new DateTimeImmutable();
-    $one_year = DateInterval::createFromDateString('1 year');
 
     $cardholder_name = "{$contact['first_name']} {$contact['last_name']}";
-    $event_date = $date->format('Y-m-d');
-    $expiry_date = $date->add($one_year)->format('m/Y');
+    $event_date = $today->format('Y-m-d');
+    $expiry_date = $today->add(new DateInterval('P1Y'))->format('m/Y');
     $membership_type_id = self::getMembershipTypeID('General');
     $merchant_reference = bin2hex(random_bytes(8));
     $psp_reference = bin2hex(random_bytes(8));
@@ -41,7 +40,6 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
         'cardHolderName'                     => $cardholder_name,
         'cardSummary'                        => '1234 5678',
         'expiryDate'                         => $expiry_date,
-        'paymentMethodVariant'               => 'visa',
         'recurring.recurringDetailReference' => '2916382255634620',
         'recurring.shopperReference'         => 'OSF-TOKEN-PRODUCTION-00001-EPS',
         'shopperEmail'                       => $contact['email'],
@@ -50,6 +48,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
       'eventDate'           => $event_date,
       'merchantAccountCode' => 'Greenpeace',
       'merchantReference'   => $merchant_reference,
+      'paymentMethod'       => 'visa',
       'pspReference'        => $psp_reference,
     ];
 
@@ -86,8 +85,10 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     $this->assertEquals($campaign['id'], $membership['campaign_id']);
     $this->assertEquals($contact['id'], $membership['contact_id']);
+    $this->assertEquals($today->format('Y-m-d'), $membership['join_date']);
     $this->assertEquals('General', $membership['membership_type_id:name']);
     $this->assertEquals('OSF', $membership['source']);
+    $this->assertEquals($today->format('Y-m-d'), $membership['start_date']);
 
     // Assert that the recurring contribution was created correctly
 
@@ -99,6 +100,8 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
       ->execute()
       ->first();
 
+    $rc_start_date = new DateTimeImmutable($recurring_contribution['start_date']);
+
     $this->assertEquals(30.0, $recurring_contribution['amount']);
     $this->assertEquals($campaign['id'], $recurring_contribution['campaign_id']);
     $this->assertEquals('EUR', $recurring_contribution['currency']);
@@ -107,6 +110,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals('month', $recurring_contribution['frequency_unit']);
     $this->assertEquals('Credit Card', $recurring_contribution['payment_instrument_id:name']);
     $this->assertEquals('OSF-TOKEN-PRODUCTION-00001-EPS', $recurring_contribution['processor_id']);
+    $this->assertEquals('13', $rc_start_date->format('d'));
 
     // Assert that a payment token has been created
 
@@ -191,6 +195,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
   }
 
   public function testCreateSEPAContract() {
+    $today = new DateTimeImmutable();
 
     // Create a contract via `OSF.contract`
 
@@ -224,8 +229,10 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
       ->first();
 
     $this->assertEquals($contact['id'], $membership['contact_id']);
+    $this->assertEquals($today->format('Y-m-d'), $membership['join_date']);
     $this->assertEquals('General', $membership['membership_type_id:name']);
     $this->assertEquals('OSF', $membership['source']);
+    $this->assertEquals($today->format('Y-m-d'), $membership['start_date']);
 
     // Assert that the recurring contribution was created correctly
 
@@ -237,6 +244,8 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
       ->execute()
       ->first();
 
+    $rc_start_date = new DateTimeImmutable($recurring_contribution['start_date']);
+
     $this->assertEquals(30.0, $recurring_contribution['amount']);
     $this->assertEquals($campaign['id'], $recurring_contribution['campaign_id']);
     $this->assertEquals('EUR', $recurring_contribution['currency']);
@@ -244,6 +253,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals(3, $recurring_contribution['frequency_interval']);
     $this->assertEquals('month', $recurring_contribution['frequency_unit']);
     $this->assertEquals('RCUR', $recurring_contribution['payment_instrument_id:name']);
+    $this->assertEquals('13', $rc_start_date->format('d'));
 
     // Assert that the SEPA mandate was created correctly
 
