@@ -315,6 +315,9 @@ function _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, $paym
     }
   }
 
+  $params['trxn_id'] = $params['psp_result_data']['pspReference'] ?? $params['trxn_id'];
+  $params['invoice_id'] = $params['psp_result_data']['merchantReference'] ?? NULL;
+
   return civicrm_api3('Contribution', 'create', $params);
 }
 
