@@ -45,8 +45,9 @@ commands:
           git clone https://github.com/greenpeace-cee/de.systopia.contract.git
           git clone https://lab.civicrm.org/extensions/mjwshared.git
           git clone https://github.com/greenpeace-cee/adyen.git -b main
+          git clone https://github.com/greenpeace-cee/de.systopia.identitytracker.git
           chown buildkit:buildkit * -R
-          su - buildkit -c "cd /buildkit/build/<< parameters.build_name >>/web && cv en de.systopia.xcm com.cividesk.normalize org.project60.sepa de.systopia.pspsepa org.project60.banking de.systopia.contract mjwshared adyen"
+          su - buildkit -c "cd /buildkit/build/<< parameters.build_name >>/web && cv en de.systopia.xcm com.cividesk.normalize org.project60.sepa de.systopia.pspsepa org.project60.banking de.systopia.contract mjwshared adyen de.systopia.identitytracker"
   install_extension:
     description: "Install Extension"
     parameters:
