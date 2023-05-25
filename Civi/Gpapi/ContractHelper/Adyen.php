@@ -235,11 +235,17 @@ class Adyen extends AbstractHelper {
 
   private static function getAccountNumber(array $psp_data) {
     $card_summary = $psp_data['additionalData']['cardSummary'] ?? NULL;
-    $pm = $psp_data['paymentMethod'];
+    $pm = $psp_data['paymentMethod'] ?? NULL;
 
-    if (empty($card_summary) || empty($pm)) return NULL;
+    if (!empty($card_summary) && !empty($pm)) {
+      return ucfirst($pm) . ": $card_summary";
+    }
 
-    return ucfirst($pm) . ": $card_summary";
+    if (!empty($psp_data['additionalData']['iban'])) {
+      return $psp_data['additionalData']['iban'];
+    }
+
+    return NULL;
   }
 
   private static function getCardHolderName(array $additional_psp_data) {
