@@ -66,13 +66,14 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
   {
     $params = [
       'contact_id' => $this->contact['id'],
-      'total_amount' => 100
+      'total_amount' => 100,
+      'trxn_id' => '1234',
     ];
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
 
     $this->assertEquals($this->contact['id'], $contribution['contact_id']);
     $this->assertEquals(100, $contribution['total_amount']);
-    $this->assertEquals('OSF', $contribution['source']);
+    $this->assertEquals('OSF', $contribution['contribution_source']);
   }
 
   public function testDonationWithCampaign()
@@ -84,7 +85,8 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $params = [
       'campaign_id' => $campaign['id'],
       'contact_id' => $this->contact['id'],
-      'total_amount' => "44.44"
+      'total_amount' => "44.44",
+      'trxn_id' => '1234',
     ];
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
 
@@ -102,7 +104,8 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
       'utm_campaign' =>'for_don',
       'utm_content'  => 'waldschutz-eu',
       'contact_id'   => $this->contact['id'],
-      'total_amount' => "52.99"
+      'total_amount' => "52.99",
+      'trxn_id'      => '1234',
     ];
 
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
