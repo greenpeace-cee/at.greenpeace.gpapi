@@ -3,6 +3,7 @@
 namespace Civi\Gpapi\ContractHelper;
 
 use \Civi\Api4;
+use Civi\Api4\Membership;
 use \CRM_Utils_Array;
 
 class Factory {
@@ -39,25 +40,23 @@ class Factory {
 
   private static function getPaymentServiceProviderForContract(int $membership_id) {
     try {
-      $contract_payment_links = civicrm_api3('ContractPaymentLink', 'get', [
-        'contract_id' => $membership_id,
-        'is_active'   => TRUE,
-        'return'      => 'contribution_recur_id',
-        'sequential'  => TRUE,
-      ]);
-
-      $recur_contrib_id = $contract_payment_links['values'][0]['id'];
+      $membership = Membership::get(FALSE)
+        ->addSelect('membership_payment.membership_recurring_contribution')
+        ->addWhere('id', '=', $membership_id)
+        ->execute()
+        ->first();
+      $recur_contrib_id = $membership['membership_payment.membership_recurring_contribution'];
 
       // --- Check whether an associated SEPA mandate exists --- //
 
-      $sepa_mandate = Api4\SepaMandate::get(FALSE)
+      $sepa_mandate_count = Api4\SepaMandate::get(FALSE)
         ->selectRowCount()
         ->addWhere('entity_id', '=', $recur_contrib_id)
-        ->setLimit(1)
-        ->execute();
+        ->addWhere('entity_table', '=', 'civicrm_contribution_recur')
+        ->execute()
+        ->count();
+      if ($sepa_mandate_count > 0) return 'civicrm';
 
-      if ($sepa_mandate->rowCount > 0) return 'civicrm';
-          
       // --- Check whether the recurring contribution uses an Adyen payment processor --- //
 
       $recurring_contribution = Api4\ContributionRecur::get(FALSE)
