@@ -344,26 +344,23 @@ abstract class AbstractHelper {
   protected function loadContract(int $membership_id) {
     $this->membership = Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $membership_id)
-      ->addSelect('*', 'membership_type_id:name', 'status_id:name')
+      ->addSelect(
+        '*',
+        'membership_type_id:name',
+        'status_id:name',
+        'membership_payment.membership_recurring_contribution'
+      )
       ->execute()
       ->first();
 
-    $contract_payment_links = civicrm_api3('ContractPaymentLink', 'get', [
-      'contract_id' => $membership_id,
-      'is_active'   => TRUE,
-      'return'      => 'contribution_recur_id',
-      'sequential'  => TRUE,
-    ]);
-
-    if ($contract_payment_links['count'] < 1) {
+    if (empty($this->membership['membership_payment.membership_recurring_contribution'])) {
       throw new Exception(
         'No payment method associated with contract',
         Exception::PAYMENT_METHOD_INVALID
       );
     }
 
-    $recur_contrib_id = $contract_payment_links['values'][0]['contribution_recur_id'];
-
+    $recur_contrib_id = $this->membership['membership_payment.membership_recurring_contribution'];
     $this->recurringContribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
       ->addSelect('*', 'contribution_status_id:name', 'payment_instrument_id:name')
