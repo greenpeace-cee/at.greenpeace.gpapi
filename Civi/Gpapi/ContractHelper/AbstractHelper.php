@@ -383,4 +383,36 @@ abstract class AbstractHelper {
     $this->loadAdditionalPaymentData();
   }
 
+  /**
+   * Get the earliest possible modify date, constrained by $params and contract_minimum_change_date
+   *
+   * @param array $params
+   *
+   * @return \DateTime
+   * @throws \Exception
+   */
+  protected function getModifyDate(array $params) {
+    // start with current date
+    $modifyDate = new \DateTime('today');
+    if (!empty($params['start_date'])) {
+      // a specific start date was requested, try using it
+      $modifyDate = new \DateTime($params['start_date']);
+    }
+    if ($modifyDate < new \DateTime()) {
+      // requested date is in the past, falling back to current date
+      $modifyDate = new \DateTime('today');
+    }
+    if (!empty(\Civi::settings()->get("contract_minimum_change_date"))) {
+      // CE's minimum change date is set
+      $minimumChangeDate = new \DateTime(\Civi::settings()->get("contract_minimum_change_date"));
+      // add one day so we don't re-debit on an already executed debit date
+      $minimumChangeDate->add(new \DateInterval('P1D'));
+      if ($modifyDate < $minimumChangeDate) {
+        // minimum change date is after modify date, falling back to it
+        $modifyDate = $minimumChangeDate;
+      }
+    }
+    return $modifyDate;
+  }
+
 }

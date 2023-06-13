@@ -91,7 +91,6 @@ class Adyen extends AbstractHelper {
       'source'                                  => 'OSF',
       'start_date'                              => $start_date,
     ];
-
     $contract_result = civicrm_api3('Contract', 'create', $create_contract_params);
 
     $this->loadContract($contract_result['id']);
@@ -114,7 +113,7 @@ class Adyen extends AbstractHelper {
     $medium_id = self::getOptionValue('encounter_medium', 'web');
     $membership_id = $params['contract_id'];
     $membership_type_id = CRM_Utils_Array::value('membership_type', $params);
-    $modify_date = $params['start_date'] ?? date('Y-m-d');
+    $modify_date = $this->getModifyDate($params)->format('Y-m-d');
 
     // Recurring contribution details
 
