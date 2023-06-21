@@ -14,6 +14,8 @@
 
 include_once __DIR__ . '/Contract.php';
 
+use \Civi\Api4;
+
 /**
  * Process OSF (online donation form) DONATION submission
  *
@@ -296,9 +298,6 @@ function _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, $paym
   $params['payment_instrument_id']  = $payment_instrument_id;
   // Accept failed donation attempts GP-13219
   $contribution_status = _civicrm_api3_is_donation_failed($params) ? 'Failed' : 'Completed';
-  $params['contribution_status_id'] = CRM_Core_PseudoConstant::getKey(
-    'CRM_Contribute_BAO_Contribution','contribution_status_id', $contribution_status
-  );
   unset($params['payment_instrument']);
   if (empty($params['receive_date'])) {
     $params['receive_date'] = date('YmdHis');
@@ -315,10 +314,55 @@ function _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, $paym
     }
   }
 
-  $params['trxn_id'] = $params['psp_result_data']['pspReference'] ?? $params['trxn_id'];
-  $params['invoice_id'] = $params['psp_result_data']['merchantReference'] ?? NULL;
+  $psp_result_data = $params['psp_result_data'] ?? [];
+  $params['trxn_id'] = $psp_result_data['pspReference'] ?? $params['trxn_id'];
+  $params['invoice_id'] = $psp_result_data['merchantReference'] ?? NULL;
 
-  return civicrm_api3('Contribution', 'create', $params);
+  $order = civicrm_api3('Order', 'create', [
+    'campaign_id'           => CRM_Utils_Array::value('campaign_id', $params),
+    'contact_id'            => $params['contact_id'],
+    'currency'              => $params['currency'],
+    'financial_type_id'     => $params['financial_type_id'],
+    'invoice_id'            => $params['invoice_id'],
+    'payment_instrument_id' => $payment_instrument_id,
+    'receive_date'          => $params['receive_date'],
+    'sequential'            => TRUE,
+    'source'                => $params['source'],
+    'total_amount'          => $params['total_amount'],
+  ]);
+
+  if ($contribution_status === 'Completed') {
+    // Donation completed
+    $payment_processor_id = _civicrm_api3_o_s_f_donation_get_payment_processor_id($psp_result_data);
+    $card_type_id = _civicrm_api3_o_s_f_donation_get_card_type_id($psp_result_data);
+    $pan_truncation = _civicrm_api3_o_s_f_donation_get_pan_truncation($psp_result_data);
+
+    civicrm_api3('Payment', 'create', [
+      'card_type_id'                      => $card_type_id,
+      'contribution_id'                   => $order['id'],
+      'fee_amount'                        => 0.0,
+      'is_send_contribution_notification' => FALSE,
+      'pan_truncation'                    => $pan_truncation,
+      'payment_instrument_id'             => $payment_instrument_id,
+      'payment_processor_id'              => $payment_processor_id,
+      'total_amount'                      => $params['total_amount'],
+      'trxn_date'                         => $params['receive_date'],
+      'trxn_id'                           => $params['trxn_id'],
+    ]);
+  } else {
+    // Donation failed
+    civicrm_api3('Contribution', 'create', [
+      'cancel_date'            => $params['receive_date'],
+      'cancel_reason'          => $params['cancel_reason'] ?? '',
+      'contribution_id'        => $order['id'],
+      'contribution_status_id' => $contribution_status,
+    ]);
+  }
+
+  return civicrm_api3('Contribution', 'get', [
+    'id'         => $order['id'],
+    'sequential' => TRUE,
+  ]);
 }
 
 /**
@@ -340,4 +384,74 @@ function _civicrm_api3_get_payment_instrument_id($value) {
 function _civicrm_api3_is_donation_failed($params): bool
 {
   return !empty($params['failed']);
+}
+
+/**
+ * Get the ID of the credit card type
+ *
+ * @param $psp_result_data
+ * @return string
+ */
+function _civicrm_api3_o_s_f_donation_get_card_type_id($psp_result_data) {
+  if (empty($psp_result_data['additionalData']['paymentMethod']) && empty($psp_result_data['paymentMethod'])) {
+    return NULL;
+  }
+
+  $card_type_name = $psp_result_data['additionalData']['paymentMethod'] ?? $psp_result_data['paymentMethod'];
+
+  // Adyen abbreviates mastercard, everything else matches
+  if ($card_type_name == 'mc') {
+    $card_type_name = 'mastercard';
+  }
+
+  // Perform lookup via API4 to avoid case mismatches from cached OptionValues
+  $card_type = Api4\OptionValue::get(FALSE)
+    ->addSelect('value')
+    ->addWhere('option_group_id:name', '=', 'accept_creditcard')
+    ->addWhere('name', '=', $card_type_name)
+    ->execute()
+    ->first();
+
+  return $card_type['value'] ?? NULL;
+}
+
+/**
+ * Get the PAN truncation of a credit card (last 4 digits of card number)
+ *
+ * @param $psp_result_data
+ * @return string
+ */
+function _civicrm_api3_o_s_f_donation_get_pan_truncation($psp_result_data) {
+  if (!empty($psp_result_data['additionalData']['cardSummary'])) {
+    // cardSummary contains last 4 digits for credit card
+    return $psp_result_data['additionalData']['cardSummary'];
+  }
+
+  if (!empty($psp_result_data['additionalData']['iban'])) {
+    // Return last 4 digits of IBAN if one is available
+    return substr($psp_result_data['additionalData']['iban'], -4);
+  }
+
+  return NULL;
+}
+
+/**
+ * Get the ID of the payment processor
+ *
+ * @param $psp_result_data
+ * @return int
+ */
+function _civicrm_api3_o_s_f_donation_get_payment_processor_id($psp_result_data) {
+  if (isset($psp_result_data['merchantAccountCode'])) {
+    $payment_processor = Api4\PaymentProcessor::get(FALSE)
+      ->addWhere('payment_processor_type_id:name', '=', 'Adyen')
+      ->addWhere('name', '=', $psp_result_data['merchantAccountCode'])
+      ->addSelect('id')
+      ->execute()
+      ->first();
+
+    if (isset($payment_processor)) return (int) $payment_processor['id'];
+  }
+
+  return NULL;
 }
