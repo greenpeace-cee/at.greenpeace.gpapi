@@ -393,9 +393,11 @@ function _civicrm_api3_is_donation_failed($params): bool
  * @return string
  */
 function _civicrm_api3_o_s_f_donation_get_card_type_id($psp_result_data) {
-  if (empty($psp_result_data['additionalData']['paymentMethod'])) return NULL;
+  if (empty($psp_result_data['additionalData']['paymentMethod']) && empty($psp_result_data['paymentMethod'])) {
+    return NULL;
+  }
 
-  $card_type_name = $psp_result_data['additionalData']['paymentMethod'];
+  $card_type_name = $psp_result_data['additionalData']['paymentMethod'] ?? $psp_result_data['paymentMethod'];
 
   // Adyen abbreviates mastercard, everything else matches
   if ($card_type_name == 'mc') {
