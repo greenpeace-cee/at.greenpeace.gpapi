@@ -56,7 +56,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
       'amount'                   => 30.0,
       'campaign'                 => 'Direct Dialog',
       'contact_id'               => $contact['id'],
-      'currency'                 => 'EUR',
+      'currency'                 => 'RON',
       'cycle_day'                => 13,
       'frequency'                => 4,
       'membership_type_id'       => $membership_type_id,
@@ -104,7 +104,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
     $this->assertEquals(30.0, $recurring_contribution['amount']);
     $this->assertEquals($campaign['id'], $recurring_contribution['campaign_id']);
-    $this->assertEquals('EUR', $recurring_contribution['currency']);
+    $this->assertEquals('RON', $recurring_contribution['currency']);
     $this->assertEquals(13, $recurring_contribution['cycle_day']);
     $this->assertEquals(3, $recurring_contribution['frequency_interval']);
     $this->assertEquals('month', $recurring_contribution['frequency_unit']);

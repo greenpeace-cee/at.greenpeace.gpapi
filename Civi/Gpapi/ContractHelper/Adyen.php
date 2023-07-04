@@ -169,6 +169,7 @@ class Adyen extends AbstractHelper {
       'sequential'             => TRUE,
       'source'                 => 'OSF',
       'total_amount'           => $this->recurringContribution['amount'],
+      'currency'               => $this->recurringContribution['currency'],
     ];
 
     $order_result = civicrm_api3('Order', 'create', $create_order_params);
@@ -189,6 +190,7 @@ class Adyen extends AbstractHelper {
       'total_amount'                      => $this->recurringContribution['amount'],
       'trxn_date'                         => $this->membership['join_date'],
       'trxn_id'                           => $psp_reference,
+      'currency'                          => $this->recurringContribution['currency'],
     ];
 
     civicrm_api3('Payment', 'create', $create_payment_params);
