@@ -145,7 +145,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
     $default_creditor_id = CRM_Sepa_Logic_Settings::getSetting('batching_default_creditor');
 
     if (isset($default_creditor_id)) return;
-    
+
     $creditor = Api4\SepaCreditor::create(FALSE)
       ->addValue('creditor_type' , 'SEPA')
       ->addValue('currency'      , 'EUR')
@@ -269,6 +269,26 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
       ->addValue('is_required'         , FALSE)
       ->addValue('label'               , 'Source')
       ->addValue('name'                , 'utm_source')
+      ->execute();
+
+    Api4\CustomField::create(FALSE)
+      ->addValue('column_name'         , 'utm_term')
+      ->addValue('custom_group_id:name', 'utm')
+      ->addValue('data_type'           , 'String')
+      ->addValue('html_type'           , 'Text')
+      ->addValue('is_required'         , FALSE)
+      ->addValue('label'               , 'Term')
+      ->addValue('name'                , 'utm_term')
+      ->execute();
+
+    Api4\CustomField::create(FALSE)
+      ->addValue('column_name'         , 'utm_id')
+      ->addValue('custom_group_id:name', 'utm')
+      ->addValue('data_type'           , 'String')
+      ->addValue('html_type'           , 'Text')
+      ->addValue('is_required'         , FALSE)
+      ->addValue('label'               , 'Id')
+      ->addValue('name'                , 'utm_id')
       ->execute();
   }
 

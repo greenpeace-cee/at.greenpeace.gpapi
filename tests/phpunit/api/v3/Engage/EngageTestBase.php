@@ -197,7 +197,7 @@ class api_v3_Engage_EngageTestBase
       ],
     ]);
 
-    $utmFieldNames = ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source'];
+    $utmFieldNames = ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_id', 'utm_term'];
 
     foreach ($utmFieldNames as $name) {
       civicrm_api3('CustomField', 'create', [

@@ -103,6 +103,16 @@ function _civicrm_api3_engage_startcase_spec(&$params) {
     'title'        => 'UTM Content',
     'api.required' => 0,
   ];
+  $params['utm_term'] = [
+    'name'         => 'utm_term',
+    'title'        => 'UTM Term',
+    'api.required' => 0,
+  ];
+  $params['utm_id'] = [
+    'name'         => 'utm_id',
+    'title'        => 'UTM Id',
+    'api.required' => 0,
+  ];
   $params['utm_medium'] = [
     'name'         => 'utm_medium',
     'title'        => 'UTM Medium',

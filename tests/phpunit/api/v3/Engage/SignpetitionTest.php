@@ -37,6 +37,8 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
       'utm_content'  => "utm_content_$randomID",
       'utm_medium'   => "utm_medium_$randomID",
       'utm_source'   => "utm_source_$randomID",
+      'utm_term'     => "utm_term_$randomID",
+      'utm_id'       => "utm_id_$randomID",
     ]);
 
     $petitionActivity = Api4\Activity::get(FALSE)
@@ -46,6 +48,8 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
         'utm.utm_campaign',
         'utm.utm_content',
         'utm.utm_medium',
+        'utm.utm_id',
+        'utm.utm_term',
         'utm.utm_source'
       )
       ->addWhere('activity_type_id:name', '=', 'Petition')
@@ -80,6 +84,16 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
       "utm_source_$randomID",
       $petitionActivity['utm.utm_source']
     );
+
+    $this->assertEquals(
+      "utm_id_$randomID",
+      $petitionActivity['utm.utm_id']
+    );
+
+    $this->assertEquals(
+      "utm_term_$randomID",
+      $petitionActivity['utm.utm_term']
+    );
   }
 
   public function testFakePetitionCase() {
@@ -96,6 +110,8 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
       'utm_content'  => "utm_content_$randomID",
       'utm_medium'   => "utm_medium_$randomID",
       'utm_source'   => "utm_source_$randomID",
+      'utm_term'     => "utm_term_$randomID",
+      'utm_id'       => "utm_id_$randomID",
     ]);
 
     $case = $this->callAPISuccess('Case', 'getsingle', [
@@ -114,6 +130,8 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
         'utm.utm_content',
         'utm.utm_medium',
         'utm.utm_source',
+        'utm.utm_term',
+        'utm.utm_id',
       ]
     );
 
@@ -140,6 +158,16 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
     $this->assertEquals(
       "utm_source_$randomID",
       $ratgeberVerschicktActivity['utm.utm_source']
+    );
+
+    $this->assertEquals(
+      "utm_term_$randomID",
+      $ratgeberVerschicktActivity['utm.utm_term']
+    );
+
+    $this->assertEquals(
+      "utm_id_$randomID",
+      $ratgeberVerschicktActivity['utm.utm_id']
     );
   }
 

@@ -184,26 +184,28 @@ the Contribution-ID in the Field `id`.
 
 #### Parameters
 
-| Field (required) | Type    | Default    | Description                         |
-| ---------------  | ------- | ---------- | ----------------------------------- |
-| `contact_id`*       | Integer | | CiviCRM Contact ID |
-| `campaign`          | String  | | External ID for donation-relevant campaign |
-| `campaign_id`       | Integer | | Overwrites `campaign` |
-| `payment_instrument`| String  | `Credit Card` | Supported methods: `Credit Card`, `OOFF`, `PayPal`, `Sofortüberweisung`, `EPS` |
-| `total_amount`*     | Float   | | Format: `0.00`, amount of donation |
-| `currency`          | String  | `EUR` | |
-| `financial_type_id` | Integer | `1` | 1 = Donation, 2 = Member Dues |
-| `source`            | String  | `OSF` | Source of the donation (not used yet) |
-| `iban`*             | String  | | IBAN (only for payment_instrument=`OOFF`) |
-| `bic`              | String  | | BIC (only for payment_instrument=`OOFF`) |
-| `gp_iban`           | String  | | IBAN for Organisation account, will be created, if not exist |
-| `trxn_id`           | String  | | Transaction-ID for donation, if payment_instrument is not `OOFF`. Unique |
-| `utm_source`        | String  | | UTM Source. Identifies which site sent the traffic |
-| `utm_medium`        | String  | | UTM Medium. Identifies what type of link was used |
-| `utm_campaign`      | String  | | UTM Campaign. Identifies a specific promotion or strategic campaign |
-| `utm_content`       | String  | | UTM Content. Identifies what specifically was clicked to bring the user to the site |
-| `failed`            | Boolean | false | Mark donation as failed in order to accept failed donation attempts |
-| `cancel_reason`     | String  | | Cancel reason of failed donation |
+| Field (required)     | Type    | Default       | Description                                                                             |
+|----------------------| ------- |---------------|-----------------------------------------------------------------------------------------|
+| `contact_id`*        | Integer |               | CiviCRM Contact ID                                                                      |
+| `campaign`           | String  |               | External ID for donation-relevant campaign                                              |
+| `campaign_id`        | Integer |               | Overwrites `campaign`                                                                   |
+| `payment_instrument` | String  | `Credit Card` | Supported methods: `Credit Card`, `OOFF`, `PayPal`, `Sofortüberweisung`, `EPS`          |
+| `total_amount`*      | Float   |               | Format: `0.00`, amount of donation                                                      |
+| `currency`           | String  | `EUR`         |                                                                                         |
+| `financial_type_id`  | Integer | `1`           | 1 = Donation, 2 = Member Dues                                                           |
+| `source`             | String  | `OSF`         | Source of the donation (not used yet)                                                   |
+| `iban`*              | String  |               | IBAN (only for payment_instrument=`OOFF`)                                               |
+| `bic`                | String  |               | BIC (only for payment_instrument=`OOFF`)                                                |
+| `gp_iban`            | String  |               | IBAN for Organisation account, will be created, if not exist                            |
+| `trxn_id`            | String  |               | Transaction-ID for donation, if payment_instrument is not `OOFF`. Unique                |
+| `utm_source`         | String  |               | UTM Source. Identifies which site sent the traffic                                      |
+| `utm_medium`         | String  |               | UTM Medium. Identifies what type of link was used                                       |
+| `utm_campaign`       | String  |               | UTM Campaign. Identifies a specific promotion or strategic campaign                     |
+| `utm_content`        | String  |               | UTM Content. Identifies what specifically was clicked to bring the user to the site     |
+| `utm_id`             | String  |               | UTM Id. Identification parameter used to track campaign performance in Google Analytics |
+| `utm_term`           | String  |               | UTM Term. Identifies search terms                                                       |
+| `failed`             | Boolean | false         | Mark donation as failed in order to accept failed donation attempts                     |
+| `cancel_reason`      | String  |               | Cancel reason of failed donation                                                        |
 <small>**\* mandatory field**</small>
 
 #### Return Value
@@ -265,26 +267,28 @@ the Membership-ID in the Field `id`.
 
 #### Parameters
 
-| Field (required) | Type    | Default    | Description                         |
-| ---------------  | ------- | ---------- | ----------------------------------- |
-| `contact_id`*              | Integer | | CiviCRM Contact ID |
-| `campaign`                 | String  | | External ID for membership source campaign |
-| `campaign_id`              | Integer | | Overwrites `campaign` |
-| `frequency`*               | Integer | | Number of debits a year for this membership (must always be 12 for PSP memberships!) |
-| `amount`*                  | Float   | | Amount for each debit, format: `0.00` |
-| `currency`                 | String  | CiviCRM default |  |
-| `membership_type_id`       | Integer | Value of the `gpapi_membership_type_id` CiviCRM setting (defaults to `1`) | CiviCRM Membership Type ID (get the IDs from the CRM) |
-| `iban`*                    | String  | | IBAN or PSP payment token (e.g. Adyen `shopperReference`) |
-| `bic`[^2]                  | String  | | BIC or PSP account name (e.g. Adyen merchant name) |
-| `payment_received`         | Boolean | `false` | If `true`, create a contribution for the first payment and move the next debit about one month further (ONLY to be used for PSP memberships!) |
-| `payment_service_provider` | String  | `SEPA` | Choose from: `adyen` or `payu`  |
-| `trxn_id`                  | String  | | Transaction-ID from donation if `payment_received` = `true`, Unique field |
-| `payment_instrument`       | String  | `RCUR` | If sending PSP-Membership choose: `Credit Card`, `PayPal`, `Sofortüberweisung`, `EPS`, if SEPA-Membership choose: `RCUR` |
-| `referrer_contact_id`      | Integer | | CiviCRM Contact ID of the Referrer (MemberGetMember programme). Invalid values will be accepted and logged for further checks |
-| `utm_source`               | String  | | UTM Source. Identifies which site sent the traffic |
-| `utm_medium`               | String  | | UTM Medium. Identifies what type of link was used |
-| `utm_campaign`             | String  | | UTM Campaign. Identifies a specific promotion or strategic campaign |
-| `utm_content`              | String  | | UTM Content. Identifies what specifically was clicked to bring the user to the site |
+| Field (required)           | Type    | Default                                                                   | Description                                                                                                                                   |
+|----------------------------| ------- |---------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `contact_id`*              | Integer |                                                                           | CiviCRM Contact ID                                                                                                                            |
+| `campaign`                 | String  |                                                                           | External ID for membership source campaign                                                                                                    |
+| `campaign_id`              | Integer |                                                                           | Overwrites `campaign`                                                                                                                         |
+| `frequency`*               | Integer |                                                                           | Number of debits a year for this membership (must always be 12 for PSP memberships!)                                                          |
+| `amount`*                  | Float   |                                                                           | Amount for each debit, format: `0.00`                                                                                                         |
+| `currency`                 | String  | CiviCRM default                                                           |                                                                                                                                               |
+| `membership_type_id`       | Integer | Value of the `gpapi_membership_type_id` CiviCRM setting (defaults to `1`) | CiviCRM Membership Type ID (get the IDs from the CRM)                                                                                         |
+| `iban`*                    | String  |                                                                           | IBAN or PSP payment token (e.g. Adyen `shopperReference`)                                                                                     |
+| `bic`[^2]                  | String  |                                                                           | BIC or PSP account name (e.g. Adyen merchant name)                                                                                            |
+| `payment_received`         | Boolean | `false`                                                                   | If `true`, create a contribution for the first payment and move the next debit about one month further (ONLY to be used for PSP memberships!) |
+| `payment_service_provider` | String  | `SEPA`                                                                    | Choose from: `adyen` or `payu`                                                                                                                |
+| `trxn_id`                  | String  |                                                                           | Transaction-ID from donation if `payment_received` = `true`, Unique field                                                                     |
+| `payment_instrument`       | String  | `RCUR`                                                                    | If sending PSP-Membership choose: `Credit Card`, `PayPal`, `Sofortüberweisung`, `EPS`, if SEPA-Membership choose: `RCUR`                      |
+| `referrer_contact_id`      | Integer |                                                                           | CiviCRM Contact ID of the Referrer (MemberGetMember programme). Invalid values will be accepted and logged for further checks                 |
+| `utm_source`               | String  |                                                                           | UTM Source. Identifies which site sent the traffic                                                                                            |
+| `utm_medium`               | String  |                                                                           | UTM Medium. Identifies what type of link was used                                                                                             |
+| `utm_campaign`             | String  |                                                                           | UTM Campaign. Identifies a specific promotion or strategic campaign                                                                           |
+| `utm_content`              | String  |                                                                           | UTM Content. Identifies what specifically was clicked to bring the user to the site                                                           |
+| `utm_id`                   | String  |                                                                           | UTM Id. Identification parameter used to track campaign performance in Google Analytics                                                       |
+| `utm_term `                | String  |                                                                           | UTM Term. Identifies search terms                                                                                                             |
 <small>**\* mandatory field**</small>
 
 [^2]:
