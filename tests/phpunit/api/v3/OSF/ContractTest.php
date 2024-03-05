@@ -71,6 +71,8 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
       'utm_content'              => 'UTM content',
       'utm_medium'               => 'Phone',
       'utm_source'               => 'Unknown',
+      'utm_term'                 => 'Unknown',
+      'utm_id'                   => 'Unknown',
     ];
 
     $result = $this->callAPISuccess('OSF', 'contract', $osf_contract_params);
@@ -170,7 +172,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     // Assert UTM data has been added
 
     $sign_activity = Api4\Activity::get(FALSE)
-      ->addSelect('utm.utm_campaign', 'utm.utm_content', 'utm.utm_medium', 'utm.utm_source')
+      ->addSelect('utm.utm_campaign', 'utm.utm_content', 'utm.utm_medium', 'utm.utm_source', 'utm.utm_term', 'utm.utm_id')
       ->addWhere('activity_type_id:name', '=', 'Contract_Signed')
       ->addWhere('source_record_id', '=', $membership['id'])
       ->execute()
@@ -180,6 +182,8 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals('UTM content', $sign_activity['utm.utm_content']);
     $this->assertEquals('Phone', $sign_activity['utm.utm_medium']);
     $this->assertEquals('Unknown', $sign_activity['utm.utm_source']);
+    $this->assertEquals('Unknown', $sign_activity['utm.utm_id']);
+    $this->assertEquals('Unknown', $sign_activity['utm.utm_term']);
 
     // Assert 'Referrer of' relationship has been created
 

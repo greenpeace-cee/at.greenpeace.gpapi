@@ -275,6 +275,16 @@ function _civicrm_api3_o_s_f_donation_spec(&$params) {
     'title' => 'UTM Content',
     'api.required' => 0,
   ];
+  $params['utm_term'] = [
+    'name' => 'utm_term',
+    'title' => 'UTM Term',
+    'api.required' => 0,
+  ];
+  $params['utm_id'] = [
+    'name' => 'utm_id',
+    'title' => 'UTM Id',
+    'api.required' => 0,
+  ];
 
   // Accept failed donation attempts GP-13219
   $params['failed'] = [

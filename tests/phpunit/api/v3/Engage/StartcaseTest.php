@@ -77,6 +77,8 @@ class api_v3_Engage_StartcaseTest extends api_v3_Engage_EngageTestBase {
       'utm_content'  => "utm_content_$randomID",
       'utm_medium'   => "utm_medium_$randomID",
       'utm_source'   => "utm_source_$randomID",
+      'utm_id'       => "utm_id_$randomID",
+      'utm_term'     => "utm_term_$randomID",
     ])['id'];
 
     $openCaseActivity = Api4\Activity::get(FALSE)
@@ -84,6 +86,8 @@ class api_v3_Engage_StartcaseTest extends api_v3_Engage_EngageTestBase {
         'utm.utm_campaign',
         'utm.utm_content',
         'utm.utm_medium',
+        'utm.utm_term',
+        'utm.utm_id',
         'utm.utm_source'
       )
       ->setJoin([
@@ -114,6 +118,16 @@ class api_v3_Engage_StartcaseTest extends api_v3_Engage_EngageTestBase {
     $this->assertEquals(
       "utm_source_$randomID",
       $openCaseActivity['utm.utm_source']
+    );
+
+    $this->assertEquals(
+      "utm_id_$randomID",
+      $openCaseActivity['utm.utm_id']
+    );
+
+    $this->assertEquals(
+      "utm_term_$randomID",
+      $openCaseActivity['utm.utm_term']
     );
   }
 

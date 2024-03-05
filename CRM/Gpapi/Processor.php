@@ -392,7 +392,7 @@ class CRM_Gpapi_Processor {
    * @return array all non-empty UTM tracking parameters
    */
   public static function extractUTMData(array $params) {
-    $utm_keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
+    $utm_keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_id', 'utm_term'];
     $utm_params = [];
     foreach ($utm_keys as $utm_key) {
       if (!empty($params[$utm_key])) {

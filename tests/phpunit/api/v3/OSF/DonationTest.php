@@ -103,6 +103,8 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
       'utm_medium'   => 'organic',
       'utm_campaign' =>'for_don',
       'utm_content'  => 'waldschutz-eu',
+      'utm_term'     => 'utm_term_value',
+      'utm_id'       => 'utm_id_value',
       'contact_id'   => $this->contact['id'],
       'total_amount' => "52.99",
       'trxn_id'      => '1234',
@@ -119,6 +121,8 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertContains('organic', $activity, 'Activity does not contains utm_medium');
     $this->assertContains('for_don', $activity, 'Activity does not contains utm_campaign');
     $this->assertContains('waldschutz-eu', $activity, 'Activity does not contains utm_content');
+    $this->assertContains('utm_term_value', $activity, 'Activity does not contains utm_term');
+    $this->assertContains('utm_id_value', $activity, 'Activity does not contains utm_id');
   }
 
   public function testFinancialTypeMemberDues()
@@ -419,6 +423,24 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
       'custom_group_id' => 'utm',
       'name' => 'utm_source',
       'label' => 'Source',
+      'data_type' => 'String',
+      'html_type' => 'Text',
+      'is_active' => 1
+    ]);
+
+    $this->callApiSuccess('CustomField', 'create', [
+      'custom_group_id' => 'utm',
+      'name' => 'utm_id',
+      'label' => 'Id',
+      'data_type' => 'String',
+      'html_type' => 'Text',
+      'is_active' => 1
+    ]);
+
+    $this->callApiSuccess('CustomField', 'create', [
+      'custom_group_id' => 'utm',
+      'name' => 'utm_term',
+      'label' => 'Term',
       'data_type' => 'String',
       'html_type' => 'Text',
       'is_active' => 1
