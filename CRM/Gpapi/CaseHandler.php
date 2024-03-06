@@ -42,6 +42,7 @@ class CRM_Gpapi_CaseHandler {
   public static $closedStatuses = [
     2 => 1, // Resolved => Ongoing
     9 => 5, // Rejecter => Enquirer
+    4 => 5, // Pre-Enquirer (Pre-Inquirer) => Enquirer
   ];
 
   /**
