@@ -12,7 +12,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
 
   private $referrer;
 
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
 
     $this->createReferrer();

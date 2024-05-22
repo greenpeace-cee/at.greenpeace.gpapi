@@ -11,7 +11,7 @@ class api_v3_Engage_SignpetitionTest extends api_v3_Engage_EngageTestBase {
   private $survey;
   private static $encounterMediumIDs;
 
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
 
     $this->campaign = self::createCampaign('TestCampaign');

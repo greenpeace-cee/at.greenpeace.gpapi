@@ -10,7 +10,7 @@ class api_v3_Engage_StartcaseTest extends api_v3_Engage_EngageTestBase {
   private static $activityTypeIDs;
   private static $encounterMediumIDs;
 
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
 
     self::$activityTypeIDs = [

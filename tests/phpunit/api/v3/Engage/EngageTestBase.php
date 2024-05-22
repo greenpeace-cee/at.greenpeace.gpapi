@@ -30,7 +30,7 @@ class api_v3_Engage_EngageTestBase
       ->apply(TRUE);
   }
 
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
 
     $session = CRM_Core_Session::singleton();
@@ -52,7 +52,7 @@ class api_v3_Engage_EngageTestBase
     $this->contact = self::createTestContact();
   }
 
-  public function tearDown() {
+  public function tearDown(): void {
     parent::tearDown();
   }
 
