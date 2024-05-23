@@ -112,7 +112,7 @@ class api_v3_OSF_ContractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals('month', $recurring_contribution['frequency_unit']);
     $this->assertEquals('Credit Card', $recurring_contribution['payment_instrument_id:name']);
     $this->assertEquals('OSF-TOKEN-PRODUCTION-00001-EPS', $recurring_contribution['processor_id']);
-    $this->assertEquals('13', $rc_start_date->format('d'));
+    $this->assertEquals($today->format('d'), $rc_start_date->format('d'));
 
     // Assert that a payment token has been created
 

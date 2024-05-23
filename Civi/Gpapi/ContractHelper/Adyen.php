@@ -3,6 +3,7 @@
 namespace Civi\Gpapi\ContractHelper;
 
 use \Civi\Api4;
+use \Civi\Core\Event\GenericHookEvent;
 use \CRM_Utils_Array;
 use \DateInterval;
 use \DateTime;
@@ -59,6 +60,13 @@ class Adyen extends AbstractHelper {
 
     $start_date= date('Ymd', strtotime($event_date));
 
+    $default_cycle_day = min(
+      (int) (new DateTimeImmutable($event_date))->format('d'),
+      max(\CRM_Contract_PaymentAdapter_Adyen::cycleDays())
+    );
+
+    $cycle_day = isset($cycle_day) ? $cycle_day : $default_cycle_day;
+
     // --- API options --- //
 
     $sequential = (int) !empty($params['sequential']);
@@ -91,6 +99,7 @@ class Adyen extends AbstractHelper {
       'source'                                  => 'OSF',
       'start_date'                              => $start_date,
     ];
+
     $contract_result = civicrm_api3('Contract', 'create', $create_contract_params);
 
     $this->loadContract($contract_result['id']);
@@ -194,6 +203,22 @@ class Adyen extends AbstractHelper {
     ];
 
     civicrm_api3('Payment', 'create', $create_payment_params);
+
+    Api4\ContributionRecur::update(FALSE)
+      ->addWhere('id', '=', $this->recurringContribution['id'])
+      ->addValue('start_date', $psp_result_data['eventDate'])
+      ->execute();
+
+    $hookEvent = GenericHookEvent::create([
+      'contribution_recur_id' => $this->recurringContribution['id'],
+      'cycle_day'             => $this->recurringContribution['cycle_day'],
+      'frequency_interval'    => $this->recurringContribution['frequency_interval'],
+      'frequency_unit'        => $this->recurringContribution['frequency_unit'],
+      'newDate'               => $this->recurringContribution['next_sched_contribution_date'],
+      'originalDate'          => $this->recurringContribution['next_sched_contribution_date'],
+    ]);
+
+    \Civi::dispatcher()->dispatch('civi.recur.nextschedcontributiondatealter', $hookEvent);
   }
 
   protected function getPaymentDetails() {
