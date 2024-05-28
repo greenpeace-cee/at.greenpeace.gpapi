@@ -35,7 +35,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
   /**
    * The setup() method is executed before the test is executed (optional).
    */
-  public function setUp()
+  public function setUp(): void
   {
     $this->contact = reset($this->callAPISuccess('Contact', 'create', [
       'email'        => 'test@example.org',
@@ -57,7 +57,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
    * The tearDown() method is executed after the test was executed (optional)
    * This can be used for cleanup.
    */
-  public function tearDown()
+  public function tearDown(): void
   {
     parent::tearDown();
   }

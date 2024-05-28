@@ -33,7 +33,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
       ->apply(TRUE);
   }
 
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
 
     $this->defaultErrorHandler = set_error_handler(function ($errno, $errstr) {
@@ -58,7 +58,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
     $config->userPermissionClass->permissions = ['access OSF API'];
   }
 
-  public function tearDown() {
+  public function tearDown(): void {
     CRM_Gpapi_Identitytracker_Configuration::resetInstance();
 
     set_error_handler($this->defaultErrorHandler, E_USER_DEPRECATED);
