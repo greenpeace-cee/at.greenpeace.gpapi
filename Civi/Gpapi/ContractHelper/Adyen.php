@@ -206,7 +206,7 @@ class Adyen extends AbstractHelper {
 
     Api4\ContributionRecur::update(FALSE)
       ->addWhere('id', '=', $this->recurringContribution['id'])
-      ->addValue('start_date', $psp_result_data['eventDate'])
+      ->addValue('start_date', $psp_result_data['eventDate'] ?? date('Y-m-d'))
       ->execute();
 
     $hookEvent = GenericHookEvent::create([
