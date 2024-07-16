@@ -51,11 +51,17 @@ class Adyen extends AbstractHelper {
     $shopper_reference = CRM_Utils_Array::value(
       'recurring.shopperReference',
       $additional_psp_data
+    ) ?? CRM_Utils_Array::value(
+      'shopperReference',
+      $additional_psp_data
     );
 
     $stored_pm_id = CRM_Utils_Array::value(
       'recurring.recurringDetailReference',
       $additional_psp_data
+    ) ?? CRM_Utils_Array::value(
+      'pspReference',
+      $psp_result_data
     );
 
     $start_date= date('Ymd', strtotime($event_date));
