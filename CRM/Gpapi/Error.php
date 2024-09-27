@@ -5,6 +5,12 @@ class CRM_Gpapi_Error {
   const IMPORT_ERROR_ACTIVITY_TYPE = 'streetimport_error';
 
   public static function create($endpoint, $message, $context) {
+    if ($message instanceof Exception) {
+      $exception = $message;
+      $message = $exception->getMessage() . ' in ' . $exception->getFile() . ':' . $exception->getLine();
+      $context = ['parameters' => $context];
+      $context['trace'] = $exception->getTrace();
+    }
     Civi::log()->error("{$endpoint}: {$message}", $context);
     $params = [
       'activity_type_id'   => self::IMPORT_ERROR_ACTIVITY_TYPE,
