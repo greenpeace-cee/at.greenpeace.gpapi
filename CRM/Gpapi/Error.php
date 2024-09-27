@@ -5,6 +5,7 @@ class CRM_Gpapi_Error {
   const IMPORT_ERROR_ACTIVITY_TYPE = 'streetimport_error';
 
   public static function create($endpoint, $message, $context) {
+    Civi::log()->error("{$endpoint}: {$message}", $context);
     $params = [
       'activity_type_id'   => self::IMPORT_ERROR_ACTIVITY_TYPE,
       'subject'            => 'Custom API: ' . $endpoint . ' Error',
