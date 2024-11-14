@@ -1,6 +1,6 @@
 <?php
 
-namespace Civi\Gpapi\ContractHelper;
+namespace Civi\Gpapi\Api;
 
 abstract class ApiBase {
 

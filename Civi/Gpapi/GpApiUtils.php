@@ -4,6 +4,7 @@ namespace Civi\Gpapi;
 
 use Civi\Api4\Email;
 use Civi\Api4\Group;
+use Civi\Api4\OptionValue;
 
 class GpApiUtils {
 
@@ -21,7 +22,7 @@ class GpApiUtils {
     return '';
   }
 
-  public static function findGroupContactTitle($groupContactId): string {
+  public static function getGroupContactTitle($groupContactId): string {
     $groups = Group::get(FALSE)
       ->addSelect('id', 'title')
       ->addWhere('id', '=', $groupContactId)
@@ -34,12 +35,18 @@ class GpApiUtils {
     return '';
   }
 
-  public static function getOptionValueValue($optionGroupName, $optionValueName): string {
-    return civicrm_api3('OptionValue', 'getvalue', [
-      'return' => 'value',
-      'option_group_id' => $optionGroupName,
-      'name' => $optionValueName,
-    ]);
+  public static function getOptionValueLabel($optionGroupName, $optionValueName): string {
+    $optionValues = OptionValue::get(FALSE)
+      ->addSelect('label')
+      ->addWhere('option_group_id:name', '=', $optionGroupName)
+      ->addWhere('name', '=', $optionValueName)
+      ->setLimit(1)
+      ->execute();
+    foreach ($optionValues as $optionValue) {
+      return $optionValue['label'];
+    }
+
+    return '';
   }
 
 }

@@ -59,7 +59,7 @@ function _civicrm_api3_o_s_f_order_process($params) {
       return civicrm_api3_create_error("You must not provide both 'linked_contribution' and 'linked_membership' via OSF.order API.");
     }
 
-    CRM_Gpapi_Processor::identifyContactID($params['contact_id']);
+    $params['contact_id'] = CRM_Gpapi_Processor::identifyContactID($params['contact_id']);
 
     if (empty($params['contact_id'])) {
       return civicrm_api3_create_error('No contact found.');

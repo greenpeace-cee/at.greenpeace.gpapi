@@ -12,35 +12,20 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
-use Civi\Gpapi\ContractHelper\NewsletterUnsubscribe;
+use Civi\Gpapi\Api\NewsletterUnsubscribe;
 
-/**
- * Process Newsletter newsletter subscription
- *
- * @param see specs below (_civicrm_api3_newsletter_unsubscribe_spec)
- *
- * @return array API result array
- * @access public
- * @throws \Exception
- */
 function civicrm_api3_newsletter_unsubscribe($params) {
   // Use default error handler. See GP-23825
   $tempErrorScope = CRM_Core_TemporaryErrorScope::useException();
 
   try {
-    return (new NewsletterUnsubscribe($params))->getResult();
+    return civicrm_api3_create_success((new NewsletterUnsubscribe($params))->getResult());
   } catch (Exception $e) {
     CRM_Gpapi_Error::create('Newsletter.unsubscribe', $e, $params);
     throw $e;
   }
 }
 
-/**
- * Adjust Metadata for Payment action
- *
- * The metadata is used for setting defaults, documentation & validation
- * @param array $params array or parameters determined by getfields
- */
 function _civicrm_api3_newsletter_unsubscribe_spec(&$params) {
   $params['contact_id'] = [
     'name' => 'contact_id',
