@@ -4,6 +4,24 @@ use CRM_Gpapi_ExtensionUtil as E;
 
 return [
   [
+    'name' => 'OptionValue_Optout',
+    'entity' => 'OptionValue',
+    'cleanup' => 'never',
+    'update' => 'always',
+    'params' => [
+      'version' => 4,
+      'values' => [
+        'option_group_id.name' => 'activity_type',
+        'label' => E::ts('Opt-Out'),
+        'name' => 'Optout',
+      ],
+      'match' => [
+        'name',
+        'option_group_id',
+      ],
+    ],
+  ],
+  [
     'name' => 'CustomGroup_optout_information',
     'entity' => 'CustomGroup',
     'cleanup' => 'never',
