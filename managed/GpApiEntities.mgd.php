@@ -14,8 +14,8 @@ return [
         'name' => 'optout_information',
         'title' => E::ts('Opt-Out Information'),
         'extends' => 'Activity',
-        'extends_entity_column_value' => [
-          '135',
+        'extends_entity_column_value:name' => [
+          'Optout',
         ],
         'style' => 'Inline',
         'weight' => 20,
