@@ -54,7 +54,7 @@ function _civicrm_api3_o_s_f_donation_process($params) {
       return civicrm_api3_create_error("No 'contact_id' provided.");
     }
 
-    CRM_Gpapi_Processor::identifyContactID($params['contact_id']);
+    $params['contact_id'] = CRM_Gpapi_Processor::identifyContactID($params['contact_id']);
 
     if (empty($params['contact_id'])) {
       return civicrm_api3_create_error('No contact found.');
