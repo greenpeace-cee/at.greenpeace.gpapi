@@ -158,8 +158,27 @@ return [
       'version' => 4,
       'values' => [
         'option_group_id.name' => 'optout_source',
-        'label' => E::ts('Engagement Tool'),
+        'label' => E::ts('Mailingwork'),
         'value' => '1',
+        'name' => 'Mailingwork',
+      ],
+      'match' => [
+        'name',
+        'option_group_id'
+      ],
+    ],
+  ],
+  [
+    'name' => 'OptionGroup_optout_source_OptionValue_EngagementTool',
+    'entity' => 'OptionValue',
+    'cleanup' => 'never',
+    'update' => 'always',
+    'params' => [
+      'version' => 4,
+      'values' => [
+        'option_group_id.name' => 'optout_source',
+        'label' => E::ts('Engagement Tool'),
+        'value' => '2',
         'name' => 'engagement_tool',
       ],
       'match' => [
