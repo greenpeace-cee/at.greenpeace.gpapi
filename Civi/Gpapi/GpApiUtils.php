@@ -29,7 +29,7 @@ class GpApiUtils {
       ->setLimit(1)
       ->execute();
     foreach ($groups as $group) {
-      return $group['title'];
+      return "Opt-Out from \"{$group['title']}\" via Engagement Tool";
     }
 
     return '';
@@ -43,7 +43,7 @@ class GpApiUtils {
       ->setLimit(1)
       ->execute();
     foreach ($optionValues as $optionValue) {
-      return $optionValue['label'];
+      return 'Added "' . $optionValue['label'] . '" via Engagement Tool';
     }
 
     return '';

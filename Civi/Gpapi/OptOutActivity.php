@@ -32,7 +32,7 @@ class OptOutActivity {
       ->addValue('optout_information.optout_identifier', !empty($mailingId) ? $mailingId : '')
       ->addValue('activity_date_time', (new DateTime())->format('Y-m-d H:i:s'))
       ->addValue('optout_information.optout_item', $email)
-      ->addValue('subject', 'Added "' . $subject . '" via Engagement Tool');
+      ->addValue('subject', $subject);
 
     $activity->addChain('activity_contact', ActivityContact::create(FALSE)
       ->addValue('activity_id', '$id')
@@ -46,7 +46,7 @@ class OptOutActivity {
 
     $mailing = self::findMailing($mailingId);
     if (!empty($mailing)) {
-      $parentActivity = self::findParentActivity($mailingId, $contactId, $email);
+      $parentActivity = self::findParentActivity($mailing['id'], $contactId, $email);
       if (!empty($parentActivity['id'])) {
         $activity->addValue('activity_hierarchy.parent_activity_id', $parentActivity['id']);
       }
@@ -133,6 +133,9 @@ class OptOutActivity {
   }
 
   private static function findMailing($mailingId): ?array {
+    if (empty($mailingId)) {
+      return NULL;
+    }
     try {
       $mailing = reset(civicrm_api3('MailingworkMailing', 'get', [
         'return' => ['id'],
