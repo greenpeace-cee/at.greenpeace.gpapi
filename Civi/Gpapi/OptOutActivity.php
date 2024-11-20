@@ -29,10 +29,13 @@ class OptOutActivity {
       ->addValue('medium_id:name', 'web')
       ->addValue('optout_information.optout_source:name', 'engagement_tool')
       ->addValue('optout_information.optout_type:name', $optOutType)
-      ->addValue('optout_information.optout_identifier', !empty($mailingId) ? $mailingId : '')
       ->addValue('activity_date_time', (new DateTime())->format('Y-m-d H:i:s'))
       ->addValue('optout_information.optout_item', $email)
       ->addValue('subject', $subject);
+
+    if (!empty($mailingId)) {
+      $activity->addValue('optout_information.optout_identifier', $mailingId);
+    }
 
     $activity->addChain('activity_contact', ActivityContact::create(FALSE)
       ->addValue('activity_id', '$id')
