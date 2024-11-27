@@ -33,10 +33,6 @@ class OptOutActivity {
       ->addValue('optout_information.optout_item', $email)
       ->addValue('subject', $subject);
 
-    if (!empty($mailingId)) {
-      $activity->addValue('optout_information.optout_identifier', $mailingId);
-    }
-
     $activity->addChain('activity_contact', ActivityContact::create(FALSE)
       ->addValue('activity_id', '$id')
       ->addValue('contact_id', $contactId)
@@ -49,6 +45,7 @@ class OptOutActivity {
 
     $mailing = self::findMailing($mailingId);
     if (!empty($mailing)) {
+      $activity->addValue('optout_information.optout_identifier', $mailing['id']);
       $parentActivity = self::findParentActivity($mailing['id'], $contactId, $email);
       if (!empty($parentActivity['id'])) {
         $activity->addValue('activity_hierarchy.parent_activity_id', $parentActivity['id']);
