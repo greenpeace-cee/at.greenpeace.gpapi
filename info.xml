@@ -9,9 +9,9 @@
     <email>endres@systopia.de</email>
   </maintainer>
   <urls>
-    <url desc="Main Extension Page">https://github.com/systopia/at.greenpeace.uimods</url>
-    <url desc="Documentation">https://github.com/systopia/at.greenpeace.uimods</url>
-    <url desc="Support">https://github.com/systopia/at.greenpeace.uimods/issues</url>
+    <url desc="Main Extension Page">https://github.com/greenpeace-cee/at.greenpeace.gpapi</url>
+    <url desc="Documentation">https://github.com/greenpeace-cee/at.greenpeace.gpapi</url>
+    <url desc="Support">https://github.com/greenpeace-cee/at.greenpeace.gpapi/issues</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
   <releaseDate>2024-11-27</releaseDate>
