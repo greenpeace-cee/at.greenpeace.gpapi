@@ -45,9 +45,20 @@ function gpapi_civicrm_enable() {
  * Define custom (Drupal) permissions
  */
 function gpapi_civicrm_permission(&$permissions) {
-  $permissions['access OSF API']        = 'GP-API: access OSF API';
-  $permissions['access Engage API']     = 'GP-API: access Engage API';
-  $permissions['access Newsletter API'] = 'GP-API: access Newsletter API';
+  $permissions['access OSF API'] = [
+    'label' => 'GP-API: access OSF API',
+    'description' => 'GP-API: access OSF API',
+  ];
+
+  $permissions['access Engage API'] = [
+    'label' => 'GP-API: access Engage API',
+    'description' => 'GP-API: access Engage API',
+  ];
+
+  $permissions['access Newsletter API'] = [
+    'label' => 'GP-API: access Newsletter API',
+    'description' => 'GP-API: access Newsletter API',
+  ];
 }
 
 /**
