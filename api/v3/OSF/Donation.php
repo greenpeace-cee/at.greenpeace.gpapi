@@ -325,8 +325,8 @@ function _civicrm_api3_o_s_f_donation_create_nonsepa_contribution($params, $paym
   }
 
   $psp_result_data = $params['psp_result_data'] ?? [];
-  $params['trxn_id'] = $psp_result_data['pspReference'] ?? $params['trxn_id'];
-  $params['invoice_id'] = $psp_result_data['merchantReference'] ?? NULL;
+  $params['trxn_id'] = $psp_result_data['pspReference'] ?? NULL;
+  $params['invoice_id'] = $psp_result_data['merchantReference'] ?? $params['trxn_id'];
 
   $order = civicrm_api3('Order', 'create', [
     'campaign_id'           => CRM_Utils_Array::value('campaign_id', $params),
