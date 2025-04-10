@@ -26,7 +26,6 @@ class api_v3_OSF_GetcontractTest extends api_v3_OSF_ContractTestBase {
     $create_contract_params = [
       'campaign_id'                          => $campaign['id'],
       'contact_id'                           => $contact['id'],
-      'debug'                                => FALSE,
       'join_date'                            => $join_date,
       'membership_type_id'                   => $membership_type_id,
       'payment_method.adapter'               => 'sepa_mandate',
