@@ -73,13 +73,13 @@ jobs:
           PATH="/home/runner/buildkit/bin:$PATH"
           cd "$EXT_DIR"
           cp -R "$GITHUB_WORKSPACE/at.greenpeace.gpapi" "$EXT_DIR/at.greenpeace.gpapi"
-          git clone https://github.com/systopia/de.systopia.xcm.git
+          git clone https://github.com/greenpeace-cee/de.systopia.xcm.git
           git clone https://github.com/greenpeace-cee/com.cividesk.normalize.git
-          git clone https://github.com/Project60/org.project60.sepa.git
+          git clone https://github.com/greenpeace-cee/org.project60.sepa.git
           git clone https://github.com/systopia/de.systopia.pspsepa.git
           git clone https://github.com/Project60/org.project60.banking.git
           git clone https://github.com/greenpeace-cee/de.systopia.contract.git
-          git clone https://lab.civicrm.org/extensions/mjwshared.git -b 1.2.22
+          git clone https://github.com/greenpeace-cee/mjwshared.git
           git clone https://github.com/greenpeace-cee/adyen.git -b main
           git clone https://github.com/greenpeace-cee/de.systopia.identitytracker.git
           cv en adyen at.greenpeace.gpapi
