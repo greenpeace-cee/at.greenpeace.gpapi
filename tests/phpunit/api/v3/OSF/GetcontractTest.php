@@ -43,6 +43,8 @@ class api_v3_OSF_GetcontractTest extends api_v3_OSF_ContractTestBase {
       'payment_method.type'                  => 'RCUR',
       'source'                               => 'OSF',
       'start_date'                           => $join_date,
+      'debug' => 1,
+      'options' => ['debug' => 1],
     ];
 
     $contract_result = civicrm_api3('Contract', 'create', $create_contract_params);
