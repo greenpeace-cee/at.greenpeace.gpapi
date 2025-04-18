@@ -42,10 +42,6 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
 
     self::createRequiredOptionValues();
     self::createMembershipTypes();
-    self::createUTMCustomFields();
-    self::createReferralInfoCustomFields();
-    self::createReferrerOfRelationship();
-
     $this->createAdyenPaymentProcessor();
     $this->createDefaultCampaign();
     $this->createDefaultContact();
@@ -62,7 +58,6 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
     CRM_Gpapi_Identitytracker_Configuration::resetInstance();
 
     set_error_handler($this->defaultErrorHandler, E_USER_DEPRECATED);
-
     parent::tearDown();
   }
 
@@ -184,111 +179,12 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
       ->execute();
   }
 
-  private static function createReferralInfoCustomFields() {
-    Api4\CustomGroup::create(FALSE)
-      ->addValue('extends'   , 'Membership')
-      ->addValue('name'      , 'membership_referral')
-      ->addValue('table_name', 'civicrm_value_membership_referral')
-      ->addValue('title'     , 'Referral Information')
-      ->execute();
-
-    Api4\CustomField::create(FALSE)
-      ->addValue('column_name'         , 'membership_referrer')
-      ->addValue('custom_group_id:name', 'membership_referral')
-      ->addValue('data_type'           , 'ContactReference')
-      ->addValue('html_type'           , 'Autocomplete-Select')
-      ->addValue('is_required'         , FALSE)
-      ->addValue('label'               , 'Referrer')
-      ->addValue('name'                , 'membership_referrer')
-      ->execute();
-  }
-
-  private static function createReferrerOfRelationship() {
-    Api4\RelationshipType::create(FALSE)
-      ->addValue('contact_type_a', 'Individual')
-      ->addValue('contact_type_b', 'Individual')
-      ->addValue('label_a_b', 'Referrer of')
-      ->addValue('label_b_a', 'Referrer by')
-      ->addValue('name_a_b', 'Referrer of')
-      ->addValue('name_b_a', 'Referrer by')
-      ->execute();
-  }
-
   private static function createRequiredOptionValues() {
     Api4\OptionValue::create(FALSE)
       ->addValue('is_active', TRUE)
       ->addValue('label', 'Import Error')
       ->addValue('name', 'streetimport_error')
       ->addValue('option_group_id.name', 'activity_type')
-      ->execute();
-  }
-
-  private static function createUTMCustomFields() {
-    Api4\CustomGroup::create(FALSE)
-      ->addValue('extends'    , 'Activity')
-      ->addValue('name'       , 'utm')
-      ->addValue('table_name' , 'civicrm_value_utm')
-      ->addValue('title'      , 'UTM Tracking Information')
-      ->execute();
-
-    Api4\CustomField::create(FALSE)
-      ->addValue('column_name'         , 'utm_content')
-      ->addValue('custom_group_id:name', 'utm')
-      ->addValue('data_type'           , 'String')
-      ->addValue('html_type'           , 'Text')
-      ->addValue('is_required'         , FALSE)
-      ->addValue('label'               , 'Content')
-      ->addValue('name'                , 'utm_content')
-      ->execute();
-
-    Api4\CustomField::create(FALSE)
-      ->addValue('column_name'         , 'utm_campaign')
-      ->addValue('custom_group_id:name', 'utm')
-      ->addValue('data_type'           , 'String')
-      ->addValue('html_type'           , 'Text')
-      ->addValue('is_required'         , FALSE)
-      ->addValue('label'               , 'Campaign')
-      ->addValue('name'                , 'utm_campaign')
-      ->execute();
-
-    Api4\CustomField::create(FALSE)
-      ->addValue('column_name'         , 'utm_medium')
-      ->addValue('custom_group_id:name', 'utm')
-      ->addValue('data_type'           , 'String')
-      ->addValue('html_type'           , 'Text')
-      ->addValue('is_required'         , FALSE)
-      ->addValue('label'               , 'Medium')
-      ->addValue('name'                , 'utm_medium')
-      ->execute();
-
-    Api4\CustomField::create(FALSE)
-      ->addValue('column_name'         , 'utm_source')
-      ->addValue('custom_group_id:name', 'utm')
-      ->addValue('data_type'           , 'String')
-      ->addValue('html_type'           , 'Text')
-      ->addValue('is_required'         , FALSE)
-      ->addValue('label'               , 'Source')
-      ->addValue('name'                , 'utm_source')
-      ->execute();
-
-    Api4\CustomField::create(FALSE)
-      ->addValue('column_name'         , 'utm_term')
-      ->addValue('custom_group_id:name', 'utm')
-      ->addValue('data_type'           , 'String')
-      ->addValue('html_type'           , 'Text')
-      ->addValue('is_required'         , FALSE)
-      ->addValue('label'               , 'Term')
-      ->addValue('name'                , 'utm_term')
-      ->execute();
-
-    Api4\CustomField::create(FALSE)
-      ->addValue('column_name'         , 'utm_id')
-      ->addValue('custom_group_id:name', 'utm')
-      ->addValue('data_type'           , 'String')
-      ->addValue('html_type'           , 'Text')
-      ->addValue('is_required'         , FALSE)
-      ->addValue('label'               , 'Id')
-      ->addValue('name'                , 'utm_id')
       ->execute();
   }
 

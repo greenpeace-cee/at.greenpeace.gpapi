@@ -27,7 +27,7 @@ class api_v3_Engage_EngageTestBase
       ->install('org.project60.banking')
       ->install('de.systopia.contract')
       ->install('de.systopia.xcm')
-      ->apply(TRUE);
+      ->apply();
   }
 
   public function setUp(): void {
@@ -45,7 +45,7 @@ class api_v3_Engage_EngageTestBase
     Civi::settings()->set('enable_components', $enCompSetting);
 
     self::createRequiredOptionValues();
-    self::createRequiredCustomGroups();
+    self::fixOptionValues();
     self::createRequiredGroups();
     self::createRequiredProfiles();
     $this->caseType = self::defineCaseType();
@@ -72,144 +72,12 @@ class api_v3_Engage_EngageTestBase
     ]);
   }
 
-  private static function createRequiredCustomGroups() {
-    civicrm_api3('CustomGroup', 'create', [
-      'name'       => 'petition_information',
-      'title'      => 'Petition Information',
-      'table_name' => 'civicrm_value_petition_information',
-      'extends'    => 'Activity',
-      'extends_entity_column_value' => [
-        self::getOptionValue('activity_type', 'Petition'),
-      ],
-    ]);
-
-    civicrm_api3('CustomGroup', 'create', [
-      'name'       => 'source_contact_data',
-      'title'      => 'Source Contact Data',
-      'table_name' => 'civicrm_value_source_contact_data',
-      'extends'    => 'Activity',
-      'extends_entity_column_value' => [
-        self::getOptionValue('activity_type', 'anonymisation_request'),
-        self::getOptionValue('activity_type', 'Open Case'),
-        self::getOptionValue('activity_type', 'Petition'),
-        self::getOptionValue('activity_type', 'Ratgeber verschickt'),
-      ],
-    ]);
-
-    $sourceContactDataFields = [
-      [
-        'name'      => 'prefix_id',
-        'label'     => 'Prefix',
-        'data_type' => 'Integer',
-      ],
-      [
-        'name'      => 'gender_id',
-        'label'     => 'Gender',
-        'data_type' => 'Integer',
-      ],
-      [
-        'name'      => 'first_name',
-        'label'     => 'First Name',
-        'data_type' => 'String',
-      ],
-      [
-        'name'      => 'last_name',
-        'label'     => 'Last Name',
-        'data_type' => 'String',
-      ],
-      [
-        'name'      => 'birth_date',
-        'label'     => 'Birth Date',
-        'data_type' => 'String',
-      ],
-      [
-        'name'      => 'bpk',
-        'label'     => 'bpk',
-        'data_type' => 'String',
-      ],
-      [
-        'name'      => 'email',
-        'label'     => 'Email',
-        'data_type' => 'String',
-      ],
-      [
-        'name'      => 'phone',
-        'label'     => 'Phone',
-        'data_type' => 'String',
-      ],
-      [
-        'name'      => 'country_id',
-        'label'     => 'Country',
-        'data_type' => 'Country',
-      ],
-      [
-        'name'      => 'postal_code',
-        'label'     => 'Postal Code',
-        'data_type' => 'String',
-      ],
-      [
-        'name'      => 'city',
-        'label'     => 'City',
-        'data_type' => 'String',
-      ],
-      [
-        'name'      => 'street_address',
-        'label'     => 'Street Address',
-        'data_type' => 'String',
-      ],
-      [
-        'name'      => 'newsletter',
-        'label'     => 'Newsletter Opt-In',
-        'data_type' => 'Boolean',
-      ],
-      [
-        'name'      => 'geoip_country_id',
-        'label'     => 'GeoIP County',
-        'data_type' => 'Country',
-      ],
-    ];
-
-    foreach ($sourceContactDataFields as $fieldData) {
-      $fieldData['custom_group_id'] = 'source_contact_data';
-      $fieldData['column_name'] = $fieldData['name'];
-      $fieldData['is_required'] = 0;
-
-      civicrm_api3('CustomField', 'create', $fieldData);
-    }
-
+  private static function fixOptionValues() {
     civicrm_api3('OptionValue', 'create', [
         'id'     => self::getOptionValueID('activity_type', 'Contribution'),
         'filter' => 0,
     ]);
 
-    civicrm_api3('CustomGroup', 'create', [
-      'name'       => 'utm',
-      'title'      => 'UTM Tracking Information',
-      'table_name' => 'civicrm_value_utm',
-      'extends'    => 'Activity',
-      'extends_entity_column_value' => [
-        self::getOptionValue('activity_type', 'Contract_Signed'),
-        self::getOptionValue('activity_type', 'Contribution'),
-        self::getOptionValue('activity_type', 'Petition'),
-        self::getOptionValue('activity_type', 'Open Case'),
-        self::getOptionValue('activity_type', 'Ratgeber verschickt'),
-        self::getOptionValue('activity_type', 'UTM Tracking'),
-      ],
-    ]);
-
-    $utmFieldNames = ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_id', 'utm_term'];
-
-    foreach ($utmFieldNames as $name) {
-      civicrm_api3('CustomField', 'create', [
-        'custom_group_id' => 'utm',
-        'name'            => $name,
-        'label'           => ucfirst(substr($name, 4)),
-        'column_name'     => $name,
-        'data_type'       => 'String',
-        'text_length'     => 255,
-        'is_required'     => 0,
-      ]);
-    }
   }
 
   private static function createRequiredGroups() {
@@ -227,18 +95,8 @@ class api_v3_Engage_EngageTestBase
       ],
       [
         'option_group_id' => 'activity_type',
-        'name'            => 'Ratgeber verschickt',
-        'label'           => 'Ratgeber verschickt',
-      ],
-      [
-        'option_group_id' => 'activity_type',
         'name'            => 'streetimport_error',
         'label'           => 'Import Error',
-      ],
-      [
-        'option_group_id' => 'activity_type',
-        'name'            => 'UTM Tracking',
-        'label'           => 'UTM Tracking',
       ],
       [
         'option_group_id' => 'case_status',

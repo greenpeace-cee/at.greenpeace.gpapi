@@ -22,8 +22,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
    *
    * See: https://docs.civicrm.org/dev/en/latest/testing/phpunit/#civitest
    */
-  public function setUpHeadless()
-  {
+  public function setUpHeadless() {
     return \Civi\Test::headless()
       ->installMe(__DIR__)
       ->install('org.project60.sepa')
@@ -35,8 +34,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
   /**
    * The setup() method is executed before the test is executed (optional).
    */
-  public function setUp(): void
-  {
+  public function setUp(): void {
     $this->contact = reset($this->callAPISuccess('Contact', 'create', [
       'email'        => 'test@example.org',
       'contact_type' => 'Individual',
@@ -57,13 +55,11 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
    * The tearDown() method is executed after the test was executed (optional)
    * This can be used for cleanup.
    */
-  public function tearDown(): void
-  {
+  public function tearDown(): void {
     parent::tearDown();
   }
 
-  public function testDonationBasic()
-  {
+  public function testDonationBasic() {
     $params = [
       'contact_id' => $this->contact['id'],
       'total_amount' => 100,
@@ -76,8 +72,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertEquals('OSF', $contribution['contribution_source']);
   }
 
-  public function testDonationWithCampaign()
-  {
+  public function testDonationWithCampaign() {
     $campaign = reset($this->callApiSuccess('Campaign', 'create', [
       'title' => "Test Campaign",
       'is_active' => 1,
@@ -95,9 +90,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertEquals(44.44, $contribution['total_amount']);
   }
 
-  public function testDonationWithUtmParams()
-  {
-    $this->setUpCustomGroupUtm();
+  public function testDonationWithUtmParams() {
     $params = [
       'utm_source'   => 'modx',
       'utm_medium'   => 'organic',
@@ -125,8 +118,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertContains('utm_id_value', $activity, 'Activity does not contains utm_id');
   }
 
-  public function testFinancialTypeMemberDues()
-  {
+  public function testFinancialTypeMemberDues() {
     $financial_type_id = 2;
     $this->callApiSuccess('FinancialType', 'create', [
       'id'        => $financial_type_id,
@@ -144,8 +136,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertEquals($financial_type_id, $contribution['financial_type_id']);
   }
 
-  public function testPaymentInstrumentCreditCard()
-  {
+  public function testPaymentInstrumentCreditCard() {
     $json_data = '{"currency":"RON","payment_instrument":"Credit Card","financial_type_id":1,"source":"OSF",
     "total_amount":"60.00","trxn_id":"OSF-TEST-1","psp_result_data":{},"check_permissions":true,"version":3}';
     $params = $this->addTestingContact($json_data);
@@ -159,8 +150,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertEquals($this->getContributionStatusId('Completed'), $contribution['contribution_status_id']);
   }
 
-  public function testPaymentInstrumentPaypal()
-  {
+  public function testPaymentInstrumentPaypal() {
     $this->callApiSuccess('OptionValue', 'create', [
       'option_group_id' => 'payment_instrument',
       'name'            => 'PayPal',
@@ -181,8 +171,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertEquals($this->getContributionStatusId('Completed'), $contribution['contribution_status_id']);
   }
 
-  public function testPaymentInstrumentSofortueberweisung()
-  {
+  public function testPaymentInstrumentSofortueberweisung() {
     $this->callApiSuccess('OptionValue', 'create', [
       'option_group_id' => 'payment_instrument',
       'name'            => 'Sofortüberweisung',
@@ -203,8 +192,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertEquals($this->getContributionStatusId('Completed'), $contribution['contribution_status_id']);
   }
 
-  public function testPaymentInstrumentEPS()
-  {
+  public function testPaymentInstrumentEPS() {
     $this->callApiSuccess('OptionValue', 'create', [
       'option_group_id' => 'payment_instrument',
       'name'            => 'EPS',
@@ -225,8 +213,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertEquals($this->getContributionStatusId('Completed'), $contribution['contribution_status_id']);
   }
 
-  public function testPaymentInstrumentSepa()
-  {
+  public function testPaymentInstrumentSepa() {
     $this->setUpCreditor();
     $json_data = '{"currency":"EUR","payment_instrument":"OOFF","financial_type_id":1,"source":"OSF",
     "sequential":"1","total_amount":"35.00","iban":"AT542011182129643403","check_permissions":true,"version":3}';
@@ -241,8 +228,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertEquals($this->getContributionStatusId('Pending'), $contribution['contribution_status_id']);
   }
 
-  public function testContributionStatusFailed()
-  {
+  public function testContributionStatusFailed() {
     $json_data = '{"failed":true,"cancel_date":"","cancel_reason":"XX01",
     "currency":"GBP","payment_instrument":"Credit Card","financial_type_id":1,"source":"OSF",
     "total_amount":"25.50","trxn_id":"OSF-TEST-99","psp_result_data":{},"check_permissions":true,"version":3}';
@@ -265,8 +251,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
    * @test
    * @dataProvider provideContributionPspResultData
    */
-  public function testPspResultDataIbanAndBIC($json_data, $expected)
-  {
+  public function testPspResultDataIbanAndBIC($json_data, $expected) {
     $this->setUpCreditor();
     $params = $this->addTestingContact($json_data);
     $contribution = reset($this->callApiSuccess('OSF', 'donation', $params)['values']);
@@ -304,8 +289,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     $this->assertEquals(json_encode($expected), json_encode($actual));
   }
 
-  public function provideContributionPspResultData()
-  {
+  public function provideContributionPspResultData() {
     return [
       [
         'psp_result_data_null' => '{"currency":"EUR","payment_instrument":"EPS","financial_type_id":1,"source":"OSF",
@@ -351,8 +335,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
    *
    * @throws \CiviCRM_API3_Exception
    */
-  public function setUpCreditor()
-  {
+  public function setUpCreditor() {
     $default_creditor_id = (int) CRM_Sepa_Logic_Settings::getSetting('batching_default_creditor');
     if (empty($default_creditor_id)) {
       // create if there isn't
@@ -375,8 +358,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
    * @param $value
    * @return bool|int|string|null
    */
-  public function getContributionStatusId($value)
-  {
+  public function getContributionStatusId($value) {
     return CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution','contribution_status_id', $value);
   }
 
@@ -386,8 +368,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
    * @param $value
    * @return bool|int|string|null
    */
-  public function getPaymentInstrumentId($value)
-  {
+  public function getPaymentInstrumentId($value) {
     return CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution','payment_instrument_id', $value);
   }
 
@@ -405,72 +386,4 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     return $params;
   }
 
-  /**
-   * Set Up Custom Group Utm with custom fields
-   *
-   * @throws CRM_Core_Exception
-   */
-  public function setUpCustomGroupUtm()
-  {
-    $custom_group = reset($this->callApiSuccess('CustomGroup', 'create', [
-      'title'     => 'UTM Tracking Information',
-      'extends'   => 'Activity',
-      'name'      => 'utm',
-      'is_active' => 1
-    ])['values']);
-
-    $this->callApiSuccess('CustomField', 'create', [
-      'custom_group_id' => 'utm',
-      'name' => 'utm_source',
-      'label' => 'Source',
-      'data_type' => 'String',
-      'html_type' => 'Text',
-      'is_active' => 1
-    ]);
-
-    $this->callApiSuccess('CustomField', 'create', [
-      'custom_group_id' => 'utm',
-      'name' => 'utm_id',
-      'label' => 'Id',
-      'data_type' => 'String',
-      'html_type' => 'Text',
-      'is_active' => 1
-    ]);
-
-    $this->callApiSuccess('CustomField', 'create', [
-      'custom_group_id' => 'utm',
-      'name' => 'utm_term',
-      'label' => 'Term',
-      'data_type' => 'String',
-      'html_type' => 'Text',
-      'is_active' => 1
-    ]);
-
-    $this->callApiSuccess('CustomField', 'create', [
-      'custom_group_id' => 'utm',
-      'name' => 'utm_medium',
-      'label' => 'Medium',
-      'data_type' => 'String',
-      'html_type' => 'Text',
-      'is_active' => 1
-    ]);
-
-    $this->callApiSuccess('CustomField', 'create', [
-      'custom_group_id' => 'utm',
-      'name' => 'utm_campaign',
-      'label' => 'Campaign',
-      'data_type' => 'String',
-      'html_type' => 'Text',
-      'is_active' => 1
-    ]);
-
-    $this->callApiSuccess('CustomField', 'create', [
-      'custom_group_id' => 'utm',
-      'name' => 'utm_content',
-      'label' => 'Content',
-      'data_type' => 'String',
-      'html_type' => 'Text',
-      'is_active' => 1
-    ]);
-  }
 }

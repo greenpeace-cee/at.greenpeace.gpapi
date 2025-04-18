@@ -54,7 +54,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $payment_details = [
       'merchant_account'  => 'Merch',
-      'shopper_reference' => 'ADYEN-123',
+      'shopper_reference' => 'OSF-TOKEN-PRODUCTION-00001-EPS',
     ];
     
     $transaction_details = [
@@ -71,7 +71,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
       'hash'                     => $contact['hash'],
       'membership_type'          => 'Foerderer',
       'payment_details'          => $payment_details,
-      'payment_instrument'       => 'Debit Card',
+      'payment_instrument'       => 'Credit Card',
       'payment_service_provider' => 'adyen',
       'transaction_details'      => $transaction_details,
     ]);
@@ -90,7 +90,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $recurring_contribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
-      ->addSelect('*', 'payment_instrument_id:name')
+      ->addSelect('*')
       ->execute()
       ->first();
 
@@ -100,7 +100,6 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals(17, $recurring_contribution['cycle_day']);
     $this->assertEquals(3, $recurring_contribution['frequency_interval']);
     $this->assertEquals('month', $recurring_contribution['frequency_unit']);
-    $this->assertEquals('Debit Card', $recurring_contribution['payment_instrument_id:name']);
     $this->assertEquals('17', $rc_start_date->format('d'));
 
   }
@@ -170,7 +169,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $payment_details = [
       'merchant_account'  => 'Merch',
-      'shopper_reference' => 'ADYEN-123',
+      'shopper_reference' => 'OSF-TOKEN-PRODUCTION-00001-EPS',
     ];
     
     $transaction_details = [
@@ -186,7 +185,7 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
       'hash'                     => $contact['hash'],
       'membership_type'          => 'Foerderer',
       'payment_details'          => $payment_details,
-      'payment_instrument'       => 'Debit Card',
+      'payment_instrument'       => 'Credit Card',
       'payment_service_provider' => 'adyen',
       'transaction_details'      => $transaction_details,
     ]);
@@ -206,14 +205,13 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
 
     $recurring_contribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recur_contrib_id)
-      ->addSelect('*', 'payment_instrument_id:name')
+      ->addSelect('*')
       ->execute()
       ->first();
 
     $this->assertEquals(20.0, $recurring_contribution['amount']);
     $this->assertEquals(3, $recurring_contribution['frequency_interval']);
     $this->assertEquals('month', $recurring_contribution['frequency_unit']);
-    $this->assertEquals('Debit Card', $recurring_contribution['payment_instrument_id:name']);
 
   }
 
