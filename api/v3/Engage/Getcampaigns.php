@@ -20,7 +20,7 @@ function civicrm_api3_engage_getcampaigns($params) {
         "sequential"          => 1,
         "parent_id"           => [ "IS NULL" => 1 ],
         "custom_$etEnabledId" => 1,
-        "options"             => [ "or" => [ [ "parent_id", "custom_$etEnabledId" ] ] ],
+        "options"             => [ "or" => [ [ "parent_id", "custom_$etEnabledId" ] ], 'limit' => 0],
     ]);
 }
 
