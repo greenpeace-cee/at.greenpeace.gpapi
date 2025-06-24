@@ -76,7 +76,6 @@ jobs:
           git clone https://github.com/greenpeace-cee/de.systopia.xcm.git
           git clone https://github.com/greenpeace-cee/com.cividesk.normalize.git
           git clone https://github.com/greenpeace-cee/org.project60.sepa.git
-          git clone https://github.com/systopia/de.systopia.pspsepa.git
           git clone https://github.com/Project60/org.project60.banking.git
           git clone https://github.com/greenpeace-cee/de.systopia.contract.git
           git clone https://github.com/greenpeace-cee/mjwshared.git

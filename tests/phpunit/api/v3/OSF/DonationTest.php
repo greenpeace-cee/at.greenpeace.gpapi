@@ -26,7 +26,6 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
     return \Civi\Test::headless()
       ->installMe(__DIR__)
       ->install('org.project60.sepa')
-      ->install('de.systopia.pspsepa')
       ->install('org.project60.banking')
       ->apply(TRUE);
   }
