@@ -82,6 +82,7 @@ jobs:
           git clone https://github.com/greenpeace-cee/mjwshared.git
           git clone https://github.com/greenpeace-cee/adyen.git -b main
           git clone https://github.com/greenpeace-cee/de.systopia.identitytracker.git
+          git clone https://github.com/greenpeace-cee/be.aivl.streetimport.git
           cv en adyen at.greenpeace.gpapi
       - id: run-tests
         name: "Run Tests"
