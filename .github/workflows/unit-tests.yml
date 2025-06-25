@@ -73,7 +73,7 @@ jobs:
           PATH="/home/runner/buildkit/bin:$PATH"
           cd "$EXT_DIR"
           cp -R "$GITHUB_WORKSPACE/at.greenpeace.gpapi" "$EXT_DIR/at.greenpeace.gpapi"
-          git clone https://github.com/systopia/de.systopia.xcm.git
+          git clone https://github.com/greenpeace-cee/de.systopia.xcm.git
           git clone https://github.com/greenpeace-cee/com.cividesk.normalize.git
           git clone https://github.com/greenpeace-cee/org.project60.sepa.git
           git clone https://github.com/systopia/de.systopia.pspsepa.git
