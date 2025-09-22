@@ -54,6 +54,7 @@ function civicrm_api3_o_s_f_getcampaigns($params) {
   );
   $extra_campaigns = civicrm_api3('Campaign', 'get', [
     $odf_field => 1,
+    'option.limit' => 0,
   ]);
 
   foreach ($extra_campaigns['values'] as $campaign) {
