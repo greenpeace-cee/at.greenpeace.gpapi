@@ -18,6 +18,7 @@
   <version>1.9.9</version>
   <develStage>stable</develStage>
   <requires>
+    <ext>be.aivl.streetimport</ext>
     <ext>de.systopia.xcm</ext>
     <ext>com.cividesk.normalize</ext>
     <ext>de.systopia.contract</ext>

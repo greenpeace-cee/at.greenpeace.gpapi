@@ -24,7 +24,6 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
     return \Civi\Test::headless()
       ->installMe(__DIR__)
       ->install('org.project60.sepa')
-      ->install('de.systopia.pspsepa')
       ->install('org.project60.banking')
       ->install('de.systopia.contract')
       ->install('de.systopia.identitytracker')
