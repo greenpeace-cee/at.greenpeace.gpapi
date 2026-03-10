@@ -89,6 +89,7 @@ return [
       ],
       'match' => [
         'name',
+        'custom_group_id',
       ],
     ],
   ],
@@ -110,6 +111,7 @@ return [
       ],
       'match' => [
         'name',
+        'custom_group_id',
       ],
     ],
   ],
@@ -131,6 +133,7 @@ return [
       ],
       'match' => [
         'name',
+        'custom_group_id',
       ],
     ],
   ],
@@ -152,6 +155,7 @@ return [
       ],
       'match' => [
         'name',
+        'custom_group_id',
       ],
     ],
   ],
@@ -173,6 +177,7 @@ return [
       ],
       'match' => [
         'name',
+        'custom_group_id',
       ],
     ],
   ],
@@ -194,6 +199,7 @@ return [
       ],
       'match' => [
         'name',
+        'custom_group_id',
       ],
     ],
   ],
