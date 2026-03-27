@@ -19,49 +19,25 @@ class Adyen extends AbstractHelper {
 
     // --- General membership details --- //
 
-    $campaign_id = (int) CRM_Utils_Array::value('campaign_id', $params);
+    $campaign_id = $params['campaign_id'] ?? NULL;
     $contact_id = $params['contact_id'];
-    $membership_type_id = CRM_Utils_Array::value('membership_type_id', $params);
+    $membership_type_id = $params['membership_type_id'] ?? NULL;
 
     // --- Recurring contribution details --- //
 
     $amount = number_format($params['amount'], 2, '.', '');
-    $currency = CRM_Utils_Array::value('currency', $params);
-    $cycle_day = CRM_Utils_Array::value('cycle_day', $params);
+    $currency = $params['currency'] ?? NULL;
+    $cycle_day = $params['cycle_day'] ?? NULL;
     $financial_type_id = self::getFinancialTypeID('Member Dues');
     $frequency_interval = (int) (12.0 / $params['frequency']);
-    $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params);
+    $payment_instrument_id = $params['payment_instrument'] ?? NULL;
 
     // --- PSP result data --- //
 
-    $psp_result_data = CRM_Utils_Array::value('psp_result_data', $params, []);
-    $additional_psp_data = CRM_Utils_Array::value('additionalData', $psp_result_data, []);
-    $card_holder_name = self::getCardHolderName($additional_psp_data);
-    $event_date = CRM_Utils_Array::value('eventDate', $psp_result_data, date('Y-m-d'));
-
-    $account_number = self::getAccountNumber($psp_result_data);
-    $billing_first_name = $card_holder_name[0];
-    $billing_last_name = $card_holder_name[1];
-    $expiry_date = self::getExpiryDate($additional_psp_data);
-    $ip_address = CRM_Utils_Array::value('shopperIP', $additional_psp_data);
+    $psp_result_data = $params['psp_result_data'] ?? [];
+    $event_date = $psp_result_data['eventDate'] ?? date('Y-m-d');
     $join_date = date('Ymd', strtotime($event_date));
-    $payment_processor_id = self::getPaymentProcessorID($psp_result_data);
-    $shopper_email = CRM_Utils_Array::value('shopperEmail', $additional_psp_data);
-
-    $shopper_reference = CRM_Utils_Array::value(
-      'recurring.shopperReference',
-      $additional_psp_data
-    ) ?? CRM_Utils_Array::value(
-      'shopperReference',
-      $additional_psp_data
-    );
-
-    $stored_pm_id = CRM_Utils_Array::value(
-      'recurring.recurringDetailReference',
-      $additional_psp_data
-    );
-
-    $start_date= date('Ymd', strtotime($event_date));
+    $start_date = date('Ymd', strtotime($event_date));
 
     $default_cycle_day = min(
       (int) (new DateTimeImmutable($event_date))->format('d'),
@@ -79,29 +55,21 @@ class Adyen extends AbstractHelper {
       'contact_id'                              => $contact_id,
       'join_date'                               => $join_date,
       'membership_type_id'                      => $membership_type_id,
-      'payment_method.account_number'           => $account_number,
       'payment_method.adapter'                  => 'adyen',
       'payment_method.amount'                   => $amount,
-      'payment_method.billing_first_name'       => $billing_first_name,
-      'payment_method.billing_last_name'        => $billing_last_name,
       'payment_method.campaign_id'              => $campaign_id,
       'payment_method.contact_id'               => $contact_id,
       'payment_method.currency'                 => $currency,
       'payment_method.cycle_day'                => $cycle_day,
-      'payment_method.email'                    => $shopper_email,
-      'payment_method.expiry_date'              => $expiry_date,
       'payment_method.financial_type_id'        => $financial_type_id,
       'payment_method.frequency_interval'       => $frequency_interval,
       'payment_method.frequency_unit'           => 'month',
-      'payment_method.ip_address'               => $ip_address,
       'payment_method.payment_instrument_id'    => $payment_instrument_id,
-      'payment_method.payment_processor_id'     => $payment_processor_id,
-      'payment_method.shopper_reference'        => $shopper_reference,
-      'payment_method.stored_payment_method_id' => $stored_pm_id,
       'sequential'                              => $sequential,
       'source'                                  => 'OSF',
       'start_date'                              => $start_date,
     ];
+    $create_contract_params = array_merge($create_contract_params, $this->getPaymentMethodDataFromPayload($params));
 
     $contract_result = civicrm_api3('Contract', 'create', $create_contract_params);
 
@@ -109,30 +77,45 @@ class Adyen extends AbstractHelper {
   }
 
   public function update(array $params) {
-    $payment_details = CRM_Utils_Array::value('payment_details', $params);
+    $payment_details = $params['payment_details'] ?? [];
 
     if (empty($payment_details['shopper_reference'])) {
       throw new Exception('Missing Shopper Reference');
+    }
+
+    if (empty($payment_details['stored_payment_method_id'])) {
+      throw new Exception('Missing Stored Payment Method ID');
     }
 
     if (empty($payment_details['merchant_account'])) {
       throw new Exception('Missing Merchant Account');
     }
 
+    $payment_processor_id = Api4\PaymentProcessor::get(FALSE)
+      ->addWhere('payment_processor_type_id:name', '=', 'Adyen')
+      ->addWhere('name', '=', $payment_details['merchant_account'])
+      ->addSelect('id')
+      ->execute()
+      ->first()['id'] ?? NULL;
+
+    if (empty($payment_processor_id)) {
+      throw new Exception('Missing or invalid merchant account');
+    }
+
     // General membership details
 
-    $campaign_id = CRM_Utils_Array::value('campaign_id', $params);
+    $campaign_id = $params['campaign_id'] ?? NULL;
     $medium_id = self::getOptionValue('encounter_medium', 'web');
     $membership_id = $params['contract_id'];
-    $membership_type_id = CRM_Utils_Array::value('membership_type', $params);
+    $membership_type_id = $params['membership_type'] ?? NULL;
     $modify_date = $this->getModifyDate($params)->format('Y-m-d');
 
     // Recurring contribution details
 
     $annual_amount = number_format($params['amount'] * $params['frequency'], 2);
-    $cycle_day = CRM_Utils_Array::value('cycle_day', $params);
+    $cycle_day = $params['cycle_day'] ?? NULL;
     $frequency = $params['frequency'];
-    $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params);
+    $payment_instrument_id = $params['payment_instrument'] ?? NULL;
 
     // API options
 
@@ -152,6 +135,9 @@ class Adyen extends AbstractHelper {
       'payment_method.adapter'                  => 'adyen',
       'payment_method.cycle_day'                => $cycle_day,
       'payment_method.payment_instrument_id'    => $payment_instrument_id,
+      'payment_method.payment_processor_id'     => $payment_processor_id,
+      'payment_method.shopper_reference'        => $payment_details['shopper_reference'],
+      'payment_method.stored_payment_method_id' => $payment_details['stored_payment_method_id'],
     ];
 
     $response = civicrm_api3('Contract', 'modify', $modify_contract_params);
@@ -164,10 +150,47 @@ class Adyen extends AbstractHelper {
     $this->loadContract($membership_id);
   }
 
+  /**
+   * @throws \Exception
+   */
+  private function getPaymentMethodDataFromPayload(array $params): array {
+    $psp_result_data = $params['psp_result_data'] ?? $params['payment_details']['psp_result_data'] ?? [];
+    $additional_psp_data = $psp_result_data['additionalData'] ?? [];
+    $card_holder_name = self::getCardHolderName($additional_psp_data);
+    $account_number = self::getAccountNumber($psp_result_data);
+    $billing_first_name = $card_holder_name[0];
+    $billing_last_name = $card_holder_name[1];
+    $expiry_date = self::getExpiryDate($additional_psp_data);
+    $ip_address = $additional_psp_data['shopperIP'] ?? NULL;
+    $payment_processor_id = self::getPaymentProcessorID($params);
+    $shopper_email = $additional_psp_data['shopperEmail'] ?? NULL;
+
+    $shopper_reference = $additional_psp_data['recurring.shopperReference']
+      ?? $additional_psp_data['shopperReference']
+      ?? $params['payment_details']['shopper_reference']
+      ?? NULL;
+
+    $stored_pm_id = $additional_psp_data['recurring.recurringDetailReference']
+      ?? $params['payment_details']['stored_payment_method_id']
+      ?? NULL;
+
+    return [
+      'payment_method.account_number'           => $account_number,
+      'payment_method.billing_first_name'       => $billing_first_name,
+      'payment_method.billing_last_name'        => $billing_last_name,
+      'payment_method.email'                    => $shopper_email,
+      'payment_method.expiry_date'              => $expiry_date,
+      'payment_method.ip_address'               => $ip_address,
+      'payment_method.payment_processor_id'     => $payment_processor_id,
+      'payment_method.shopper_reference'        => $shopper_reference,
+      'payment_method.stored_payment_method_id' => $stored_pm_id,
+    ];
+  }
+
   public function createInitialContribution(array $params) {
-    $psp_result_data = CRM_Utils_Array::value('psp_result_data', $params, []);
-    $merchant_reference = CRM_Utils_Array::value('merchantReference', $psp_result_data);
-    $psp_reference = CRM_Utils_Array::value('pspReference', $psp_result_data);
+    $psp_result_data = $params['psp_result_data'] ?? [];
+    $merchant_reference = $psp_result_data['merchantReference'] ?? NULL;
+    $psp_reference = $psp_result_data['pspReference'] ?? NULL;
 
     $create_order_params = [
       'campaign_id'            => $this->recurringContribution['campaign_id'],
@@ -298,11 +321,11 @@ class Adyen extends AbstractHelper {
   }
 
   private static function getExpiryDate(array $additional_psp_data) {
-    $expiry_date = CRM_Utils_Array::value('expiryDate', $additional_psp_data);
+    $expiry_date = $additional_psp_data['expiryDate'] ?? NULL;
 
     if (empty($expiry_date)) return NULL;
 
-    list($month, $year) = explode('/', $expiry_date);
+    [$month, $year] = explode('/', $expiry_date);
     $expiry_date = new DateTime("$year-$month-01");
     $expiry_date->add(new DateInterval('P1M'));
     $expiry_date = new DateTime($expiry_date->format('Y-m-01'));
@@ -311,9 +334,9 @@ class Adyen extends AbstractHelper {
     return $expiry_date->format('Ymd');
   }
 
-  private static function getPaymentProcessorID(array $psp_result_data) {
+  private static function getPaymentProcessorID(array $params) {
     $processor_type = 'Adyen';
-    $name = CRM_Utils_Array::value('merchantAccountCode', $psp_result_data);
+    $name = $params['psp_result_data']['merchantAccountCode'] ?? $params['payment_details']['merchant_account'] ?? NULL;
 
     if (empty($name)) {
       throw new \Exception("Missing PSP parameter 'merchantAccountCode'");
