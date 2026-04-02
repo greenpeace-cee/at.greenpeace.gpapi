@@ -129,7 +129,7 @@ class Adyen extends AbstractHelper {
 
     // Recurring contribution details
 
-    $annual_amount = number_format($params['amount'] * $params['frequency'], 2);
+    $annual_amount = number_format($params['amount'] * $params['frequency'], 2, '.', '');
     $cycle_day = CRM_Utils_Array::value('cycle_day', $params);
     $frequency = $params['frequency'];
     $payment_instrument_id = CRM_Utils_Array::value('payment_instrument', $params);
