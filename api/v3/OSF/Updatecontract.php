@@ -38,7 +38,7 @@ function _civicrm_api3_o_s_f_updatecontract_process(&$params) {
     $lock = _civicrm_api3_o_s_f_updatecontract_acquireLock($params);
 
     try {
-      $contract_helper->update($params);
+      $result = $contract_helper->update($params);
     } catch (Exception $e) {
       throw $e;
     } finally {
@@ -48,14 +48,12 @@ function _civicrm_api3_o_s_f_updatecontract_process(&$params) {
     $membership_id = $contract_helper->membership['id'];
     $null = NULL;
 
-    return civicrm_api3_create_success(
-      [[ 'id' => $membership_id ]],
-      $params,
-      'OSF',
-      'updatecontract',
-      $null,
-      [ 'id' => $membership_id ]
-    );
+    $response = [
+      'id' => $membership_id,
+      'contract_activity_id' => reset($result['values'])['change_activity_id'],
+    ];
+
+    return civicrm_api3_create_success([$response], $params, 'OSF', 'updatecontract', $null, $response);
   } catch (Exception $e) {
     $tx->rollback();
 

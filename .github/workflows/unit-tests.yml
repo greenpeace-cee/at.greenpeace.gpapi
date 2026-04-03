@@ -75,7 +75,7 @@ jobs:
           cp -R "$GITHUB_WORKSPACE/at.greenpeace.gpapi" "$EXT_DIR/at.greenpeace.gpapi"
           git clone https://github.com/greenpeace-cee/de.systopia.xcm.git
           git clone https://github.com/greenpeace-cee/com.cividesk.normalize.git
-          git clone https://github.com/greenpeace-cee/org.project60.sepa.git
+          git clone --branch upstream https://github.com/greenpeace-cee/org.project60.sepa.git
           git clone https://github.com/Project60/org.project60.banking.git
           git clone https://github.com/greenpeace-cee/de.systopia.contract.git
           git clone https://github.com/greenpeace-cee/mjwshared.git

@@ -76,7 +76,7 @@ class Adyen extends AbstractHelper {
     $this->loadContract($contract_result['id']);
   }
 
-  public function update(array $params) {
+  public function update(array $params): array {
     $payment_details = $params['payment_details'] ?? [];
 
     if (empty($payment_details['shopper_reference'])) {
@@ -136,11 +136,32 @@ class Adyen extends AbstractHelper {
       'payment_method.cycle_day'                => $cycle_day,
       'payment_method.payment_instrument_id'    => $payment_instrument_id,
       'payment_method.payment_processor_id'     => $payment_processor_id,
-      'payment_method.shopper_reference'        => $payment_details['shopper_reference'],
-      'payment_method.stored_payment_method_id' => $payment_details['stored_payment_method_id'],
     ];
 
-    $response = civicrm_api3('Contract', 'modify', $modify_contract_params);
+    // check for existing PaymentToken
+    $existingPaymentToken = Api4\PaymentToken::get(FALSE)
+      ->addWhere('payment_processor_id', '=', $payment_processor_id)
+      ->addWhere('contact_id', '=', $params['contact_id'])
+      ->addWhere('token', '=', $payment_details['stored_payment_method_id'])
+      ->addWhere('cr.processor_id', '=', $payment_details['shopper_reference'])
+      ->addSelect('id',)
+      ->addJoin(
+        'ContributionRecur AS cr',
+        'INNER',
+        ['cr.payment_token_id', '=', 'id']
+      )
+      ->execute()
+      ->first();
+    if (!empty($existingPaymentToken)) {
+      // re-use existing PaymentToken
+      $modify_contract_params['payment_method.payment_token_id'] = $existingPaymentToken['id'];
+    }
+    else {
+      // provide params to create new PaymentToken
+      $modify_contract_params = array_merge($modify_contract_params, $this->getPaymentMethodDataFromPayload($params));
+    }
+
+    $result = civicrm_api3('Contract', 'modify', $modify_contract_params);
 
     civicrm_api3('Contract', 'process_scheduled_modifications', [
       'id'                => $membership_id,
@@ -148,6 +169,8 @@ class Adyen extends AbstractHelper {
     ]);
 
     $this->loadContract($membership_id);
+
+    return $result;
   }
 
   /**

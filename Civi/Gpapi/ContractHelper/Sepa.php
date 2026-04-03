@@ -122,7 +122,7 @@ class Sepa extends AbstractHelper {
     return wordwrap($obfuscated, 4, ' ', TRUE);
   }
 
-  public function update(array $params) {
+  public function update(array $params): array {
     $payment_details = CRM_Utils_Array::value('payment_details', $params, []);
 
     if (empty($payment_details['iban'])) {
@@ -186,7 +186,7 @@ class Sepa extends AbstractHelper {
       'payment_method.payment_instrument_id'    => $payment_instrument_id,
     ];
 
-    $response = civicrm_api3('Contract', 'modify', $modify_contract_params);
+    $result = civicrm_api3('Contract', 'modify', $modify_contract_params);
 
     civicrm_api3('Contract', 'process_scheduled_modifications', [
       'id'                => $membership_id,
@@ -194,6 +194,8 @@ class Sepa extends AbstractHelper {
     ]);
 
     $this->loadContract($membership_id);
+
+    return $result;
   }
 
   public function createInitialContribution (array $params) {
