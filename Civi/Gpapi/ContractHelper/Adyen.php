@@ -112,7 +112,7 @@ class Adyen extends AbstractHelper {
 
     // Recurring contribution details
 
-    $annual_amount = number_format($params['amount'] * $params['frequency'], 2);
+    $annual_amount = number_format($params['amount'] * $params['frequency'], 2, '.', '');
     $cycle_day = $params['cycle_day'] ?? NULL;
     $frequency = $params['frequency'];
     $payment_instrument_id = $params['payment_instrument'] ?? NULL;

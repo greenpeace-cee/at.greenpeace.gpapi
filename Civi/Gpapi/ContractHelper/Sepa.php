@@ -142,7 +142,7 @@ class Sepa extends AbstractHelper {
     // TODO: support multiple creditors
     $this->creditor = (array) \CRM_Sepa_Logic_Settings::defaultCreditor();
 
-    $annual_amount = number_format($params['amount'] * $params['frequency'], 2);
+    $annual_amount = number_format($params['amount'] * $params['frequency'], 2, '.', '');
     $currency = CRM_Utils_Array::value('currency', $params, $this->creditor['currency']);
 
     if ($currency != $this->creditor['currency']) {
