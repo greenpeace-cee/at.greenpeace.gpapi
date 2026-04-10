@@ -105,6 +105,31 @@ class api_v3_OSF_UpdatecontractTest extends api_v3_OSF_ContractTestBase {
     $this->assertEquals('month', $recurring_contribution['frequency_unit']);
     $this->assertEquals('17', $rc_start_date->format('d'));
 
+    // update again without cycle day
+    $update_result = $this->callAPISuccess('OSF', 'updatecontract', [
+      'amount'                   => 20,
+      'contract_id'              => $membership_id,
+      'debug'                    => FALSE,
+      'frequency'                => 4,
+      'hash'                     => $contact['hash'],
+      'membership_type'          => 'Foerderer',
+      'payment_details'          => $payment_details,
+      'payment_instrument'       => 'Credit Card',
+      'payment_service_provider' => 'adyen',
+    ]);
+
+    $this->assertNotEmpty($update_result['id']);
+
+    $recur_contrib_id = self::getRecurContribIdForContract($membership['id']);
+
+    $recurring_contribution = Api4\ContributionRecur::get(FALSE)
+      ->addWhere('id', '=', $recur_contrib_id)
+      ->addSelect('cycle_day')
+      ->execute()
+      ->first();
+
+    $this->assertEquals(17, $recurring_contribution['cycle_day']);
+
   }
 
   public function testUpdateAdyenContractWithNewShopperReference() {
