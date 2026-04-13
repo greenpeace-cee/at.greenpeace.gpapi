@@ -115,8 +115,10 @@ function _civicrm_api3_engage_signpetition_process($params) {
     CRM_Gpapi_Processor::storeEmail($contact_id, $params);
     CRM_Gpapi_Processor::storePhone($contact_id, $params);
 
-    // GP-463: "der Group "Donation Info" Eintrag soll immer gesetzt werden..."
-    CRM_Gpapi_Processor::addToGroup($contact_id, 'Donation Info');
+    if (!empty($params['email'])) {
+      // GP-463: "der Group "Donation Info" Eintrag soll immer gesetzt werden..."
+      CRM_Gpapi_Processor::addToGroup($contact_id, 'Donation Info');
+    }
 
     // GP-463: "...aber der "Group Community NL" Eintrag soll nur bei übergebenem newsletter=1 Wert gesetzt werden."
     if (!empty($params['newsletter']) && strtolower($params['newsletter']) != 'no') {
