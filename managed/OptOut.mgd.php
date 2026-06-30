@@ -80,7 +80,8 @@ return [
         'name' => 'group',
       ],
       'match' => [
-        'name',
+          'name',
+          'option_group_id',
       ],
     ],
   ],
