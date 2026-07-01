@@ -81,6 +81,7 @@ return [
       ],
       'match' => [
         'name',
+        'option_group_id',
       ],
     ],
   ],
