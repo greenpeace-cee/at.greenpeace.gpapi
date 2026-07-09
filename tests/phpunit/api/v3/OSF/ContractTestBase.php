@@ -29,7 +29,7 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
       ->install('de.systopia.identitytracker')
       ->install('mjwshared')
       ->install('adyen')
-      ->apply(TRUE);
+      ->apply();
   }
 
   public function setUp(): void {
@@ -95,10 +95,16 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
   }
 
   private function createAdyenPaymentProcessor() {
-    $this->adyenPaymentProcessor = Api4\PaymentProcessor::create(FALSE)
-      ->addValue('financial_account_id.name'     , 'Payment Processor Account')
-      ->addValue('name'                          , 'Greenpeace')
-      ->addValue('payment_processor_type_id.name', 'Adyen')
+    $this->adyenPaymentProcessor = Api4\PaymentProcessor::save(FALSE)
+      ->addRecord([
+        'financial_account_id.name' => 'Payment Processor Account',
+        'name' => 'Greenpeace',
+        'payment_processor_type_id.name' => 'Adyen',
+      ])
+      ->setReload(TRUE)
+      ->setMatch([
+        'name',
+      ])
       ->execute()
       ->first();
   }
@@ -140,13 +146,19 @@ implements HeadlessInterface, HookInterface, TransactionalInterface {
 
     if (isset($default_creditor_id)) return;
 
-    $creditor = Api4\SepaCreditor::create(FALSE)
-      ->addValue('creditor_type' , 'SEPA')
-      ->addValue('currency'      , 'EUR')
-      ->addValue('iban'          , 'AT483200000012345864')
-      ->addValue('mandate_active', TRUE)
-      ->addValue('mandate_prefix', 'SEPA')
-      ->addValue('uses_bic'      , FALSE)
+    $creditor = Api4\SepaCreditor::save(FALSE)
+      ->addRecord([
+        'creditor_type' => 'SEPA',
+        'currency' => 'EUR',
+        'iban' => 'AT483200000012345864',
+        'mandate_active' => TRUE,
+        'mandate_prefix' => 'SEPA',
+        'uses_bic' => FALSE,
+      ])
+      ->setReload(TRUE)
+      ->setMatch([
+        'iban',
+      ])
       ->execute()
       ->first();
 

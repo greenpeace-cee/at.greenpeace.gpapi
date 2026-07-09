@@ -27,7 +27,7 @@ class api_v3_OSF_DonationTest extends \PHPUnit\Framework\TestCase implements Hea
       ->installMe(__DIR__)
       ->install('org.project60.sepa')
       ->install('org.project60.banking')
-      ->apply(TRUE);
+      ->apply();
   }
 
   /**

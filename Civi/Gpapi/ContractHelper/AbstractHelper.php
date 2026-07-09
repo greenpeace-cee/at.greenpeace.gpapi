@@ -16,7 +16,7 @@ abstract class AbstractHelper {
 
   abstract public function createInitialContribution(array $params);
 
-  abstract public function update(array $params);
+  abstract public function update(array $params): array;
 
   abstract protected function getPaymentDetails();
 
