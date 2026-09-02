@@ -89,6 +89,10 @@ function _civicrm_api3_engage_signpetition_process($params) {
       }
     }
 
+    if (!empty($params['external_dialoger_id']) && !empty($params['petition_dialoger'])) {
+      return civicrm_api3_create_error('Cannot accept both external_dialoger_id and petition_dialoger in a single request');
+    }
+
     CRM_Gpapi_Processor::preprocessContactData($params);
     CRM_Gpapi_Processor::resolveCampaign($params);
     $contact_data = $params;
@@ -102,6 +106,14 @@ function _civicrm_api3_engage_signpetition_process($params) {
 
     if (!CRM_Gpapi_Processor::setContactIdByHash($contact_data)) {
       return civicrm_api3_create_error('Unknown contact hash');
+    }
+
+    if (!empty($params['external_dialoger_id'])) {
+      $dialoger_contact_id = CRM_Donutapp_Util::getContactIdByDialogerId($params['external_dialoger_id']);
+      if (empty($dialoger_contact_id)) {
+        return civicrm_api3_create_error('Unknown external dialoger id "' . $params['external_dialoger_id'] . '"');
+      }
+      $params['petition_dialoger'] = $dialoger_contact_id;
     }
 
     if (!empty($contact_data['hash'])) {
