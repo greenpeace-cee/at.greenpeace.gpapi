@@ -1,2 +1,3 @@
 tests.txt
 site/
+.phpunit.result.cache
