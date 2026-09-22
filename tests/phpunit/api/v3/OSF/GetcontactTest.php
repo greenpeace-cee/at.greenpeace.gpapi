@@ -24,6 +24,7 @@ class api_v3_OSF_GetcontactTest extends \PHPUnit\Framework\TestCase implements H
   public function setUpHeadless() {
     return Test::headless()
       ->installMe(__DIR__)
+      ->install('de.systopia.identitytracker')
       ->apply();
   }
 
