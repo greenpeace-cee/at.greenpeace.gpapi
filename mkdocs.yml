@@ -12,6 +12,7 @@ nav:
   - Online Donations: donations.md
   - Engagement: engagement.md
   - Newsletter: newsletter.md
+  - SMS: sms.md
 
 markdown_extensions:
   - attr_list
