@@ -22,6 +22,7 @@
     <ext>de.systopia.xcm</ext>
     <ext>com.cividesk.normalize</ext>
     <ext>de.systopia.contract</ext>
+    <ext>de.systopia.identitytracker</ext>
   </requires>
   <compatibility>
     <ver>5.69</ver>
@@ -38,5 +39,6 @@
   <mixins>
     <mixin>mgd-php@1.0.0</mixin>
     <mixin>setting-php@1.0.0</mixin>
+    <mixin>scan-classes@1.0.0</mixin>
   </mixins>
 </extension>
