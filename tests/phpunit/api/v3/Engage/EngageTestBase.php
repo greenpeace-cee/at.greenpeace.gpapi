@@ -26,6 +26,7 @@ class api_v3_Engage_EngageTestBase
       ->install('org.project60.banking')
       ->install('de.systopia.contract')
       ->install('de.systopia.xcm')
+      ->install('de.systopia.identitytracker')
       ->apply();
   }
 
